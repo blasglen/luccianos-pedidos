@@ -302,6 +302,13 @@ export default function App() {
         input, textarea, select, button { font-family: inherit; }
         input:focus, textarea:focus, button:focus-visible { outline: 2px solid var(--plum); outline-offset: 1px; }
         ::placeholder { color: #B8AA98; }
+
+        .order-layout { display: grid; grid-template-columns: 1fr 320px; gap: 24px; align-items: start; }
+        .order-ticket { position: sticky; top: 24px; }
+        @media (max-width: 760px) {
+          .order-layout { grid-template-columns: 1fr; gap: 20px; }
+          .order-ticket { position: static; }
+        }
       `}</style>
 
       {toast && (
@@ -474,7 +481,7 @@ function OrderForm({ sucursal, onBack, onViewHistory, activeVendor, setActiveVen
   return (
     <div style={styles.wrap}>
       <TopBar onBack={onBack} title={sucursal} subtitle="Pedido semanal de stock" />
-      <div style={styles.formLayout}>
+      <div className="order-layout" style={styles.formLayout}>
         <div style={styles.formMain}>
           <div style={styles.tabs}>
             {VENDOR_ORDER.map((v) => (
@@ -521,7 +528,7 @@ function OrderForm({ sucursal, onBack, onViewHistory, activeVendor, setActiveVen
           </div>
         </div>
 
-        <div style={styles.ticket}>
+        <div className="order-ticket" style={styles.ticket}>
           <div style={styles.ticketHeader}>
             <Package size={16} color="var(--plum)" />
             <span>Resumen del pedido</span>
@@ -927,7 +934,7 @@ const styles = {
     padding: "20px 14px", display: "flex", flexDirection: "column", alignItems: "center",
     gap: 8, cursor: "pointer", fontSize: 14, fontWeight: 600, color: "var(--ink)",
   },
-  formLayout: { display: "grid", gridTemplateColumns: "1fr 320px", gap: 24, alignItems: "start" },
+  formLayout: {},
   formMain: {},
   tabs: { display: "flex", gap: 8, marginBottom: 14 },
   tab: {
@@ -953,7 +960,7 @@ const styles = {
     fontSize: 13, textAlign: "center", flexShrink: 0,
   },
   emptyRow: { padding: "24px 16px", color: "#A99A86", fontSize: 14, textAlign: "center" },
-  ticket: { background: "var(--paper)", border: "1px solid var(--line)", borderRadius: 16, padding: 20, position: "sticky", top: 24 },
+  ticket: { background: "var(--paper)", border: "1px solid var(--line)", borderRadius: 16, padding: 20 },
   ticketHeader: { display: "flex", alignItems: "center", gap: 8, fontWeight: 600, fontSize: 14, color: "var(--plum)" },
   ticketCount: { fontSize: 12, color: "#8A7B68", marginTop: 4 },
   ticketDivider: { borderTop: "1px dashed var(--line)", margin: "14px 0" },

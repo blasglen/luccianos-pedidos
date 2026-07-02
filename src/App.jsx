@@ -444,15 +444,17 @@ function PinScreen({ roleKey, value, setValue, error, onSubmit, onBack }) {
 
 function SucursalSelect({ onBack, onPick }) {
   return (
-    <div style={styles.wrap}>
+    <div style={styles.wrapFull}>
       <TopBar onBack={onBack} title="Elegí tu sucursal" />
-      <div style={styles.sucGrid}>
-        {SUCURSALES.map((s) => (
-          <button key={s} style={styles.sucCard} onClick={() => onPick(s)}>
-            <Store size={20} color="var(--pistachio-dark)" strokeWidth={1.6} />
-            {s}
-          </button>
-        ))}
+      <div style={styles.sucGridWrap}>
+        <div style={styles.sucGrid}>
+          {SUCURSALES.map((s) => (
+            <button key={s} style={styles.sucCard} onClick={() => onPick(s)}>
+              <Store size={20} color="var(--pistachio-dark)" strokeWidth={1.6} />
+              {s}
+            </button>
+          ))}
+        </div>
       </div>
     </div>
   );
@@ -884,6 +886,8 @@ const styles = {
   roleTitle: { fontFamily: "'Fraunces', serif", fontWeight: 600, fontSize: 18, color: "var(--plum)" },
   roleDesc: { fontSize: 13, color: "#8A7B68", textAlign: "center" },
   wrap: { maxWidth: 980, margin: "0 auto", padding: "28px 24px 0" },
+  wrapFull: { maxWidth: 980, margin: "0 auto", padding: "28px 24px 0", minHeight: "calc(100vh - 60px)", display: "flex", flexDirection: "column" },
+  sucGridWrap: { flex: 1, display: "flex", alignItems: "center", justifyContent: "center" },
   topBar: { display: "flex", alignItems: "center", gap: 14, marginBottom: 24 },
   backBtn: {
     width: 36, height: 36, borderRadius: 10, border: "1px solid var(--line)",
@@ -892,7 +896,7 @@ const styles = {
   },
   topTitle: { fontFamily: "'Fraunces', serif", fontWeight: 600, fontSize: 22, color: "var(--plum)" },
   topSubtitle: { fontSize: 13, color: "#8A7B68", marginTop: 2 },
-  sucGrid: { display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 12 },
+  sucGrid: { display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 12, width: "100%" },
   sucCard: {
     background: "var(--paper)", border: "1px solid var(--line)", borderRadius: 12,
     padding: "20px 14px", display: "flex", flexDirection: "column", alignItems: "center",

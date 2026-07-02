@@ -905,8 +905,8 @@ const styles = {
     cursor: "pointer", flexShrink: 0,
   },
   darkTopTitle: { fontFamily: "'Fraunces', serif", fontWeight: 600, fontSize: 22, color: "#F4E9C9" },
-  darkLogoWrap: { display: "flex", justifyContent: "center", margin: "28px 0 12px" },
-  darkLogoImg: { width: 220, height: "auto" },
+  darkLogoWrap: { display: "flex", justifyContent: "center", margin: "12px 0 4px" },
+  darkLogoImg: { width: 170, height: "auto" },
   sucGridWrapDark: { flex: 1, display: "flex", alignItems: "center", justifyContent: "center" },
   sucCardGold: {
     background: "#C9A24C", border: "1px solid #A9822F", borderRadius: 12,

@@ -444,13 +444,19 @@ function PinScreen({ roleKey, value, setValue, error, onSubmit, onBack }) {
 
 function SucursalSelect({ onBack, onPick }) {
   return (
-    <div style={styles.wrapFull}>
-      <TopBar onBack={onBack} title="Elegí tu sucursal" />
-      <div style={styles.sucGridWrap}>
+    <div style={styles.darkWrap}>
+      <div style={styles.darkTopBar}>
+        <button style={styles.darkBackBtn} onClick={onBack}><ArrowLeft size={18} color="#fff" /></button>
+        <div style={styles.darkTopTitle}>Elegí tu sucursal</div>
+      </div>
+      <div style={styles.darkLogoWrap}>
+        <img src={`${import.meta.env.BASE_URL}logo-white.png`} alt="Lucciano's" style={styles.darkLogoImg} />
+      </div>
+      <div style={styles.sucGridWrapDark}>
         <div style={styles.sucGrid}>
           {SUCURSALES.map((s) => (
-            <button key={s} style={styles.sucCard} onClick={() => onPick(s)}>
-              <Store size={20} color="var(--pistachio-dark)" strokeWidth={1.6} />
+            <button key={s} style={styles.sucCardGold} onClick={() => onPick(s)}>
+              <Store size={20} color="#1A1A1A" strokeWidth={1.8} />
               {s}
             </button>
           ))}
@@ -888,6 +894,25 @@ const styles = {
   wrap: { maxWidth: 980, margin: "0 auto", padding: "28px 24px 0" },
   wrapFull: { maxWidth: 980, margin: "0 auto", padding: "28px 24px 0", minHeight: "calc(100vh - 60px)", display: "flex", flexDirection: "column" },
   sucGridWrap: { flex: 1, display: "flex", alignItems: "center", justifyContent: "center" },
+  darkWrap: {
+    minHeight: "100vh", background: "#111111", display: "flex", flexDirection: "column",
+    padding: "28px 24px 40px", maxWidth: 980, margin: "0 auto",
+  },
+  darkTopBar: { display: "flex", alignItems: "center", gap: 14 },
+  darkBackBtn: {
+    width: 36, height: 36, borderRadius: 10, border: "1px solid rgba(255,255,255,0.25)",
+    background: "transparent", display: "flex", alignItems: "center", justifyContent: "center",
+    cursor: "pointer", flexShrink: 0,
+  },
+  darkTopTitle: { fontFamily: "'Fraunces', serif", fontWeight: 600, fontSize: 22, color: "#F4E9C9" },
+  darkLogoWrap: { display: "flex", justifyContent: "center", margin: "28px 0 12px" },
+  darkLogoImg: { width: 220, height: "auto" },
+  sucGridWrapDark: { flex: 1, display: "flex", alignItems: "center", justifyContent: "center" },
+  sucCardGold: {
+    background: "#C9A24C", border: "1px solid #A9822F", borderRadius: 12,
+    padding: "20px 14px", display: "flex", flexDirection: "column", alignItems: "center",
+    gap: 8, cursor: "pointer", fontSize: 14, fontWeight: 800, color: "#1A1A1A", width: "100%",
+  },
   topBar: { display: "flex", alignItems: "center", gap: 14, marginBottom: 24 },
   backBtn: {
     width: 36, height: 36, borderRadius: 10, border: "1px solid var(--line)",

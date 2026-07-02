@@ -896,7 +896,7 @@ const styles = {
   sucGridWrap: { flex: 1, display: "flex", alignItems: "center", justifyContent: "center" },
   darkWrap: {
     minHeight: "100vh", background: "#111111", display: "flex", flexDirection: "column",
-    padding: "28px 24px 40px", maxWidth: 980, margin: "0 auto",
+    padding: "56px 24px 40px", maxWidth: 980, margin: "0 auto",
   },
   darkTopBar: { display: "flex", alignItems: "center", gap: 14 },
   darkBackBtn: {
@@ -905,8 +905,8 @@ const styles = {
     cursor: "pointer", flexShrink: 0,
   },
   darkTopTitle: { fontFamily: "'Fraunces', serif", fontWeight: 600, fontSize: 22, color: "#F4E9C9" },
-  darkLogoWrap: { display: "flex", justifyContent: "center", margin: "12px 0 4px" },
-  darkLogoImg: { width: 170, height: "auto" },
+  darkLogoWrap: { display: "flex", justifyContent: "center", margin: "56px 0 16px" },
+  darkLogoImg: { width: 210, height: "auto" },
   sucGridWrapDark: { flex: 1, display: "flex", alignItems: "center", justifyContent: "center" },
   sucCardGold: {
     background: "#C9A24C", border: "1px solid #A9822F", borderRadius: 12,

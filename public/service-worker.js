@@ -1,5 +1,9 @@
 const CACHE_NAME = "luccianos-pedidos-v1";
-const APP_SHELL = ["/", "/index.html", "/manifest.json"];
+
+// Calcula la carpeta base automáticamente (funciona tanto en Vercel como en
+// GitHub Pages, sin necesidad de hardcodear la ruta).
+const BASE = new URL(self.registration.scope).pathname;
+const APP_SHELL = [BASE, `${BASE}index.html`, `${BASE}manifest.json`];
 
 self.addEventListener("install", (event) => {
   event.waitUntil(
@@ -17,7 +21,7 @@ self.addEventListener("activate", (event) => {
   self.clients.claim();
 });
 
-// Network-first for navigation/data, falling back to cache when offline.
+// Network-first para navegación/datos, con fallback a caché si no hay conexión.
 self.addEventListener("fetch", (event) => {
   if (event.request.method !== "GET") return;
   event.respondWith(

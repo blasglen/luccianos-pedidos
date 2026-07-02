@@ -396,7 +396,7 @@ export default function App() {
 function Home({ onSucursal, onDeposito }) {
   return (
     <div style={styles.center}>
-      <img src="/logo.png" alt="Lucciano's" style={styles.logoImg} />
+      <img src={`${import.meta.env.BASE_URL}logo.png`} alt="Lucciano's" style={styles.logoImg} />
       <div style={styles.eyebrow}>Pedidos internos</div>
       <h1 style={styles.h1}>¿Quién sos hoy?</h1>
       <p style={styles.sub}>Elegí tu rol para pedir o recibir stock.</p>

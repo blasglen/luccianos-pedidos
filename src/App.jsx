@@ -174,10 +174,12 @@ function fmtShortDate(iso) {
 }
 
 function sanitizeQty(value) {
-  let v = value.replace(/[^\d.,]/g, "");
-  const parts = v.split(/[.,]/);
-  if (parts.length > 2) {
-    v = parts[0] + "." + parts.slice(1).join("");
+  let v = value.replace(/[^\d.]/g, "");
+  const dotIndex = v.indexOf(".");
+  if (dotIndex !== -1) {
+    const intPart = v.slice(0, dotIndex);
+    const decPart = v.slice(dotIndex + 1).replace(/\./g, "").slice(0, 2);
+    v = intPart + "." + decPart;
   }
   return v;
 }

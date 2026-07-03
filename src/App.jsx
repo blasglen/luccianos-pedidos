@@ -880,7 +880,7 @@ const styles = {
     "--pistachio": "#8CA876", "--pistachio-dark": "#5F7A4C", "--terracotta": "#C9714E",
     "--ink": "#2B2320", "--line": "#E7DFCF",
     minHeight: "100vh", background: "var(--cream)", color: "var(--ink)",
-    fontFamily: "'Inter', system-ui, sans-serif", padding: "0 0 60px",
+    fontFamily: "'Inter', system-ui, sans-serif",
   },
   center: {
     display: "flex", flexDirection: "column", alignItems: "center",
@@ -916,7 +916,7 @@ const styles = {
   },
   roleTitle: { fontFamily: "'Fraunces', serif", fontWeight: 600, fontSize: 18, color: "var(--plum)" },
   roleDesc: { fontSize: 13, color: "#8A7B68", textAlign: "center" },
-  wrap: { maxWidth: 980, margin: "0 auto", padding: "28px 24px 0" },
+  wrap: { maxWidth: 980, margin: "0 auto", padding: "28px 24px 60px" },
   wrapFull: { maxWidth: 980, margin: "0 auto", padding: "28px 24px 0", minHeight: "calc(100vh - 60px)", display: "flex", flexDirection: "column" },
   sucGridWrap: { flex: 1, display: "flex", alignItems: "center", justifyContent: "center" },
   darkWrap: {

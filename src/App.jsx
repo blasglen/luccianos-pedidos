@@ -173,6 +173,15 @@ function fmtShortDate(iso) {
   return `${day}/${month}/${d.getFullYear()}`;
 }
 
+function sanitizeQty(value) {
+  let v = value.replace(/[^\d.,]/g, "");
+  const parts = v.split(/[.,]/);
+  if (parts.length > 2) {
+    v = parts[0] + "." + parts.slice(1).join("");
+  }
+  return v;
+}
+
 function getSucursalOrderNumber(order, allOrders) {
   const sameSucursal = allOrders
     .filter((o) => o.sucursal === order.sucursal)
@@ -878,8 +887,9 @@ function OrderForm({ sucursal, onBack, onViewHistory, activeVendor, setActiveVen
                     className="qtyInput"
                     style={styles.qtyInput}
                     placeholder="cant."
+                    inputMode="decimal"
                     value={draft[key] || ""}
-                    onChange={(e) => setQty(activeVendor, p.item, e.target.value)}
+                    onChange={(e) => setQty(activeVendor, p.item, sanitizeQty(e.target.value))}
                   />
                 </div>
               );

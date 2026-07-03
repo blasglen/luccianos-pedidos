@@ -413,24 +413,26 @@ export default function App() {
 function Home({ onSucursal, onDeposito }) {
   return (
     <div className="no-scroll-screen" style={styles.homeDark}>
-      <img src={`${import.meta.env.BASE_URL}logo-gold.png`} alt="Lucciano's" style={styles.homeLogoImg} />
-      <div style={styles.homeEyebrow}>Estados Unidos</div>
-      <h1 style={styles.homeH1}>Gestión de Compras</h1>
-      <div style={styles.roleGrid}>
-        <button style={styles.roleCard} onClick={onSucursal}>
-          <Store size={28} color="var(--plum)" strokeWidth={1.6} />
-          <div style={styles.roleTitle}>Sucursal</div>
-          <div style={styles.roleDesc}>Responsable de Sucursal</div>
-        </button>
-        <button style={styles.roleCard} onClick={onDeposito}>
-          <ClipboardList size={28} color="var(--plum)" strokeWidth={1.6} />
-          <div style={styles.roleTitle}>Depósito</div>
-          <div style={styles.roleDesc}>Responsable de Compras</div>
-        </button>
-      </div>
-      <div style={styles.homeTagline}>
-        <div>#IL MAESTRO</div>
-        <div>DEL GELATO</div>
+      <div style={styles.homeInner}>
+        <img src={`${import.meta.env.BASE_URL}logo-gold.png`} alt="Lucciano's" style={styles.homeLogoImg} />
+        <div style={styles.homeEyebrow}>Estados Unidos</div>
+        <h1 style={styles.homeH1}>Gestión de Compras</h1>
+        <div style={styles.roleGrid}>
+          <button style={styles.roleCard} onClick={onSucursal}>
+            <Store size={28} color="var(--plum)" strokeWidth={1.6} />
+            <div style={styles.roleTitle}>Sucursal</div>
+            <div style={styles.roleDesc}>Responsable de Sucursal</div>
+          </button>
+          <button style={styles.roleCard} onClick={onDeposito}>
+            <ClipboardList size={28} color="var(--plum)" strokeWidth={1.6} />
+            <div style={styles.roleTitle}>Depósito</div>
+            <div style={styles.roleDesc}>Responsable de Compras</div>
+          </button>
+        </div>
+        <div style={styles.homeTagline}>
+          <div>#IL MAESTRO</div>
+          <div>DEL GELATO</div>
+        </div>
       </div>
     </div>
   );
@@ -465,26 +467,28 @@ function PinScreen({ roleKey, value, setValue, error, onSubmit, onBack }) {
 function SucursalSelect({ onBack, onPick }) {
   return (
     <div style={styles.darkWrapScroll}>
-      <div style={styles.darkTopBar}>
-        <button style={styles.darkBackBtn} onClick={onBack}><ArrowLeft size={18} color="#fff" /></button>
-        <div style={styles.darkTopTitle}>Elegí tu sucursal</div>
-      </div>
-      <div style={styles.darkLogoWrapSmall}>
-        <img src={`${import.meta.env.BASE_URL}logo-white.png`} alt="Lucciano's" style={styles.darkLogoImgSmall} />
-      </div>
-      <div style={styles.branchList}>
-        {SUCURSALES.map((s) => (
-          <button
-            key={s}
-            style={{
-              ...styles.branchCard,
-              backgroundImage: `linear-gradient(180deg, rgba(0,0,0,0.68) 0%, rgba(0,0,0,0.15) 45%, rgba(0,0,0,0.05) 100%), url(${import.meta.env.BASE_URL}branches/${SUCURSAL_PHOTOS[s]})`,
-            }}
-            onClick={() => onPick(s)}
-          >
-            <span style={styles.branchCardName}>{s}</span>
-          </button>
-        ))}
+      <div style={styles.darkInner}>
+        <div style={styles.darkTopBar}>
+          <button style={styles.darkBackBtn} onClick={onBack}><ArrowLeft size={18} color="#fff" /></button>
+          <div style={styles.darkTopTitle}>Elegí tu sucursal</div>
+        </div>
+        <div style={styles.darkLogoWrapSmall}>
+          <img src={`${import.meta.env.BASE_URL}logo-white.png`} alt="Lucciano's" style={styles.darkLogoImgSmall} />
+        </div>
+        <div style={styles.branchList}>
+          {SUCURSALES.map((s) => (
+            <button
+              key={s}
+              style={{
+                ...styles.branchCard,
+                backgroundImage: `linear-gradient(180deg, rgba(0,0,0,0.68) 0%, rgba(0,0,0,0.15) 45%, rgba(0,0,0,0.05) 100%), url(${import.meta.env.BASE_URL}branches/${SUCURSAL_PHOTOS[s]})`,
+              }}
+              onClick={() => onPick(s)}
+            >
+              <span style={styles.branchCardName}>{s}</span>
+            </button>
+          ))}
+        </div>
       </div>
     </div>
   );
@@ -902,7 +906,11 @@ const styles = {
   },
   homeDark: {
     height: "100vh", overflow: "hidden", background: "#111111", display: "flex", flexDirection: "column",
-    alignItems: "center", textAlign: "center", padding: "100px 24px 50px", maxWidth: 520, margin: "0 auto",
+    alignItems: "center", width: "100%", padding: "100px 24px 50px",
+  },
+  homeInner: {
+    width: "100%", maxWidth: 520, display: "flex", flexDirection: "column",
+    alignItems: "center", textAlign: "center", flex: 1,
   },
   homeLogoImg: { width: 280, height: "auto", marginBottom: 24 },
   homeEyebrow: {
@@ -935,8 +943,9 @@ const styles = {
   sucGridWrap: { flex: 1, display: "flex", alignItems: "center", justifyContent: "center" },
   darkWrapScroll: {
     minHeight: "100vh", background: "#111111", display: "flex", flexDirection: "column",
-    padding: "56px 24px 40px", maxWidth: 980, margin: "0 auto",
+    alignItems: "center", padding: "56px 24px 40px", width: "100%",
   },
+  darkInner: { width: "100%", maxWidth: 980 },
   darkTopBar: { display: "flex", alignItems: "center", gap: 14 },
   darkBackBtn: {
     width: 36, height: 36, borderRadius: 10, border: "1px solid rgba(255,255,255,0.25)",

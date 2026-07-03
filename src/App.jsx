@@ -1,7 +1,7 @@
 import { useState, useEffect, useMemo, useRef } from "react";
 import {
   Search, Package, ClipboardList, Store, CheckCircle2, Clock, Loader2,
-  ArrowLeft, Send, ChevronDown, ChevronUp, Lock,
+  ArrowLeft, Send, ChevronDown, ChevronUp, Lock, CalendarDays,
 } from "lucide-react";
 import { supabase } from "./supabaseClient";
 
@@ -190,6 +190,8 @@ export default function App() {
   const [toast, setToast] = useState(null);
   const [filterSucursal, setFilterSucursal] = useState("Todas");
   const [filterStatus, setFilterStatus] = useState("todas");
+  const [filterDateFrom, setFilterDateFrom] = useState("");
+  const [filterDateTo, setFilterDateTo] = useState("");
   const [expandedOrder, setExpandedOrder] = useState(null);
   const [lastOrder, setLastOrder] = useState(null);
   const [pendingRole, setPendingRole] = useState(null);
@@ -199,6 +201,8 @@ export default function App() {
   const [authChecked, setAuthChecked] = useState(false);
 
   useEffect(() => { loadOrders(); }, []);
+
+  useEffect(() => { unlockScroll(); }, [screen]);
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data }) => {
@@ -327,8 +331,16 @@ export default function App() {
   const depositoOrders = useMemo(() => {
     return orders
       .filter((o) => filterSucursal === "Todas" || o.sucursal === filterSucursal)
-      .filter((o) => filterStatus === "todas" || o.status === filterStatus);
-  }, [orders, filterSucursal, filterStatus]);
+      .filter((o) => filterStatus === "todas" || o.status === filterStatus)
+      .filter((o) => {
+        if (!filterDateFrom) return true;
+        const orderTime = new Date(o.date).getTime();
+        const from = new Date(`${filterDateFrom}T00:00:00`).getTime();
+        const toDay = filterDateTo || filterDateFrom;
+        const to = new Date(`${toDay}T23:59:59`).getTime();
+        return orderTime >= from && orderTime <= to;
+      });
+  }, [orders, filterSucursal, filterStatus, filterDateFrom, filterDateTo]);
 
   return (
     <div style={styles.page}>
@@ -440,6 +452,10 @@ export default function App() {
           setFilterSucursal={setFilterSucursal}
           filterStatus={filterStatus}
           setFilterStatus={setFilterStatus}
+          filterDateFrom={filterDateFrom}
+          setFilterDateFrom={setFilterDateFrom}
+          filterDateTo={filterDateTo}
+          setFilterDateTo={setFilterDateTo}
           expandedOrder={expandedOrder}
           setExpandedOrder={setExpandedOrder}
           updateStatus={updateStatus}
@@ -486,6 +502,7 @@ function DepositoAuth({ onBack, onSuccess }) {
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [loading, setLoading] = useState(false);
+  useEffect(() => () => unlockScroll(), []);
   const [error, setError] = useState(null);
   const [info, setInfo] = useState(null);
 
@@ -624,6 +641,7 @@ function ResetPassword({ onSuccess }) {
   const [confirmPassword, setConfirmPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
+  useEffect(() => () => unlockScroll(), []);
 
   async function handleSubmit() {
     setError(null);
@@ -684,6 +702,7 @@ function ResetPassword({ onSuccess }) {
 }
 
 function PinScreen({ roleKey, value, setValue, error, onSubmit, onBack }) {
+  useEffect(() => () => unlockScroll(), []);
   return (
     <div style={styles.center}>
       <Lock size={36} color="var(--plum)" strokeWidth={1.5} />
@@ -908,9 +927,10 @@ function SucursalHistory({ sucursal, orders, loading, onBack, expandedOrder, set
   );
 }
 
-function Deposito({ onBack, loading, orders, allOrders, filterSucursal, setFilterSucursal, filterStatus, setFilterStatus, expandedOrder, setExpandedOrder, updateStatus, onImportOrders, userEmail, onLogout }) {
+function Deposito({ onBack, loading, orders, allOrders, filterSucursal, setFilterSucursal, filterStatus, setFilterStatus, filterDateFrom, setFilterDateFrom, filterDateTo, setFilterDateTo, expandedOrder, setExpandedOrder, updateStatus, onImportOrders, userEmail, onLogout }) {
   const pendingCount = allOrders.filter((o) => o.status === "pendiente").length;
   const [showExport, setShowExport] = useState(false);
+  const hasDateFilter = !!filterDateFrom;
 
   return (
     <div style={styles.wrap}>
@@ -936,6 +956,37 @@ function Deposito({ onBack, loading, orders, allOrders, filterSucursal, setFilte
           <option value="preparacion">En preparación</option>
           <option value="recibido">Recibido</option>
         </select>
+        <div style={styles.dateFilterGroup}>
+          <CalendarDays size={16} color="#8A7B68" />
+          <label style={styles.dateFilterLabel}>
+            Desde
+            <input
+              type="date"
+              style={styles.dateInput}
+              value={filterDateFrom}
+              onChange={(e) => {
+                setFilterDateFrom(e.target.value);
+                if (filterDateTo && e.target.value > filterDateTo) setFilterDateTo(e.target.value);
+              }}
+            />
+          </label>
+          <label style={styles.dateFilterLabel}>
+            Hasta <span style={{ color: "#A99A86" }}>(opcional, para un rango)</span>
+            <input
+              type="date"
+              style={styles.dateInput}
+              value={filterDateTo}
+              min={filterDateFrom || undefined}
+              disabled={!filterDateFrom}
+              onChange={(e) => setFilterDateTo(e.target.value)}
+            />
+          </label>
+          {hasDateFilter && (
+            <button style={styles.dateClearBtn} onClick={() => { setFilterDateFrom(""); setFilterDateTo(""); }}>
+              Limpiar fechas
+            </button>
+          )}
+        </div>
       </div>
 
       {loading && <div style={styles.emptyRow}>Cargando pedidos...</div>}
@@ -1306,7 +1357,20 @@ const styles = {
     padding: "7px 14px", borderRadius: 999, border: "1px solid var(--line)",
     background: "var(--paper)", fontSize: 12, fontWeight: 600, cursor: "pointer", color: "var(--ink)",
   },
-  filters: { display: "flex", gap: 10, marginBottom: 18, flexWrap: "wrap" },
+  filters: { display: "flex", gap: 10, marginBottom: 18, flexWrap: "wrap", alignItems: "center" },
+  dateFilterGroup: {
+    display: "flex", alignItems: "flex-end", gap: 10, flexWrap: "wrap",
+    background: "var(--paper)", border: "1px solid var(--line)", borderRadius: 10, padding: "8px 12px",
+  },
+  dateFilterLabel: { display: "flex", flexDirection: "column", gap: 4, fontSize: 11, color: "#8A7B68", fontWeight: 600 },
+  dateInput: {
+    padding: "6px 8px", borderRadius: 8, border: "1px solid var(--line)",
+    background: "var(--paper)", fontSize: 13, color: "var(--ink)",
+  },
+  dateClearBtn: {
+    padding: "8px 12px", borderRadius: 999, border: "1px solid var(--line)",
+    background: "var(--cream)", fontSize: 12, fontWeight: 600, cursor: "pointer", color: "var(--terracotta)",
+  },
   select: { padding: "9px 12px", borderRadius: 10, border: "1px solid var(--line)", background: "var(--paper)", fontSize: 13, color: "var(--ink)" },
   toast: {
     position: "fixed", top: 20, left: "50%", transform: "translateX(-50%)",

@@ -259,6 +259,7 @@ export default function App() {
   const [filterStatus, setFilterStatus] = useState("todas");
   const [filterDateFrom, setFilterDateFrom] = useState("");
   const [filterDateTo, setFilterDateTo] = useState("");
+  const [depositoView, setDepositoView] = useState("pedido");
   const [expandedOrder, setExpandedOrder] = useState(null);
   const [lastOrder, setLastOrder] = useState(null);
   const [pendingRole, setPendingRole] = useState(null);
@@ -523,6 +524,8 @@ export default function App() {
           setFilterDateFrom={setFilterDateFrom}
           filterDateTo={filterDateTo}
           setFilterDateTo={setFilterDateTo}
+          depositoView={depositoView}
+          setDepositoView={setDepositoView}
           expandedOrder={expandedOrder}
           setExpandedOrder={setExpandedOrder}
           updateStatus={updateStatus}
@@ -1218,9 +1221,24 @@ function DateRangePicker({ from, to, setFrom, setTo }) {
   );
 }
 
-function Deposito({ onBack, loading, orders, allOrders, filterSucursal, setFilterSucursal, filterStatus, setFilterStatus, filterDateFrom, setFilterDateFrom, filterDateTo, setFilterDateTo, expandedOrder, setExpandedOrder, updateStatus, onImportOrders, userEmail, onLogout }) {
+function Deposito({ onBack, loading, orders, allOrders, filterSucursal, setFilterSucursal, filterStatus, setFilterStatus, filterDateFrom, setFilterDateFrom, filterDateTo, setFilterDateTo, depositoView, setDepositoView, expandedOrder, setExpandedOrder, updateStatus, onImportOrders, userEmail, onLogout }) {
   const pendingCount = allOrders.filter((o) => o.status === "pendiente").length;
   const [showExport, setShowExport] = useState(false);
+
+  const productSummary = useMemo(() => {
+    const map = new Map();
+    orders.forEach((o) => {
+      o.items.forEach((it) => {
+        const key = `${it.vendor}|${it.item}|${it.code}`;
+        const qty = parseFloat(String(it.quantity).replace(",", ".")) || 0;
+        if (!map.has(key)) {
+          map.set(key, { vendor: it.vendor, item: it.item, code: it.code, total: 0 });
+        }
+        map.get(key).total += qty;
+      });
+    });
+    return Array.from(map.values()).sort((a, b) => b.total - a.total);
+  }, [orders]);
 
   return (
     <div style={styles.wrap}>
@@ -1234,6 +1252,21 @@ function Deposito({ onBack, loading, orders, allOrders, filterSucursal, setFilte
       </div>
 
       {showExport && <ExportPanel orders={allOrders} onImport={onImportOrders} />}
+
+      <div style={styles.tabs}>
+        <button
+          style={{ ...styles.tab, ...(depositoView === "pedido" ? styles.tabActive : {}) }}
+          onClick={() => setDepositoView("pedido")}
+        >
+          Por pedido
+        </button>
+        <button
+          style={{ ...styles.tab, ...(depositoView === "producto" ? styles.tabActive : {}) }}
+          onClick={() => setDepositoView("producto")}
+        >
+          Por producto
+        </button>
+      </div>
 
       <div style={styles.filters}>
         <select style={styles.select} value={filterSucursal} onChange={(e) => setFilterSucursal(e.target.value)}>
@@ -1257,34 +1290,61 @@ function Deposito({ onBack, loading, orders, allOrders, filterSucursal, setFilte
       {loading && <div style={styles.emptyRow}>Cargando pedidos...</div>}
       {!loading && orders.length === 0 && <div style={styles.emptyRow}>No hay pedidos que coincidan con el filtro.</div>}
 
-      <div style={styles.orderCards}>
-        {orders.map((o) => (
-          <OrderCard
-            key={o.id}
-            order={o}
-            expanded={expandedOrder === o.id}
-            onToggle={() => setExpandedOrder(expandedOrder === o.id ? null : o.id)}
-            showSucursal
-            allOrders={allOrders}
-            actions={
-              <div style={styles.statusBtns}>
-                {Object.entries(STATUS_META).map(([key, meta]) => (
-                  <button
-                    key={key}
-                    onClick={() => updateStatus(o.id, key)}
-                    style={{
-                      ...styles.statusBtn,
-                      ...(o.status === key ? { background: meta.color, color: "#fff", borderColor: meta.color } : {}),
-                    }}
-                  >
-                    {meta.label}
-                  </button>
-                ))}
-              </div>
-            }
-          />
-        ))}
-      </div>
+      {!loading && orders.length > 0 && depositoView === "pedido" && (
+        <div style={styles.orderCards}>
+          {orders.map((o) => (
+            <OrderCard
+              key={o.id}
+              order={o}
+              expanded={expandedOrder === o.id}
+              onToggle={() => setExpandedOrder(expandedOrder === o.id ? null : o.id)}
+              showSucursal
+              allOrders={allOrders}
+              actions={
+                <div style={styles.statusBtns}>
+                  {Object.entries(STATUS_META).map(([key, meta]) => (
+                    <button
+                      key={key}
+                      onClick={() => updateStatus(o.id, key)}
+                      style={{
+                        ...styles.statusBtn,
+                        ...(o.status === key ? { background: meta.color, color: "#fff", borderColor: meta.color } : {}),
+                      }}
+                    >
+                      {meta.label}
+                    </button>
+                  ))}
+                </div>
+              }
+            />
+          ))}
+        </div>
+      )}
+
+      {!loading && orders.length > 0 && depositoView === "producto" && (
+        <div style={styles.productSummaryWrap}>
+          <table style={styles.productSummaryTable}>
+            <thead>
+              <tr>
+                <th style={styles.productSummaryHeaderCell}>Producto</th>
+                <th style={{ ...styles.productSummaryHeaderCell, textAlign: "center" }}>Código</th>
+                <th style={{ ...styles.productSummaryHeaderCell, textAlign: "center" }}>Proveedor</th>
+                <th style={{ ...styles.productSummaryHeaderCell, textAlign: "right" }}>Cantidad total</th>
+              </tr>
+            </thead>
+            <tbody>
+              {productSummary.map((p) => (
+                <tr key={`${p.vendor}|${p.item}|${p.code}`}>
+                  <td style={styles.productSummaryCell}>{p.item}</td>
+                  <td style={{ ...styles.productSummaryCell, textAlign: "center", color: "#A99A86" }}>{p.code}</td>
+                  <td style={{ ...styles.productSummaryCell, textAlign: "center" }}>{p.vendor}</td>
+                  <td style={{ ...styles.productSummaryCell, textAlign: "right", fontWeight: 700 }}>{p.total}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
     </div>
   );
 }
@@ -1694,5 +1754,12 @@ const styles = {
   tablePreviewDataCell: {
     border: "1px solid #000", padding: "6px 10px", background: "#d9d9d9", color: "#000",
   },
+  productSummaryWrap: { background: "var(--paper)", border: "1px solid var(--line)", borderRadius: 14, overflow: "hidden" },
+  productSummaryTable: { width: "100%", borderCollapse: "collapse", fontSize: 13 },
+  productSummaryHeaderCell: {
+    textAlign: "left", padding: "12px 16px", fontSize: 11, fontWeight: 700, textTransform: "uppercase",
+    letterSpacing: "0.04em", color: "#8A7B68", borderBottom: "1px solid var(--line)", background: "var(--cream)",
+  },
+  productSummaryCell: { padding: "10px 16px", borderBottom: "1px solid var(--line)", color: "var(--ink)" },
   exportPanel: { background: "var(--paper)", border: "1px solid var(--line)", borderRadius: 14, padding: 18, marginBottom: 18 },
 };

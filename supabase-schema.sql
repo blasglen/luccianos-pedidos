@@ -25,6 +25,10 @@ create policy "Cualquiera puede crear pedidos"
   on orders for insert
   with check (true);
 
-create policy "Cualquiera puede actualizar pedidos"
+-- Antes cualquiera con el link podía cambiar el estado de un pedido (candado simple).
+-- Ahora que Depósito tiene cuentas reales (mail + contraseña), solo alguien logueado
+-- puede cambiar el estado. Cargar/leer pedidos sigue abierto (lo usan las sucursales
+-- sin cuenta, solo con su PIN).
+create policy "Solo usuarios logueados pueden actualizar pedidos"
   on orders for update
-  using (true);
+  using (auth.role() = 'authenticated');

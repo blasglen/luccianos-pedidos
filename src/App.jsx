@@ -200,6 +200,43 @@ function buildMailBody(order) {
   return body;
 }
 
+function escapeHtml(str) {
+  return String(str)
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;");
+}
+
+function buildOrderHtmlTable(order) {
+  const font = "font-family:Arial,Helvetica,sans-serif;font-size:13px;";
+  const headerCell = `border:1px solid #000000;padding:6px 14px;font-weight:bold;background:#ffffff;${font}`;
+  const headerCellCenter = `${headerCell}text-align:center;`;
+  const dataCell = `border:1px solid #000000;padding:6px 14px;background:#d9d9d9;${font}`;
+  const dataCellCenter = `${dataCell}text-align:center;`;
+
+  let html = `<div style="${font}color:#000000;">`;
+  html += `<p style="margin:0 0 2px;"><strong>Pedido de stock</strong></p>`;
+  html += `<p style="margin:0 0 2px;">Sucursal: ${escapeHtml(order.sucursal)}</p>`;
+  html += `<p style="margin:0 0 14px;">Fecha: ${escapeHtml(fmtDate(order.date))}</p>`;
+
+  VENDOR_ORDER.filter((v) => order.items.some((it) => it.vendor === v)).forEach((v) => {
+    html += `<p style="margin:0 0 6px;font-weight:bold;">${escapeHtml(v)}</p>`;
+    html += `<table style="border-collapse:collapse;margin-bottom:18px;">`;
+    html += `<tr><td style="${headerCell}">Item</td><td style="${headerCellCenter}">Code</td><td style="${headerCellCenter}"></td></tr>`;
+    order.items.filter((it) => it.vendor === v).forEach((it) => {
+      html += `<tr><td style="${dataCell}">${escapeHtml(it.item)}</td><td style="${dataCellCenter}">${escapeHtml(it.code)}</td><td style="${dataCellCenter}">${escapeHtml(it.quantity)}</td></tr>`;
+    });
+    html += `</table>`;
+  });
+
+  if (order.notes) {
+    html += `<p style="margin:8px 0 0;"><strong>Notas:</strong> ${escapeHtml(order.notes)}</p>`;
+  }
+  html += `</div>`;
+  return html;
+}
+
 function buildMailto(order) {
   const subject = `Pedido de stock - ${order.sucursal} - ${fmtDate(order.date)}`;
   const body = buildMailBody(order);
@@ -893,12 +930,38 @@ function OrderForm({ sucursal, onBack, onViewHistory, activeVendor, setActiveVen
 function Confirm({ sucursal, lastOrder, onNewOrder, onHistory, onHome }) {
   const textRef = useRef(null);
   const [selected, setSelected] = useState(false);
+  const [copiedTable, setCopiedTable] = useState(false);
+  const [copyError, setCopyError] = useState(false);
 
   function selectAll() {
     if (textRef.current) {
       textRef.current.focus();
       textRef.current.select();
       setSelected(true);
+    }
+  }
+
+  async function copyFormattedTable() {
+    if (!lastOrder) return;
+    const html = buildOrderHtmlTable(lastOrder);
+    const text = buildMailBody(lastOrder);
+    try {
+      if (navigator.clipboard && window.ClipboardItem) {
+        await navigator.clipboard.write([
+          new window.ClipboardItem({
+            "text/html": new Blob([html], { type: "text/html" }),
+            "text/plain": new Blob([text], { type: "text/plain" }),
+          }),
+        ]);
+      } else {
+        await navigator.clipboard.writeText(text);
+      }
+      setCopyError(false);
+      setCopiedTable(true);
+      setTimeout(() => setCopiedTable(false), 3000);
+    } catch (err) {
+      setCopyError(true);
+      setTimeout(() => setCopyError(false), 3000);
     }
   }
 
@@ -913,25 +976,65 @@ function Confirm({ sucursal, lastOrder, onNewOrder, onHistory, onHome }) {
       {lastOrder && (
         <div style={{ width: "100%", maxWidth: 460, marginTop: 14 }}>
           <ol style={{ textAlign: "left", fontSize: 13, color: "#6B5D4B", paddingLeft: 20, margin: "0 0 12px" }}>
-            <li>Apretá "Seleccionar todo" abajo.</li>
-            <li>Copialo con <strong>Ctrl+C</strong> (o Cmd+C en Mac).</li>
-            <li>Abrí un mail nuevo a {ORDER_EMAIL} y pegalo con <strong>Ctrl+V</strong>.</li>
+            <li>Apretá "Copiar tabla con formato" abajo.</li>
+            <li>Abrí un mail nuevo a {ORDER_EMAIL} y pegalo con <strong>Ctrl+V</strong> (o Cmd+V en Mac).</li>
+            <li>Va a quedar con el mismo formato de tabla que le mandamos siempre a los proveedores.</li>
           </ol>
-          <textarea
-            ref={textRef}
-            readOnly
-            value={buildMailBody(lastOrder)}
-            style={styles.copyBox}
-            rows={8}
-            onFocus={(e) => e.target.select()}
-          />
           <button
-            onClick={selectAll}
-            style={{ ...styles.secondaryBtn, width: "100%", marginTop: 10, display: "flex", alignItems: "center", justifyContent: "center", gap: 8 }}
+            onClick={copyFormattedTable}
+            style={{ ...styles.submitBtn, width: "100%" }}
           >
-            {selected ? <CheckCircle2 size={16} color="var(--pistachio-dark)" /> : null}
-            {selected ? "Texto seleccionado — ahora Ctrl+C" : "Seleccionar todo"}
+            {copiedTable ? <CheckCircle2 size={16} /> : <ClipboardList size={16} />}
+            {copiedTable
+              ? "¡Copiado! Ahora pegalo en el mail"
+              : copyError
+              ? "No se pudo copiar, probá con el texto de abajo"
+              : "Copiar tabla con formato"}
           </button>
+
+          <div style={styles.tablePreviewWrap}>
+            {VENDOR_ORDER.filter((v) => lastOrder.items.some((it) => it.vendor === v)).map((v) => (
+              <div key={v} style={{ marginBottom: 14 }}>
+                <div style={styles.tablePreviewVendor}>{v}</div>
+                <table style={styles.tablePreviewTable}>
+                  <tbody>
+                    <tr>
+                      <td style={styles.tablePreviewHeaderCell}>Item</td>
+                      <td style={{ ...styles.tablePreviewHeaderCell, textAlign: "center" }}>Code</td>
+                      <td style={styles.tablePreviewHeaderCell}></td>
+                    </tr>
+                    {lastOrder.items.filter((it) => it.vendor === v).map((it, i) => (
+                      <tr key={i}>
+                        <td style={styles.tablePreviewDataCell}>{it.item}</td>
+                        <td style={{ ...styles.tablePreviewDataCell, textAlign: "center" }}>{it.code}</td>
+                        <td style={{ ...styles.tablePreviewDataCell, textAlign: "center" }}>{it.quantity}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            ))}
+          </div>
+
+          <details style={{ marginTop: 6 }}>
+            <summary style={styles.textLink}>¿No se copió bien? Usar texto plano en su lugar</summary>
+            <textarea
+              ref={textRef}
+              readOnly
+              value={buildMailBody(lastOrder)}
+              style={{ ...styles.copyBox, marginTop: 10 }}
+              rows={8}
+              onFocus={(e) => e.target.select()}
+            />
+            <button
+              onClick={selectAll}
+              style={{ ...styles.secondaryBtn, width: "100%", marginTop: 10, display: "flex", alignItems: "center", justifyContent: "center", gap: 8 }}
+            >
+              {selected ? <CheckCircle2 size={16} color="var(--pistachio-dark)" /> : null}
+              {selected ? "Texto seleccionado — ahora Ctrl+C" : "Seleccionar todo"}
+            </button>
+          </details>
+
           <a href={buildMailto(lastOrder)} style={{ ...styles.historyLink, display: "block", textAlign: "center" }}>
             O probar con "Abrir mi programa de mail"
           </a>
@@ -1581,6 +1684,15 @@ const styles = {
   copyBox: {
     width: "100%", border: "1px solid var(--line)", borderRadius: 10, padding: 12,
     fontSize: 12, fontFamily: "monospace", resize: "vertical", background: "var(--cream)", color: "var(--ink)",
+  },
+  tablePreviewWrap: { marginTop: 16, textAlign: "left" },
+  tablePreviewVendor: { fontSize: 12, fontWeight: 700, color: "var(--ink)", marginBottom: 6 },
+  tablePreviewTable: { borderCollapse: "collapse", width: "100%", fontSize: 12 },
+  tablePreviewHeaderCell: {
+    border: "1px solid #000", padding: "6px 10px", fontWeight: 700, background: "#fff", color: "#000",
+  },
+  tablePreviewDataCell: {
+    border: "1px solid #000", padding: "6px 10px", background: "#d9d9d9", color: "#000",
   },
   exportPanel: { background: "var(--paper)", border: "1px solid var(--line)", borderRadius: 14, padding: 18, marginBottom: 18 },
 };

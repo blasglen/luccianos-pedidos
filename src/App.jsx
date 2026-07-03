@@ -296,7 +296,7 @@ export default function App() {
   return (
     <div style={styles.page}>
       <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=Kaushan+Script&family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=Inter:wght@400;500;600;700&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=Kaushan+Script&family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=Bodoni+Moda:opsz,wght@6..96,700;6..96,800&family=Inter:wght@400;500;600;700&display=swap');
         * { box-sizing: border-box; }
         body { margin: 0; }
         input, textarea, select, button { font-family: inherit; }
@@ -404,20 +404,23 @@ function Home({ onSucursal, onDeposito }) {
   return (
     <div style={styles.homeDark}>
       <img src={`${import.meta.env.BASE_URL}logo-gold.png`} alt="Lucciano's" style={styles.homeLogoImg} />
-      <div style={styles.homeEyebrow}>Pedidos internos</div>
-      <h1 style={styles.homeH1}>¿Quién sos hoy?</h1>
-      <p style={styles.homeSub}>Elegí tu rol para pedir o recibir stock.</p>
+      <div style={styles.homeEyebrow}>Estados Unidos</div>
+      <h1 style={styles.homeH1}>Gestión de Compras</h1>
       <div style={styles.roleGrid}>
         <button style={styles.roleCard} onClick={onSucursal}>
           <Store size={28} color="var(--plum)" strokeWidth={1.6} />
           <div style={styles.roleTitle}>Sucursal</div>
-          <div style={styles.roleDesc}>Armar y enviar el pedido semanal</div>
+          <div style={styles.roleDesc}>Responsable de Sucursal</div>
         </button>
         <button style={styles.roleCard} onClick={onDeposito}>
           <ClipboardList size={28} color="var(--plum)" strokeWidth={1.6} />
           <div style={styles.roleTitle}>Depósito</div>
-          <div style={styles.roleDesc}>Ver y gestionar los pedidos que llegan</div>
+          <div style={styles.roleDesc}>Responsable de Compras</div>
         </button>
+      </div>
+      <div style={styles.homeTagline}>
+        <div>#IL MAESTRO</div>
+        <div>DEL GELATO</div>
       </div>
     </div>
   );
@@ -885,15 +888,19 @@ const styles = {
   },
   homeDark: {
     minHeight: "100vh", background: "#111111", display: "flex", flexDirection: "column",
-    alignItems: "center", textAlign: "center", padding: "70px 24px 40px", maxWidth: 520, margin: "0 auto",
+    alignItems: "center", textAlign: "center", padding: "100px 24px 50px", maxWidth: 520, margin: "0 auto",
   },
   homeLogoImg: { width: 280, height: "auto", marginBottom: 24 },
   homeEyebrow: {
     fontSize: 12, letterSpacing: "0.12em", textTransform: "uppercase",
     color: "#C9A24C", fontWeight: 600, marginBottom: 12,
   },
-  homeH1: { fontFamily: "'Fraunces', serif", fontWeight: 600, fontSize: 34, margin: "0 0 8px", color: "#F4E9C9" },
-  homeSub: { color: "#B8AA96", fontSize: 15, margin: 0 },
+  homeH1: { fontFamily: "'Fraunces', serif", fontWeight: 600, fontSize: 34, margin: "0 0 32px", color: "#F4E9C9" },
+  homeTagline: {
+    fontFamily: "'Bodoni Moda', serif", fontOpticalSizing: "auto", fontWeight: 700,
+    textTransform: "uppercase", color: "#FFFFFF", fontSize: 44, lineHeight: 1.05,
+    letterSpacing: "0.01em", marginTop: "auto", paddingTop: 60,
+  },
   logoImg: { width: 150, height: "auto", marginBottom: 4 },
   eyebrow: {
     fontSize: 12, letterSpacing: "0.12em", textTransform: "uppercase",

@@ -887,7 +887,7 @@ const styles = {
     textAlign: "center", padding: "80px 24px 40px", maxWidth: 520, margin: "0 auto",
   },
   homeDark: {
-    minHeight: "100vh", background: "#111111", display: "flex", flexDirection: "column",
+    height: "100vh", overflow: "hidden", background: "#111111", display: "flex", flexDirection: "column",
     alignItems: "center", textAlign: "center", padding: "100px 24px 50px", maxWidth: 520, margin: "0 auto",
   },
   homeLogoImg: { width: 280, height: "auto", marginBottom: 24 },
@@ -920,7 +920,7 @@ const styles = {
   wrapFull: { maxWidth: 980, margin: "0 auto", padding: "28px 24px 0", minHeight: "calc(100vh - 60px)", display: "flex", flexDirection: "column" },
   sucGridWrap: { flex: 1, display: "flex", alignItems: "center", justifyContent: "center" },
   darkWrap: {
-    minHeight: "100vh", background: "#111111", display: "flex", flexDirection: "column",
+    height: "100vh", overflow: "hidden", background: "#111111", display: "flex", flexDirection: "column",
     padding: "56px 24px 40px", maxWidth: 980, margin: "0 auto",
   },
   darkTopBar: { display: "flex", alignItems: "center", gap: 14 },

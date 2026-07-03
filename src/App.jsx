@@ -402,11 +402,11 @@ export default function App() {
 
 function Home({ onSucursal, onDeposito }) {
   return (
-    <div style={styles.center}>
-      <img src={`${import.meta.env.BASE_URL}logo.png`} alt="Lucciano's" style={styles.logoImg} />
-      <div style={styles.eyebrow}>Pedidos internos</div>
-      <h1 style={styles.h1}>¿Quién sos hoy?</h1>
-      <p style={styles.sub}>Elegí tu rol para pedir o recibir stock.</p>
+    <div style={styles.homeDark}>
+      <img src={`${import.meta.env.BASE_URL}logo-gold.png`} alt="Lucciano's" style={styles.homeLogoImg} />
+      <div style={styles.homeEyebrow}>Pedidos internos</div>
+      <h1 style={styles.homeH1}>¿Quién sos hoy?</h1>
+      <p style={styles.homeSub}>Elegí tu rol para pedir o recibir stock.</p>
       <div style={styles.roleGrid}>
         <button style={styles.roleCard} onClick={onSucursal}>
           <Store size={28} color="var(--plum)" strokeWidth={1.6} />
@@ -883,6 +883,17 @@ const styles = {
     display: "flex", flexDirection: "column", alignItems: "center",
     textAlign: "center", padding: "80px 24px 40px", maxWidth: 520, margin: "0 auto",
   },
+  homeDark: {
+    minHeight: "100vh", background: "#111111", display: "flex", flexDirection: "column",
+    alignItems: "center", textAlign: "center", padding: "70px 24px 40px", maxWidth: 520, margin: "0 auto",
+  },
+  homeLogoImg: { width: 280, height: "auto", marginBottom: 24 },
+  homeEyebrow: {
+    fontSize: 12, letterSpacing: "0.12em", textTransform: "uppercase",
+    color: "#C9A24C", fontWeight: 600, marginBottom: 12,
+  },
+  homeH1: { fontFamily: "'Fraunces', serif", fontWeight: 600, fontSize: 34, margin: "0 0 8px", color: "#F4E9C9" },
+  homeSub: { color: "#B8AA96", fontSize: 15, margin: 0 },
   logoImg: { width: 150, height: "auto", marginBottom: 4 },
   eyebrow: {
     fontSize: 12, letterSpacing: "0.12em", textTransform: "uppercase",

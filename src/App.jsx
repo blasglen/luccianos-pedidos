@@ -129,13 +129,21 @@ const SUCURSAL_PHOTOS = {
   "Vineland": "vineland.jpg",
   "Weston": "weston.jpg",
 };
+const SUCURSAL_ABBR = {
+  "American Dream": "AMD",
+  "Aventura": "AVE",
+  "Sawgrass": "SAW",
+  "Florida Mall": "FML",
+  "Vineland": "VIN",
+  "Weston": "WES",
+};
 const ORDER_EMAIL = "admin@luccianos.us";
 const ALLOWED_DEPOSITO_EMAILS = ["contabilidad@luccianos.com.ar", "admin@luccianos.us"];
 
 const STATUS_META = {
   pendiente: { label: "Pendiente", color: "var(--terracotta)", bg: "#FBEAE0" },
-  preparacion: { label: "En preparación", color: "#B08628", bg: "#FAF1DC" },
-  recibido: { label: "Recibido", color: "var(--pistachio-dark)", bg: "#EAF1E3" },
+  pedido: { label: "Pedido", color: "var(--pistachio-dark)", bg: "#EAF1E3" },
+  cancelado: { label: "Cancelado", color: "#B3261E", bg: "#F7D6D2" },
 };
 
 let scrollLockY = 0;
@@ -156,6 +164,27 @@ function fmtDate(iso) {
   const d = new Date(iso);
   return d.toLocaleDateString("es-AR", { day: "2-digit", month: "short", year: "numeric" }) +
     " · " + d.toLocaleTimeString("es-AR", { hour: "2-digit", minute: "2-digit" });
+}
+
+function fmtShortDate(iso) {
+  const d = new Date(iso);
+  const day = String(d.getDate()).padStart(2, "0");
+  const month = String(d.getMonth() + 1).padStart(2, "0");
+  return `${day}/${month}/${d.getFullYear()}`;
+}
+
+function getSucursalOrderNumber(order, allOrders) {
+  const sameSucursal = allOrders
+    .filter((o) => o.sucursal === order.sucursal)
+    .sort((a, b) => new Date(a.date) - new Date(b.date));
+  const idx = sameSucursal.findIndex((o) => o.id === order.id);
+  return idx === -1 ? null : idx + 1;
+}
+
+function getOrderCode(order, allOrders) {
+  const abbr = SUCURSAL_ABBR[order.sucursal] || order.sucursal.slice(0, 3).toUpperCase();
+  const num = getSucursalOrderNumber(order, allOrders);
+  return `ORDEN ${fmtShortDate(order.date)} - #${abbr}-${num ?? "?"}`;
 }
 
 function buildMailBody(order) {
@@ -925,7 +954,7 @@ function SucursalHistory({ sucursal, orders, loading, onBack, expandedOrder, set
       {!loading && orders.length === 0 && <div style={styles.emptyRow}>Todavía no enviaste ningún pedido.</div>}
       <div style={styles.orderCards}>
         {orders.map((o) => (
-          <OrderCard key={o.id} order={o} expanded={expandedOrder === o.id} onToggle={() => setExpandedOrder(expandedOrder === o.id ? null : o.id)} />
+          <OrderCard key={o.id} order={o} expanded={expandedOrder === o.id} onToggle={() => setExpandedOrder(expandedOrder === o.id ? null : o.id)} allOrders={orders} />
         ))}
       </div>
     </div>
@@ -1111,8 +1140,8 @@ function Deposito({ onBack, loading, orders, allOrders, filterSucursal, setFilte
         <select style={styles.select} value={filterStatus} onChange={(e) => setFilterStatus(e.target.value)}>
           <option value="todas">Todos los estados</option>
           <option value="pendiente">Pendiente</option>
-          <option value="preparacion">En preparación</option>
-          <option value="recibido">Recibido</option>
+          <option value="pedido">Pedido</option>
+          <option value="cancelado">Cancelado</option>
         </select>
         <DateRangePicker
           from={filterDateFrom}
@@ -1133,6 +1162,7 @@ function Deposito({ onBack, loading, orders, allOrders, filterSucursal, setFilte
             expanded={expandedOrder === o.id}
             onToggle={() => setExpandedOrder(expandedOrder === o.id ? null : o.id)}
             showSucursal
+            allOrders={allOrders}
             actions={
               <div style={styles.statusBtns}>
                 {Object.entries(STATUS_META).map(([key, meta]) => (
@@ -1270,7 +1300,7 @@ function ExportPanel({ orders, onImport }) {
   );
 }
 
-function OrderCard({ order, expanded, onToggle, showSucursal, actions }) {
+function OrderCard({ order, expanded, onToggle, showSucursal, actions, allOrders }) {
   const meta = STATUS_META[order.status] || STATUS_META.pendiente;
   return (
     <div style={styles.orderCard}>
@@ -1282,6 +1312,7 @@ function OrderCard({ order, expanded, onToggle, showSucursal, actions }) {
               <Clock size={12} /> {meta.label}
             </span>
           </div>
+          <div style={styles.orderCode}>{getOrderCode(order, allOrders || [order])}</div>
           <div style={styles.orderCardDate}>{fmtDate(order.date)} · {order.items.length} ítems</div>
         </div>
         {expanded ? <ChevronUp size={18} color="#A99A86" /> : <ChevronDown size={18} color="#A99A86" />}
@@ -1477,6 +1508,10 @@ const styles = {
     padding: "16px 18px", background: "none", border: "none", cursor: "pointer", textAlign: "left",
   },
   orderCardTitle: { fontSize: 15, fontWeight: 600, color: "var(--ink)", display: "flex", alignItems: "center", gap: 10 },
+  orderCode: {
+    fontSize: 12, fontWeight: 700, color: "var(--plum)", marginTop: 4,
+    letterSpacing: "0.02em",
+  },
   orderCardDate: { fontSize: 12, color: "#A99A86", marginTop: 4 },
   statusPill: { fontSize: 11, fontWeight: 600, padding: "3px 9px", borderRadius: 999, display: "inline-flex", alignItems: "center", gap: 4 },
   orderCardBody: { padding: "0 18px 18px", borderTop: "1px solid var(--line)" },

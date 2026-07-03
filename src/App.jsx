@@ -932,10 +932,163 @@ function SucursalHistory({ sucursal, orders, loading, onBack, expandedOrder, set
   );
 }
 
+function toISODate(d) {
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, "0");
+  const day = String(d.getDate()).padStart(2, "0");
+  return `${y}-${m}-${day}`;
+}
+
+function parseISODate(iso) {
+  const [y, m, d] = iso.split("-").map(Number);
+  return new Date(y, m - 1, d);
+}
+
+function formatDisplayDate(iso) {
+  const [y, m, d] = iso.split("-");
+  return `${d}/${m}/${y}`;
+}
+
+const WEEKDAYS_ES = ["Do", "Lu", "Ma", "Mi", "Ju", "Vi", "Sa"];
+const MONTH_NAMES_ES = [
+  "enero", "febrero", "marzo", "abril", "mayo", "junio",
+  "julio", "agosto", "septiembre", "octubre", "noviembre", "diciembre",
+];
+
+function DateRangePicker({ from, to, setFrom, setTo }) {
+  const [open, setOpen] = useState(false);
+  const today = new Date();
+  const initial = from ? parseISODate(from) : today;
+  const [viewYear, setViewYear] = useState(initial.getFullYear());
+  const [viewMonth, setViewMonth] = useState(initial.getMonth());
+  const wrapRef = useRef(null);
+  const hasFilter = !!from;
+
+  useEffect(() => {
+    if (!open) return;
+    function onClickOutside(e) {
+      if (wrapRef.current && !wrapRef.current.contains(e.target)) setOpen(false);
+    }
+    function onKeyDown(e) {
+      if (e.key === "Escape") setOpen(false);
+    }
+    document.addEventListener("mousedown", onClickOutside);
+    document.addEventListener("keydown", onKeyDown);
+    return () => {
+      document.removeEventListener("mousedown", onClickOutside);
+      document.removeEventListener("keydown", onKeyDown);
+    };
+  }, [open]);
+
+  function goPrevMonth() {
+    setViewMonth((m) => {
+      if (m === 0) { setViewYear((y) => y - 1); return 11; }
+      return m - 1;
+    });
+  }
+  function goNextMonth() {
+    setViewMonth((m) => {
+      if (m === 11) { setViewYear((y) => y + 1); return 0; }
+      return m + 1;
+    });
+  }
+
+  function handleDayClick(iso) {
+    if (!from || (from && to)) {
+      setFrom(iso);
+      setTo("");
+    } else {
+      if (iso < from) {
+        setTo(from);
+        setFrom(iso);
+      } else {
+        setTo(iso);
+      }
+      setOpen(false);
+    }
+  }
+
+  function handleClear(e) {
+    if (e) e.stopPropagation();
+    setFrom("");
+    setTo("");
+    setOpen(false);
+  }
+
+  function handleToday() {
+    const iso = toISODate(today);
+    setViewYear(today.getFullYear());
+    setViewMonth(today.getMonth());
+    handleDayClick(iso);
+  }
+
+  const firstOfMonth = new Date(viewYear, viewMonth, 1);
+  const startWeekday = firstOfMonth.getDay();
+  const daysInMonth = new Date(viewYear, viewMonth + 1, 0).getDate();
+  const todayISO = toISODate(today);
+
+  const cells = [];
+  for (let i = 0; i < startWeekday; i++) cells.push(null);
+  for (let d = 1; d <= daysInMonth; d++) cells.push(d);
+
+  const label = !from
+    ? "Seleccionar fechas"
+    : !to
+    ? `${formatDisplayDate(from)} – …`
+    : `${formatDisplayDate(from)} – ${formatDisplayDate(to)}`;
+
+  return (
+    <div style={styles.dateRangeWrapper} ref={wrapRef}>
+      <button type="button" style={styles.dateTrigger} onClick={() => setOpen((v) => !v)}>
+        <CalendarDays size={16} color="#8A7B68" />
+        <span style={styles.dateTriggerText}>{label}</span>
+      </button>
+      {hasFilter && (
+        <button type="button" style={styles.dateClearBtnFloating} onClick={handleClear} aria-label="Limpiar fechas">×</button>
+      )}
+
+      {open && (
+        <div style={styles.calendarPopup}>
+          <div style={styles.calendarHeader}>
+            <button type="button" style={styles.calendarNavBtn} onClick={goPrevMonth}>‹</button>
+            <span style={styles.calendarMonthLabel}>{MONTH_NAMES_ES[viewMonth]} {viewYear}</span>
+            <button type="button" style={styles.calendarNavBtn} onClick={goNextMonth}>›</button>
+          </div>
+          <div style={styles.calendarWeekRow}>
+            {WEEKDAYS_ES.map((wd) => <div key={wd} style={styles.calendarWeekDay}>{wd}</div>)}
+          </div>
+          <div style={styles.calendarGrid}>
+            {cells.map((d, idx) => {
+              if (d === null) return <div key={`e${idx}`} />;
+              const iso = toISODate(new Date(viewYear, viewMonth, d));
+              const isFrom = iso === from;
+              const isTo = iso === to;
+              const inRange = from && to && iso > from && iso < to;
+              const isToday = iso === todayISO;
+              let dayStyle = { ...styles.calendarDay };
+              if (inRange) dayStyle = { ...dayStyle, ...styles.calendarDayInRange };
+              if (isToday && !isFrom && !isTo) dayStyle = { ...dayStyle, ...styles.calendarDayToday };
+              if (isFrom || isTo) dayStyle = { ...dayStyle, ...styles.calendarDaySelected };
+              return (
+                <button type="button" key={iso} style={dayStyle} onClick={() => handleDayClick(iso)}>
+                  {d}
+                </button>
+              );
+            })}
+          </div>
+          <div style={styles.calendarFooter}>
+            <button type="button" style={styles.calendarFooterBtn} onClick={handleClear}>Limpiar</button>
+            <button type="button" style={styles.calendarFooterBtn} onClick={handleToday}>Hoy</button>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
 function Deposito({ onBack, loading, orders, allOrders, filterSucursal, setFilterSucursal, filterStatus, setFilterStatus, filterDateFrom, setFilterDateFrom, filterDateTo, setFilterDateTo, expandedOrder, setExpandedOrder, updateStatus, onImportOrders, userEmail, onLogout }) {
   const pendingCount = allOrders.filter((o) => o.status === "pendiente").length;
   const [showExport, setShowExport] = useState(false);
-  const hasDateFilter = !!filterDateFrom;
 
   return (
     <div style={styles.wrap}>
@@ -961,34 +1114,12 @@ function Deposito({ onBack, loading, orders, allOrders, filterSucursal, setFilte
           <option value="preparacion">En preparación</option>
           <option value="recibido">Recibido</option>
         </select>
-        <div style={styles.dateFilterGroup}>
-          <CalendarDays size={16} color="#8A7B68" />
-          <input
-            type="date"
-            style={styles.dateInput}
-            aria-label="Desde"
-            value={filterDateFrom}
-            onChange={(e) => {
-              setFilterDateFrom(e.target.value);
-              if (filterDateTo && e.target.value > filterDateTo) setFilterDateTo(e.target.value);
-            }}
-          />
-          <span style={{ color: "#A99A86" }}>–</span>
-          <input
-            type="date"
-            style={styles.dateInput}
-            aria-label="Hasta"
-            value={filterDateTo}
-            min={filterDateFrom || undefined}
-            disabled={!filterDateFrom}
-            onChange={(e) => setFilterDateTo(e.target.value)}
-          />
-          {hasDateFilter && (
-            <button style={styles.dateClearBtn} onClick={() => { setFilterDateFrom(""); setFilterDateTo(""); }}>
-              ×
-            </button>
-          )}
-        </div>
+        <DateRangePicker
+          from={filterDateFrom}
+          to={filterDateTo}
+          setFrom={setFilterDateFrom}
+          setTo={setFilterDateTo}
+        />
       </div>
 
       {loading && <div style={styles.emptyRow}>Cargando pedidos...</div>}
@@ -1360,17 +1491,49 @@ const styles = {
     background: "var(--paper)", fontSize: 12, fontWeight: 600, cursor: "pointer", color: "var(--ink)",
   },
   filters: { display: "flex", gap: 10, marginBottom: 18, flexWrap: "wrap", alignItems: "center" },
-  dateFilterGroup: {
+  dateRangeWrapper: { position: "relative" },
+  dateTrigger: {
     display: "flex", alignItems: "center", gap: 8,
-    background: "var(--paper)", border: "1px solid var(--line)", borderRadius: 999, padding: "9px 12px",
+    background: "var(--paper)", border: "1px solid var(--line)", borderRadius: 999,
+    padding: "9px 12px", cursor: "pointer",
   },
-  dateInput: {
-    padding: "0", border: "none", background: "transparent", fontSize: 13, color: "var(--ink)",
-  },
-  dateClearBtn: {
-    width: 20, height: 20, borderRadius: "50%", border: "1px solid var(--line)",
-    background: "var(--cream)", fontSize: 13, lineHeight: 1, fontWeight: 700, cursor: "pointer",
+  dateTriggerText: { fontSize: 13, color: "var(--ink)", whiteSpace: "nowrap" },
+  dateClearBtnFloating: {
+    position: "absolute", top: -6, right: -6,
+    width: 18, height: 18, borderRadius: "50%", border: "1px solid var(--line)",
+    background: "var(--cream)", fontSize: 12, lineHeight: 1, fontWeight: 700, cursor: "pointer",
     color: "var(--terracotta)", display: "flex", alignItems: "center", justifyContent: "center", padding: 0,
+  },
+  calendarPopup: {
+    position: "absolute", top: "calc(100% + 8px)", left: 0, zIndex: 40,
+    background: "var(--paper)", border: "1px solid var(--line)", borderRadius: 14,
+    padding: 16, boxShadow: "0 8px 24px rgba(0,0,0,0.16)", width: 280,
+  },
+  calendarHeader: { display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 12 },
+  calendarNavBtn: {
+    width: 28, height: 28, borderRadius: 8, border: "1px solid var(--line)",
+    background: "var(--cream)", cursor: "pointer", display: "flex", alignItems: "center",
+    justifyContent: "center", fontSize: 14, color: "var(--ink)",
+  },
+  calendarMonthLabel: { fontSize: 14, fontWeight: 600, color: "var(--plum)", textTransform: "capitalize" },
+  calendarWeekRow: { display: "grid", gridTemplateColumns: "repeat(7, 1fr)", marginBottom: 4 },
+  calendarWeekDay: { fontSize: 11, fontWeight: 600, color: "#A99A86", textAlign: "center", padding: "4px 0" },
+  calendarGrid: { display: "grid", gridTemplateColumns: "repeat(7, 1fr)", gap: 2 },
+  calendarDay: {
+    width: 32, height: 32, display: "flex", alignItems: "center", justifyContent: "center",
+    fontSize: 13, borderRadius: 8, border: "none", background: "transparent",
+    cursor: "pointer", color: "var(--ink)",
+  },
+  calendarDayToday: { border: "1px solid var(--plum)" },
+  calendarDayInRange: { background: "var(--cream)", borderRadius: 4 },
+  calendarDaySelected: { background: "var(--plum)", color: "#fff", fontWeight: 700 },
+  calendarFooter: {
+    display: "flex", justifyContent: "space-between", marginTop: 12,
+    paddingTop: 10, borderTop: "1px solid var(--line)",
+  },
+  calendarFooterBtn: {
+    background: "none", border: "none", color: "var(--pistachio-dark)",
+    fontSize: 12, fontWeight: 600, cursor: "pointer", textDecoration: "underline",
   },
   select: { padding: "9px 12px", borderRadius: 10, border: "1px solid var(--line)", background: "var(--paper)", fontSize: 13, color: "var(--ink)" },
   toast: {

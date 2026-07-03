@@ -12,7 +12,6 @@ const PINS = {
   "Florida Mall": "1004",
   "Vineland": "1005",
   "Weston": "1006",
-  "Depósito": "2000",
 };
 
 const VENDORS = {
@@ -138,6 +137,20 @@ const STATUS_META = {
   recibido: { label: "Recibido", color: "var(--pistachio-dark)", bg: "#EAF1E3" },
 };
 
+let scrollLockY = 0;
+function lockScroll() {
+  scrollLockY = window.scrollY;
+  document.body.style.position = "fixed";
+  document.body.style.top = `-${scrollLockY}px`;
+  document.body.style.width = "100%";
+}
+function unlockScroll() {
+  document.body.style.position = "";
+  document.body.style.top = "";
+  document.body.style.width = "";
+  window.scrollTo(0, scrollLockY);
+}
+
 function fmtDate(iso) {
   const d = new Date(iso);
   return d.toLocaleDateString("es-AR", { day: "2-digit", month: "short", year: "numeric" }) +
@@ -182,8 +195,21 @@ export default function App() {
   const [pendingRole, setPendingRole] = useState(null);
   const [pinValue, setPinValue] = useState("");
   const [pinError, setPinError] = useState(false);
+  const [depositoSession, setDepositoSession] = useState(null);
+  const [authChecked, setAuthChecked] = useState(false);
 
   useEffect(() => { loadOrders(); }, []);
+
+  useEffect(() => {
+    supabase.auth.getSession().then(({ data }) => {
+      setDepositoSession(data.session);
+      setAuthChecked(true);
+    });
+    const { data: listener } = supabase.auth.onAuthStateChange((_event, session) => {
+      setDepositoSession(session);
+    });
+    return () => listener.subscription.unsubscribe();
+  }, []);
 
   useEffect(() => {
     if (toast) {
@@ -333,7 +359,7 @@ export default function App() {
         </div>
       )}
 
-      {screen === "home" && <Home onSucursal={() => setScreen("sucursal-select")} onDeposito={() => requestPin("Depósito", "deposito")} />}
+      {screen === "home" && <Home onSucursal={() => setScreen("sucursal-select")} onDeposito={() => setScreen(depositoSession ? "deposito" : "deposito-auth")} />}
 
       {screen === "sucursal-select" && (
         <SucursalSelect onBack={() => setScreen("home")} onPick={(s) => requestPin(s, "order-form")} />
@@ -390,6 +416,13 @@ export default function App() {
         />
       )}
 
+      {screen === "deposito-auth" && (
+        <DepositoAuth
+          onBack={() => setScreen("home")}
+          onSuccess={() => setScreen("deposito")}
+        />
+      )}
+
       {screen === "deposito" && (
         <Deposito
           onBack={() => setScreen("home")}
@@ -404,6 +437,8 @@ export default function App() {
           setExpandedOrder={setExpandedOrder}
           updateStatus={updateStatus}
           onImportOrders={importOrders}
+          userEmail={depositoSession?.user?.email}
+          onLogout={async () => { await supabase.auth.signOut(); setScreen("home"); }}
         />
       )}
     </div>
@@ -438,6 +473,114 @@ function Home({ onSucursal, onDeposito }) {
   );
 }
 
+function DepositoAuth({ onBack, onSuccess }) {
+  const [mode, setMode] = useState("login"); // "login" | "signup"
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
+  const [info, setInfo] = useState(null);
+
+  async function handleSubmit() {
+    setError(null);
+    setInfo(null);
+    if (!email.trim() || !password.trim()) {
+      setError("Completá mail y contraseña.");
+      return;
+    }
+    if (mode === "signup" && password !== confirmPassword) {
+      setError("Las contraseñas no coinciden.");
+      return;
+    }
+    setLoading(true);
+    if (mode === "signup") {
+      const { data, error: err } = await supabase.auth.signUp({ email: email.trim(), password });
+      setLoading(false);
+      if (err) {
+        setError(err.message === "User already registered" ? "Ese mail ya tiene una cuenta creada. Probá ingresar." : err.message);
+        return;
+      }
+      if (data.session) {
+        onSuccess();
+      } else {
+        setInfo("Cuenta creada. Si te pide confirmar el mail, revisá tu casilla y después volvé acá a ingresar.");
+        setMode("login");
+      }
+    } else {
+      const { error: err } = await supabase.auth.signInWithPassword({ email: email.trim(), password });
+      setLoading(false);
+      if (err) {
+        setError("Mail o contraseña incorrectos.");
+        return;
+      }
+      onSuccess();
+    }
+  }
+
+  return (
+    <div style={styles.center}>
+      <Lock size={36} color="var(--plum)" strokeWidth={1.5} />
+      <div style={styles.eyebrow}>Depósito</div>
+      <h1 style={styles.h1}>{mode === "login" ? "Ingresá a tu cuenta" : "Creá tu cuenta"}</h1>
+      <p style={styles.sub}>
+        {mode === "login" ? "Con el mail y contraseña que ya registraste." : "Elegí un mail y una contraseña para vos."}
+      </p>
+
+      <div style={{ width: "100%", maxWidth: 320, marginTop: 20 }}>
+        <input
+          type="email"
+          placeholder="tu-mail@luccianos.us"
+          style={styles.authInput}
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
+          onFocus={lockScroll}
+          onBlur={unlockScroll}
+        />
+        <input
+          type="password"
+          placeholder="Contraseña"
+          style={styles.authInput}
+          value={password}
+          onChange={(e) => setPassword(e.target.value)}
+          onFocus={lockScroll}
+          onBlur={unlockScroll}
+          onKeyDown={(e) => { if (e.key === "Enter" && mode === "login") handleSubmit(); }}
+        />
+        {mode === "signup" && (
+          <input
+            type="password"
+            placeholder="Repetí la contraseña"
+            style={styles.authInput}
+            value={confirmPassword}
+            onChange={(e) => setConfirmPassword(e.target.value)}
+            onFocus={lockScroll}
+            onBlur={unlockScroll}
+            onKeyDown={(e) => { if (e.key === "Enter") handleSubmit(); }}
+          />
+        )}
+      </div>
+
+      {error && <div style={{ color: "var(--terracotta)", fontSize: 13, marginTop: 10, fontWeight: 600 }}>{error}</div>}
+      {info && <div style={{ color: "var(--pistachio-dark)", fontSize: 13, marginTop: 10, fontWeight: 600, maxWidth: 320 }}>{info}</div>}
+
+      <div style={{ display: "flex", gap: 12, marginTop: 20 }}>
+        <button style={styles.secondaryBtn} onClick={onBack}>Volver</button>
+        <button style={styles.primaryBtnSm} onClick={handleSubmit} disabled={loading}>
+          {loading ? "Un momento..." : mode === "login" ? "Ingresar" : "Crear cuenta"}
+        </button>
+      </div>
+
+      <button
+        style={styles.textLink}
+        onClick={() => { setMode(mode === "login" ? "signup" : "login"); setError(null); setInfo(null); }}
+      >
+        {mode === "login" ? "¿No tenés cuenta? Creá una" : "¿Ya tenés cuenta? Ingresá"}
+      </button>
+    </div>
+  );
+}
+
 function PinScreen({ roleKey, value, setValue, error, onSubmit, onBack }) {
   return (
     <div style={styles.center}>
@@ -446,12 +589,13 @@ function PinScreen({ roleKey, value, setValue, error, onSubmit, onBack }) {
       <h1 style={styles.h1}>Ingresá el PIN</h1>
       <p style={styles.sub}>Pedíselo a quien administra la herramienta si no lo tenés.</p>
       <input
-        autoFocus
         type="password"
         inputMode="numeric"
         style={{ ...styles.qtyInput, width: 160, fontSize: 20, textAlign: "center", padding: "12px 10px", marginTop: 20 }}
         value={value}
         onChange={(e) => setValue(e.target.value)}
+        onFocus={lockScroll}
+        onBlur={unlockScroll}
         onKeyDown={(e) => { if (e.key === "Enter") onSubmit(); }}
         placeholder="••••"
       />
@@ -662,7 +806,7 @@ function SucursalHistory({ sucursal, orders, loading, onBack, expandedOrder, set
   );
 }
 
-function Deposito({ onBack, loading, orders, allOrders, filterSucursal, setFilterSucursal, filterStatus, setFilterStatus, expandedOrder, setExpandedOrder, updateStatus, onImportOrders }) {
+function Deposito({ onBack, loading, orders, allOrders, filterSucursal, setFilterSucursal, filterStatus, setFilterStatus, expandedOrder, setExpandedOrder, updateStatus, onImportOrders, userEmail, onLogout }) {
   const pendingCount = allOrders.filter((o) => o.status === "pendiente").length;
   const [showExport, setShowExport] = useState(false);
 
@@ -670,7 +814,8 @@ function Deposito({ onBack, loading, orders, allOrders, filterSucursal, setFilte
     <div style={styles.wrap}>
       <TopBar onBack={onBack} title="Depósito" subtitle={`${pendingCount} pedido${pendingCount === 1 ? "" : "s"} pendiente${pendingCount === 1 ? "" : "s"}`} />
 
-      <div style={{ display: "flex", justifyContent: "flex-end", marginBottom: 14 }}>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 14, flexWrap: "wrap", gap: 10 }}>
+        {userEmail && <div style={{ fontSize: 12, color: "#8A7B68" }}>Conectado como <strong>{userEmail}</strong> · <button onClick={onLogout} style={{ ...styles.textLink, marginTop: 0, display: "inline" }}>Cerrar sesión</button></div>}
         <button style={styles.secondaryBtn} onClick={() => setShowExport((v) => !v)}>
           {showExport ? "Ocultar respaldo" : "Exportar todos los pedidos"}
         </button>
@@ -1020,6 +1165,10 @@ const styles = {
   ticketLineQty: { fontWeight: 600, color: "var(--pistachio-dark)", flexShrink: 0 },
   notesLabel: { fontSize: 12, fontWeight: 600, color: "#8A7B68", display: "block", marginBottom: 6 },
   notesInput: { width: "100%", border: "1px solid var(--line)", borderRadius: 10, padding: 10, fontSize: 13, resize: "vertical", marginBottom: 14 },
+  authInput: {
+    width: "100%", border: "1px solid var(--line)", borderRadius: 10, padding: "11px 14px",
+    fontSize: 14, marginBottom: 10, background: "var(--paper)", color: "var(--ink)",
+  },
   submitBtn: {
     width: "100%", background: "var(--plum)", color: "#fff", border: "none", borderRadius: 10,
     padding: "12px 0", fontSize: 14, fontWeight: 600, display: "flex", alignItems: "center",

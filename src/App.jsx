@@ -302,6 +302,8 @@ export default function App() {
         input, textarea, select, button { font-family: inherit; }
         input:focus, textarea:focus, button:focus-visible { outline: 2px solid var(--plum); outline-offset: 1px; }
         ::placeholder { color: #B8AA98; }
+        html, body { overscroll-behavior: none; }
+        .no-scroll-screen { touch-action: none; overscroll-behavior: none; }
 
         .order-layout { display: grid; grid-template-columns: 1fr 320px; gap: 24px; align-items: start; }
         .order-ticket { position: sticky; top: 24px; }
@@ -402,7 +404,7 @@ export default function App() {
 
 function Home({ onSucursal, onDeposito }) {
   return (
-    <div style={styles.homeDark}>
+    <div className="no-scroll-screen" style={styles.homeDark}>
       <img src={`${import.meta.env.BASE_URL}logo-gold.png`} alt="Lucciano's" style={styles.homeLogoImg} />
       <div style={styles.homeEyebrow}>Estados Unidos</div>
       <h1 style={styles.homeH1}>Gestión de Compras</h1>
@@ -454,7 +456,7 @@ function PinScreen({ roleKey, value, setValue, error, onSubmit, onBack }) {
 
 function SucursalSelect({ onBack, onPick }) {
   return (
-    <div style={styles.darkWrap}>
+    <div className="no-scroll-screen" style={styles.darkWrap}>
       <div style={styles.darkTopBar}>
         <button style={styles.darkBackBtn} onClick={onBack}><ArrowLeft size={18} color="#fff" /></button>
         <div style={styles.darkTopTitle}>Elegí tu sucursal</div>

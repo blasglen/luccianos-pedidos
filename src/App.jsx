@@ -205,8 +205,11 @@ export default function App() {
       setDepositoSession(data.session);
       setAuthChecked(true);
     });
-    const { data: listener } = supabase.auth.onAuthStateChange((_event, session) => {
+    const { data: listener } = supabase.auth.onAuthStateChange((event, session) => {
       setDepositoSession(session);
+      if (event === "PASSWORD_RECOVERY") {
+        setScreen("reset-password");
+      }
     });
     return () => listener.subscription.unsubscribe();
   }, []);
@@ -423,6 +426,10 @@ export default function App() {
         />
       )}
 
+      {screen === "reset-password" && (
+        <ResetPassword onSuccess={() => setScreen("deposito")} />
+      )}
+
       {screen === "deposito" && (
         <Deposito
           onBack={() => setScreen("home")}
@@ -474,7 +481,7 @@ function Home({ onSucursal, onDeposito }) {
 }
 
 function DepositoAuth({ onBack, onSuccess }) {
-  const [mode, setMode] = useState("login"); // "login" | "signup"
+  const [mode, setMode] = useState("login"); // "login" | "signup" | "forgot"
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
@@ -485,6 +492,24 @@ function DepositoAuth({ onBack, onSuccess }) {
   async function handleSubmit() {
     setError(null);
     setInfo(null);
+
+    if (mode === "forgot") {
+      if (!email.trim()) {
+        setError("Ingresá tu mail para poder mandarte el link.");
+        return;
+      }
+      setLoading(true);
+      const redirectTo = `${window.location.origin}${import.meta.env.BASE_URL}`;
+      const { error: err } = await supabase.auth.resetPasswordForEmail(email.trim(), { redirectTo });
+      setLoading(false);
+      if (err) {
+        setError(err.message);
+        return;
+      }
+      setInfo("Listo. Si ese mail tiene una cuenta, te llegó un link para elegir una contraseña nueva. Revisá también spam.");
+      return;
+    }
+
     if (!email.trim() || !password.trim()) {
       setError("Completá mail y contraseña.");
       return;
@@ -522,9 +547,13 @@ function DepositoAuth({ onBack, onSuccess }) {
     <div style={styles.center}>
       <Lock size={36} color="var(--plum)" strokeWidth={1.5} />
       <div style={styles.eyebrow}>Depósito</div>
-      <h1 style={styles.h1}>{mode === "login" ? "Ingresá a tu cuenta" : "Creá tu cuenta"}</h1>
+      <h1 style={styles.h1}>
+        {mode === "login" ? "Ingresá a tu cuenta" : mode === "signup" ? "Creá tu cuenta" : "Recuperar contraseña"}
+      </h1>
       <p style={styles.sub}>
-        {mode === "login" ? "Con el mail y contraseña que ya registraste." : "Elegí un mail y una contraseña para vos."}
+        {mode === "login" && "Con el mail y contraseña que ya registraste."}
+        {mode === "signup" && "Elegí un mail y una contraseña para vos."}
+        {mode === "forgot" && "Te mandamos un link a tu mail para elegir una contraseña nueva."}
       </p>
 
       <div style={{ width: "100%", maxWidth: 320, marginTop: 20 }}>
@@ -536,17 +565,20 @@ function DepositoAuth({ onBack, onSuccess }) {
           onChange={(e) => setEmail(e.target.value)}
           onFocus={lockScroll}
           onBlur={unlockScroll}
+          onKeyDown={(e) => { if (e.key === "Enter" && mode === "forgot") handleSubmit(); }}
         />
-        <input
-          type="password"
-          placeholder="Contraseña"
-          style={styles.authInput}
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
-          onFocus={lockScroll}
-          onBlur={unlockScroll}
-          onKeyDown={(e) => { if (e.key === "Enter" && mode === "login") handleSubmit(); }}
-        />
+        {mode !== "forgot" && (
+          <input
+            type="password"
+            placeholder="Contraseña"
+            style={styles.authInput}
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            onFocus={lockScroll}
+            onBlur={unlockScroll}
+            onKeyDown={(e) => { if (e.key === "Enter" && mode === "login") handleSubmit(); }}
+          />
+        )}
         {mode === "signup" && (
           <input
             type="password"
@@ -567,15 +599,85 @@ function DepositoAuth({ onBack, onSuccess }) {
       <div style={{ display: "flex", gap: 12, marginTop: 20 }}>
         <button style={styles.secondaryBtn} onClick={onBack}>Volver</button>
         <button style={styles.primaryBtnSm} onClick={handleSubmit} disabled={loading}>
-          {loading ? "Un momento..." : mode === "login" ? "Ingresar" : "Crear cuenta"}
+          {loading ? "Un momento..." : mode === "login" ? "Ingresar" : mode === "signup" ? "Crear cuenta" : "Enviar link"}
         </button>
       </div>
 
+      {mode === "login" && (
+        <button style={styles.textLink} onClick={() => { setMode("forgot"); setError(null); setInfo(null); }}>
+          ¿Olvidaste tu contraseña?
+        </button>
+      )}
+
       <button
         style={styles.textLink}
-        onClick={() => { setMode(mode === "login" ? "signup" : "login"); setError(null); setInfo(null); }}
+        onClick={() => { setMode(mode === "signup" ? "login" : mode === "forgot" ? "login" : "signup"); setError(null); setInfo(null); }}
       >
-        {mode === "login" ? "¿No tenés cuenta? Creá una" : "¿Ya tenés cuenta? Ingresá"}
+        {mode === "signup" ? "¿Ya tenés cuenta? Ingresá" : mode === "forgot" ? "Volver a ingresar" : "¿No tenés cuenta? Creá una"}
+      </button>
+    </div>
+  );
+}
+
+function ResetPassword({ onSuccess }) {
+  const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
+
+  async function handleSubmit() {
+    setError(null);
+    if (!password.trim()) {
+      setError("Elegí una contraseña nueva.");
+      return;
+    }
+    if (password !== confirmPassword) {
+      setError("Las contraseñas no coinciden.");
+      return;
+    }
+    setLoading(true);
+    const { error: err } = await supabase.auth.updateUser({ password });
+    setLoading(false);
+    if (err) {
+      setError(err.message);
+      return;
+    }
+    onSuccess();
+  }
+
+  return (
+    <div style={styles.center}>
+      <Lock size={36} color="var(--plum)" strokeWidth={1.5} />
+      <div style={styles.eyebrow}>Depósito</div>
+      <h1 style={styles.h1}>Elegí tu contraseña nueva</h1>
+      <p style={styles.sub}>Después de esto vas a entrar directo a Depósito.</p>
+
+      <div style={{ width: "100%", maxWidth: 320, marginTop: 20 }}>
+        <input
+          type="password"
+          placeholder="Contraseña nueva"
+          style={styles.authInput}
+          value={password}
+          onChange={(e) => setPassword(e.target.value)}
+          onFocus={lockScroll}
+          onBlur={unlockScroll}
+        />
+        <input
+          type="password"
+          placeholder="Repetí la contraseña nueva"
+          style={styles.authInput}
+          value={confirmPassword}
+          onChange={(e) => setConfirmPassword(e.target.value)}
+          onFocus={lockScroll}
+          onBlur={unlockScroll}
+          onKeyDown={(e) => { if (e.key === "Enter") handleSubmit(); }}
+        />
+      </div>
+
+      {error && <div style={{ color: "var(--terracotta)", fontSize: 13, marginTop: 10, fontWeight: 600 }}>{error}</div>}
+
+      <button style={{ ...styles.primaryBtnSm, marginTop: 20 }} onClick={handleSubmit} disabled={loading}>
+        {loading ? "Un momento..." : "Guardar contraseña"}
       </button>
     </div>
   );
@@ -1083,7 +1185,7 @@ const styles = {
   },
   roleTitle: { fontFamily: "'Fraunces', serif", fontWeight: 600, fontSize: 18, color: "var(--plum)" },
   roleDesc: { fontSize: 13, color: "#8A7B68", textAlign: "center" },
-  wrap: { maxWidth: 980, margin: "0 auto", padding: "28px 24px 60px" },
+  wrap: { maxWidth: 980, margin: "0 auto", padding: "calc(20px + env(safe-area-inset-top, 0px)) 24px 60px" },
   wrapFull: { maxWidth: 980, margin: "0 auto", padding: "28px 24px 0", minHeight: "calc(100vh - 60px)", display: "flex", flexDirection: "column" },
   sucGridWrap: { flex: 1, display: "flex", alignItems: "center", justifyContent: "center" },
   darkWrapScroll: {

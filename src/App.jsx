@@ -130,6 +130,7 @@ const SUCURSAL_PHOTOS = {
   "Weston": "weston.jpg",
 };
 const ORDER_EMAIL = "admin@luccianos.us";
+const ALLOWED_DEPOSITO_EMAILS = ["contabilidad@luccianos.com.ar", "admin@luccianos.us"];
 
 const STATUS_META = {
   pendiente: { label: "Pendiente", color: "var(--terracotta)", bg: "#FBEAE0" },
@@ -533,6 +534,10 @@ function DepositoAuth({ onBack, onSuccess }) {
     }
     if (mode === "signup" && password !== confirmPassword) {
       setError("Las contraseñas no coinciden.");
+      return;
+    }
+    if (mode === "signup" && !ALLOWED_DEPOSITO_EMAILS.includes(email.trim().toLowerCase())) {
+      setError("Ese mail no está autorizado para crear una cuenta de Depósito. Consultá con quien administra la herramienta.");
       return;
     }
     setLoading(true);
@@ -958,32 +963,29 @@ function Deposito({ onBack, loading, orders, allOrders, filterSucursal, setFilte
         </select>
         <div style={styles.dateFilterGroup}>
           <CalendarDays size={16} color="#8A7B68" />
-          <label style={styles.dateFilterLabel}>
-            Desde
-            <input
-              type="date"
-              style={styles.dateInput}
-              value={filterDateFrom}
-              onChange={(e) => {
-                setFilterDateFrom(e.target.value);
-                if (filterDateTo && e.target.value > filterDateTo) setFilterDateTo(e.target.value);
-              }}
-            />
-          </label>
-          <label style={styles.dateFilterLabel}>
-            Hasta <span style={{ color: "#A99A86" }}>(opcional, para un rango)</span>
-            <input
-              type="date"
-              style={styles.dateInput}
-              value={filterDateTo}
-              min={filterDateFrom || undefined}
-              disabled={!filterDateFrom}
-              onChange={(e) => setFilterDateTo(e.target.value)}
-            />
-          </label>
+          <input
+            type="date"
+            style={styles.dateInput}
+            aria-label="Desde"
+            value={filterDateFrom}
+            onChange={(e) => {
+              setFilterDateFrom(e.target.value);
+              if (filterDateTo && e.target.value > filterDateTo) setFilterDateTo(e.target.value);
+            }}
+          />
+          <span style={{ color: "#A99A86" }}>–</span>
+          <input
+            type="date"
+            style={styles.dateInput}
+            aria-label="Hasta"
+            value={filterDateTo}
+            min={filterDateFrom || undefined}
+            disabled={!filterDateFrom}
+            onChange={(e) => setFilterDateTo(e.target.value)}
+          />
           {hasDateFilter && (
             <button style={styles.dateClearBtn} onClick={() => { setFilterDateFrom(""); setFilterDateTo(""); }}>
-              Limpiar fechas
+              ×
             </button>
           )}
         </div>
@@ -1359,17 +1361,16 @@ const styles = {
   },
   filters: { display: "flex", gap: 10, marginBottom: 18, flexWrap: "wrap", alignItems: "center" },
   dateFilterGroup: {
-    display: "flex", alignItems: "flex-end", gap: 10, flexWrap: "wrap",
-    background: "var(--paper)", border: "1px solid var(--line)", borderRadius: 10, padding: "8px 12px",
+    display: "flex", alignItems: "center", gap: 8,
+    background: "var(--paper)", border: "1px solid var(--line)", borderRadius: 999, padding: "9px 12px",
   },
-  dateFilterLabel: { display: "flex", flexDirection: "column", gap: 4, fontSize: 11, color: "#8A7B68", fontWeight: 600 },
   dateInput: {
-    padding: "6px 8px", borderRadius: 8, border: "1px solid var(--line)",
-    background: "var(--paper)", fontSize: 13, color: "var(--ink)",
+    padding: "0", border: "none", background: "transparent", fontSize: 13, color: "var(--ink)",
   },
   dateClearBtn: {
-    padding: "8px 12px", borderRadius: 999, border: "1px solid var(--line)",
-    background: "var(--cream)", fontSize: 12, fontWeight: 600, cursor: "pointer", color: "var(--terracotta)",
+    width: 20, height: 20, borderRadius: "50%", border: "1px solid var(--line)",
+    background: "var(--cream)", fontSize: 13, lineHeight: 1, fontWeight: 700, cursor: "pointer",
+    color: "var(--terracotta)", display: "flex", alignItems: "center", justifyContent: "center", padding: 0,
   },
   select: { padding: "9px 12px", borderRadius: 10, border: "1px solid var(--line)", background: "var(--paper)", fontSize: 13, color: "var(--ink)" },
   toast: {

@@ -141,9 +141,9 @@ const ORDER_EMAIL = "admin@luccianos.us";
 const ALLOWED_DEPOSITO_EMAILS = ["contabilidad@luccianos.com.ar", "admin@luccianos.us"];
 
 const STATUS_META = {
-  pendiente: { label: "Pendiente", color: "var(--terracotta)", bg: "#FBEAE0" },
-  pedido: { label: "Pedido", color: "var(--pistachio-dark)", bg: "#EAF1E3" },
-  cancelado: { label: "Cancelado", color: "#B3261E", bg: "#F7D6D2" },
+  pendiente: { label: "Pendiente", color: "var(--terracotta)", bg: "#FBEAE0", on: "var(--on-accent)" },
+  pedido: { label: "Pedido", color: "var(--pistachio-dark)", bg: "#EAF1E3", on: "var(--on-accent)" },
+  cancelado: { label: "Cancelado", color: "#B3261E", bg: "#F7D6D2", on: "#fff" },
 };
 
 let scrollLockY = 0;
@@ -867,7 +867,7 @@ function OrderForm({ sucursal, onBack, onViewHistory, activeVendor, setActiveVen
           </div>
 
           <div style={styles.searchBox}>
-            <Search size={16} color="#A99A86" />
+            <Search size={16} color="var(--muted-faint)" />
             <input
               style={styles.searchInput}
               placeholder={`Buscar en ${activeVendor}...`}
@@ -990,7 +990,7 @@ function Confirm({ sucursal, lastOrder, onNewOrder, onHistory, onHome }) {
       </p>
       {lastOrder && (
         <div style={{ width: "100%", maxWidth: 460, marginTop: 14 }}>
-          <ol style={{ textAlign: "left", fontSize: 13, color: "#6B5D4B", paddingLeft: 20, margin: "0 0 12px" }}>
+          <ol style={{ textAlign: "left", fontSize: 13, color: "var(--muted-strong)", paddingLeft: 20, margin: "0 0 12px" }}>
             <li>Apretá "Copiar tabla con formato" abajo.</li>
             <li>Abrí un mail nuevo a {ORDER_EMAIL} y pegalo con <strong>Ctrl+V</strong> (o Cmd+V en Mac).</li>
             <li>Va a quedar con el mismo formato de tabla que le mandamos siempre a los proveedores.</li>
@@ -1187,7 +1187,7 @@ function DateRangePicker({ from, to, setFrom, setTo }) {
   return (
     <div style={styles.dateRangeWrapper} ref={wrapRef}>
       <button type="button" style={styles.dateTrigger} onClick={() => setOpen((v) => !v)}>
-        <CalendarDays size={16} color="#8A7B68" />
+        <CalendarDays size={16} color="var(--muted)" />
         <span style={styles.dateTriggerText}>{label}</span>
       </button>
       {hasFilter && (
@@ -1257,7 +1257,7 @@ function Deposito({ onBack, loading, orders, allOrders, filterSucursal, setFilte
       <TopBar onBack={onBack} title="Depósito" subtitle={`${pendingCount} pedido${pendingCount === 1 ? "" : "s"} pendiente${pendingCount === 1 ? "" : "s"}`} />
 
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 14, flexWrap: "wrap", gap: 10 }}>
-        {userEmail && <div style={{ fontSize: 12, color: "#8A7B68" }}>Conectado como <strong>{userEmail}</strong> · <button onClick={onLogout} style={{ ...styles.textLink, marginTop: 0, display: "inline" }}>Cerrar sesión</button></div>}
+        {userEmail && <div style={{ fontSize: 12, color: "var(--muted)" }}>Conectado como <strong>{userEmail}</strong> · <button onClick={onLogout} style={{ ...styles.textLink, marginTop: 0, display: "inline" }}>Cerrar sesión</button></div>}
         <button style={styles.secondaryBtn} onClick={() => setShowExport((v) => !v)}>
           {showExport ? "Ocultar respaldo" : "Exportar todos los pedidos"}
         </button>
@@ -1320,7 +1320,7 @@ function Deposito({ onBack, loading, orders, allOrders, filterSucursal, setFilte
                       onClick={() => updateStatus(o.id, key)}
                       style={{
                         ...styles.statusBtn,
-                        ...(o.status === key ? { background: meta.color, color: "#fff", borderColor: meta.color } : {}),
+                        ...(o.status === key ? { background: meta.color, color: meta.on, borderColor: meta.color } : {}),
                       }}
                     >
                       {meta.label}
@@ -1348,7 +1348,7 @@ function Deposito({ onBack, loading, orders, allOrders, filterSucursal, setFilte
               {productSummary.map((p) => (
                 <tr key={`${p.vendor}|${p.item}|${p.code}`}>
                   <td style={styles.productSummaryCell}>{p.item}</td>
-                  <td style={{ ...styles.productSummaryCell, textAlign: "center", color: "#A99A86" }}>{p.code}</td>
+                  <td style={{ ...styles.productSummaryCell, textAlign: "center", color: "var(--muted-faint)" }}>{p.code}</td>
                   <td style={{ ...styles.productSummaryCell, textAlign: "center" }}>{p.vendor}</td>
                   <td style={{ ...styles.productSummaryCell, textAlign: "right", fontWeight: 700 }}>{p.total}</td>
                 </tr>
@@ -1429,7 +1429,7 @@ function ExportPanel({ orders, onImport }) {
         <ClipboardList size={16} color="var(--plum)" />
         <span>Respaldo de {orders.length} pedido{orders.length === 1 ? "" : "s"}</span>
       </div>
-      <p style={{ fontSize: 12, color: "#8A7B68", margin: "6px 0 12px" }}>
+      <p style={{ fontSize: 12, color: "var(--muted)", margin: "6px 0 12px" }}>
         Con la base de datos real, esto ya no debería perderse solo — pero sirve como respaldo extra.
       </p>
       <div style={{ display: "flex", gap: 10, marginBottom: 12, flexWrap: "wrap" }}>
@@ -1490,7 +1490,7 @@ function OrderCard({ order, expanded, onToggle, showSucursal, actions, allOrders
           <div style={styles.orderCode}>{getOrderCode(order, allOrders || [order])}</div>
           <div style={styles.orderCardDate}>{fmtDate(order.date)} · {order.items.length} ítems</div>
         </div>
-        {expanded ? <ChevronUp size={18} color="#A99A86" /> : <ChevronDown size={18} color="#A99A86" />}
+        {expanded ? <ChevronUp size={18} color="var(--muted-faint)" /> : <ChevronDown size={18} color="var(--muted-faint)" />}
       </button>
       {expanded && (
         <div style={styles.orderCardBody}>
@@ -1531,9 +1531,11 @@ function TopBar({ onBack, title, subtitle }) {
 
 const styles = {
   page: {
-    "--cream": "#FBF6EE", "--paper": "#FFFFFF", "--plum": "#4A1F2E", "--plum-light": "#6E3347",
-    "--pistachio": "#8CA876", "--pistachio-dark": "#5F7A4C", "--terracotta": "#C9714E",
-    "--ink": "#2B2320", "--line": "#E7DFCF",
+    "--cream": "#161616", "--paper": "#202020", "--plum": "#C7A75F", "--plum-light": "#D6BC7F",
+    "--pistachio": "#A9C2B0", "--pistachio-dark": "#8CA895", "--terracotta": "#B98A5A",
+    "--ink": "#EAEAE7", "--line": "#333333",
+    "--muted-strong": "#D6CDBB", "--muted": "#AFA491", "--muted-faint": "#8C8272",
+    "--on-accent": "#1A1409",
     minHeight: "100vh", background: "var(--cream)", color: "var(--ink)",
     fontFamily: "'Inter', system-ui, sans-serif",
   },
@@ -1566,15 +1568,15 @@ const styles = {
     color: "var(--pistachio-dark)", fontWeight: 600, marginBottom: 12,
   },
   h1: { fontFamily: "'Fraunces', serif", fontWeight: 600, fontSize: 34, margin: "0 0 8px", color: "var(--plum)" },
-  sub: { color: "#7A6C5A", fontSize: 15, margin: 0 },
+  sub: { color: "var(--muted-strong)", fontSize: 15, margin: 0 },
   roleGrid: { display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16, marginTop: 36, width: "100%" },
   roleCard: {
     background: "var(--paper)", border: "1px solid var(--line)", borderRadius: 16,
     padding: "28px 18px", display: "flex", flexDirection: "column", alignItems: "center",
-    gap: 8, cursor: "pointer", boxShadow: "0 1px 2px rgba(74,31,46,0.04)",
+    gap: 8, cursor: "pointer", boxShadow: "0 1px 2px rgba(0,0,0,0.3)",
   },
   roleTitle: { fontFamily: "'Fraunces', serif", fontWeight: 600, fontSize: 18, color: "var(--plum)" },
-  roleDesc: { fontSize: 13, color: "#8A7B68", textAlign: "center" },
+  roleDesc: { fontSize: 13, color: "var(--muted)", textAlign: "center" },
   wrap: { maxWidth: 980, margin: "0 auto", padding: "calc(20px + env(safe-area-inset-top, 0px)) 24px 60px" },
   wrapFull: { maxWidth: 980, margin: "0 auto", padding: "28px 24px 0", minHeight: "calc(100vh - 60px)", display: "flex", flexDirection: "column" },
   sucGridWrap: { flex: 1, display: "flex", alignItems: "center", justifyContent: "center" },
@@ -1613,7 +1615,7 @@ const styles = {
     cursor: "pointer", flexShrink: 0,
   },
   topTitle: { fontFamily: "'Fraunces', serif", fontWeight: 600, fontSize: 22, color: "var(--plum)" },
-  topSubtitle: { fontSize: 13, color: "#8A7B68", marginTop: 2 },
+  topSubtitle: { fontSize: 13, color: "var(--muted)", marginTop: 2 },
   sucGrid: { display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 12, width: "100%" },
   sucCard: {
     background: "var(--paper)", border: "1px solid var(--line)", borderRadius: 12,
@@ -1625,14 +1627,14 @@ const styles = {
   tabs: { display: "flex", gap: 8, marginBottom: 14 },
   tab: {
     padding: "8px 16px", borderRadius: 999, border: "1px solid var(--line)",
-    background: "var(--paper)", fontSize: 13, fontWeight: 600, cursor: "pointer", color: "#8A7B68",
+    background: "var(--paper)", fontSize: 13, fontWeight: 600, cursor: "pointer", color: "var(--muted)",
   },
-  tabActive: { background: "var(--plum)", color: "#fff", borderColor: "var(--plum)" },
+  tabActive: { background: "var(--plum)", color: "var(--on-accent)", borderColor: "var(--plum)" },
   searchBox: {
     display: "flex", alignItems: "center", gap: 8, background: "var(--paper)",
     border: "1px solid var(--line)", borderRadius: 10, padding: "9px 12px", marginBottom: 14,
   },
-  searchInput: { border: "none", outline: "none", background: "transparent", fontSize: 14, width: "100%" },
+  searchInput: { border: "none", outline: "none", background: "transparent", fontSize: 14, width: "100%", color: "var(--ink)" },
   itemList: { background: "var(--paper)", border: "1px solid var(--line)", borderRadius: 14, maxHeight: 520, overflowY: "auto" },
   itemRow: {
     display: "flex", alignItems: "center", justifyContent: "space-between",
@@ -1640,29 +1642,29 @@ const styles = {
   },
   itemInfo: { minWidth: 0 },
   itemName: { fontSize: 14, fontWeight: 500, color: "var(--ink)" },
-  itemCode: { fontSize: 11, color: "#A99A86", marginTop: 2, letterSpacing: "0.02em" },
+  itemCode: { fontSize: 11, color: "var(--muted-faint)", marginTop: 2, letterSpacing: "0.02em" },
   qtyInput: {
     width: 84, padding: "7px 10px", borderRadius: 8, border: "1px solid var(--line)",
-    fontSize: 13, textAlign: "center", flexShrink: 0,
+    fontSize: 13, textAlign: "center", flexShrink: 0, background: "var(--paper)", color: "var(--ink)",
   },
-  emptyRow: { padding: "24px 16px", color: "#A99A86", fontSize: 14, textAlign: "center" },
+  emptyRow: { padding: "24px 16px", color: "var(--muted-faint)", fontSize: 14, textAlign: "center" },
   ticket: { background: "var(--paper)", border: "1px solid var(--line)", borderRadius: 16, padding: 20 },
   ticketHeader: { display: "flex", alignItems: "center", gap: 8, fontWeight: 600, fontSize: 14, color: "var(--plum)" },
-  ticketCount: { fontSize: 12, color: "#8A7B68", marginTop: 4 },
+  ticketCount: { fontSize: 12, color: "var(--muted)", marginTop: 4 },
   ticketDivider: { borderTop: "1px dashed var(--line)", margin: "14px 0" },
   ticketItems: { maxHeight: 220, overflowY: "auto", display: "flex", flexDirection: "column", gap: 8 },
-  ticketEmpty: { fontSize: 13, color: "#A99A86" },
+  ticketEmpty: { fontSize: 13, color: "var(--muted-faint)" },
   ticketLine: { display: "flex", justifyContent: "space-between", gap: 8, fontSize: 13 },
   ticketLineName: { color: "var(--ink)" },
   ticketLineQty: { fontWeight: 600, color: "var(--pistachio-dark)", flexShrink: 0 },
-  notesLabel: { fontSize: 12, fontWeight: 600, color: "#8A7B68", display: "block", marginBottom: 6 },
-  notesInput: { width: "100%", border: "1px solid var(--line)", borderRadius: 10, padding: 10, fontSize: 13, resize: "vertical", marginBottom: 14 },
+  notesLabel: { fontSize: 12, fontWeight: 600, color: "var(--muted)", display: "block", marginBottom: 6 },
+  notesInput: { width: "100%", border: "1px solid var(--line)", borderRadius: 10, padding: 10, fontSize: 13, resize: "vertical", marginBottom: 14, background: "var(--paper)", color: "var(--ink)" },
   authInput: {
     width: "100%", border: "1px solid var(--line)", borderRadius: 10, padding: "11px 14px",
     fontSize: 14, marginBottom: 10, background: "var(--paper)", color: "var(--ink)",
   },
   submitBtn: {
-    width: "100%", background: "var(--plum)", color: "#fff", border: "none", borderRadius: 10,
+    width: "100%", background: "var(--plum)", color: "var(--on-accent)", border: "none", borderRadius: 10,
     padding: "12px 0", fontSize: 14, fontWeight: 600, display: "flex", alignItems: "center",
     justifyContent: "center", gap: 8, cursor: "pointer",
   },
@@ -1674,8 +1676,8 @@ const styles = {
     padding: "10px 20px", borderRadius: 10, border: "1px solid var(--line)",
     background: "var(--paper)", fontSize: 14, fontWeight: 600, cursor: "pointer", color: "var(--ink)",
   },
-  primaryBtnSm: { padding: "10px 20px", borderRadius: 10, border: "none", background: "var(--plum)", color: "#fff", fontSize: 14, fontWeight: 600, cursor: "pointer" },
-  textLink: { marginTop: 20, background: "none", border: "none", color: "#8A7B68", fontSize: 13, cursor: "pointer", textDecoration: "underline" },
+  primaryBtnSm: { padding: "10px 20px", borderRadius: 10, border: "none", background: "var(--plum)", color: "var(--on-accent)", fontSize: 14, fontWeight: 600, cursor: "pointer" },
+  textLink: { marginTop: 20, background: "none", border: "none", color: "var(--muted)", fontSize: 13, cursor: "pointer", textDecoration: "underline" },
   orderCards: { display: "flex", flexDirection: "column", gap: 12 },
   orderCard: { background: "var(--paper)", border: "1px solid var(--line)", borderRadius: 14, overflow: "hidden" },
   orderCardHead: {
@@ -1687,14 +1689,14 @@ const styles = {
     fontSize: 12, fontWeight: 700, color: "var(--plum)", marginTop: 4,
     letterSpacing: "0.02em",
   },
-  orderCardDate: { fontSize: 12, color: "#A99A86", marginTop: 4 },
+  orderCardDate: { fontSize: 12, color: "var(--muted-faint)", marginTop: 4 },
   statusPill: { fontSize: 11, fontWeight: 600, padding: "3px 9px", borderRadius: 999, display: "inline-flex", alignItems: "center", gap: 4 },
   orderCardBody: { padding: "0 18px 18px", borderTop: "1px solid var(--line)" },
   vendorLabel: { fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.06em", color: "var(--pistachio-dark)", margin: "14px 0 6px" },
   detailLine: { display: "flex", justifyContent: "space-between", fontSize: 13, padding: "4px 0", gap: 12 },
-  detailCode: { color: "#A99A86", fontSize: 11 },
+  detailCode: { color: "var(--muted-faint)", fontSize: 11 },
   detailQty: { fontWeight: 600, flexShrink: 0 },
-  notesBox: { marginTop: 12, padding: 12, background: "var(--cream)", borderRadius: 10, fontSize: 13, color: "#6B5D4B" },
+  notesBox: { marginTop: 12, padding: 12, background: "var(--cream)", borderRadius: 10, fontSize: 13, color: "var(--muted-strong)" },
   statusBtns: { display: "flex", gap: 8, marginTop: 16, flexWrap: "wrap" },
   statusBtn: {
     padding: "7px 14px", borderRadius: 999, border: "1px solid var(--line)",
@@ -1727,7 +1729,7 @@ const styles = {
   },
   calendarMonthLabel: { fontSize: 14, fontWeight: 600, color: "var(--plum)", textTransform: "capitalize" },
   calendarWeekRow: { display: "grid", gridTemplateColumns: "repeat(7, 1fr)", marginBottom: 4 },
-  calendarWeekDay: { fontSize: 11, fontWeight: 600, color: "#A99A86", textAlign: "center", padding: "4px 0" },
+  calendarWeekDay: { fontSize: 11, fontWeight: 600, color: "var(--muted-faint)", textAlign: "center", padding: "4px 0" },
   calendarGrid: { display: "grid", gridTemplateColumns: "repeat(7, 1fr)", gap: 2 },
   calendarDay: {
     width: 32, height: 32, display: "flex", alignItems: "center", justifyContent: "center",
@@ -1736,7 +1738,7 @@ const styles = {
   },
   calendarDayToday: { border: "1px solid var(--plum)" },
   calendarDayInRange: { background: "var(--cream)", borderRadius: 4 },
-  calendarDaySelected: { background: "var(--plum)", color: "#fff", fontWeight: 700 },
+  calendarDaySelected: { background: "var(--plum)", color: "var(--on-accent)", fontWeight: 700 },
   calendarFooter: {
     display: "flex", justifyContent: "space-between", marginTop: 12,
     paddingTop: 10, borderTop: "1px solid var(--line)",
@@ -1770,7 +1772,7 @@ const styles = {
   productSummaryTable: { width: "100%", borderCollapse: "collapse", fontSize: 13 },
   productSummaryHeaderCell: {
     textAlign: "left", padding: "12px 16px", fontSize: 11, fontWeight: 700, textTransform: "uppercase",
-    letterSpacing: "0.04em", color: "#8A7B68", borderBottom: "1px solid var(--line)", background: "var(--cream)",
+    letterSpacing: "0.04em", color: "var(--muted)", borderBottom: "1px solid var(--line)", background: "var(--cream)",
   },
   productSummaryCell: { padding: "10px 16px", borderBottom: "1px solid var(--line)", color: "var(--ink)" },
   exportPanel: { background: "var(--paper)", border: "1px solid var(--line)", borderRadius: 14, padding: 18, marginBottom: 18 },

@@ -206,6 +206,16 @@ function sanitizeQty(value) {
   return v;
 }
 
+function canCancelOrder(order) {
+  if (order.status === "cancelado") return false;
+  const d = new Date(order.date);
+  const orderDay = new Date(d.getFullYear(), d.getMonth(), d.getDate());
+  const now = new Date();
+  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  const diffDays = Math.round((today - orderDay) / 86400000);
+  return diffDays <= 1;
+}
+
 function getSucursalOrderNumber(order, allOrders) {
   const sameSucursal = allOrders
     .filter((o) => o.sucursal === order.sucursal)
@@ -448,12 +458,14 @@ export default function App() {
   }
 
   async function updateStatus(orderId, status) {
-    const { error } = await supabase.from("orders").update({ status }).eq("id", orderId);
+    const patch = { status };
+    if (status === "cancelado") patch.canceled_at = new Date().toISOString();
+    const { error } = await supabase.from("orders").update(patch).eq("id", orderId);
     if (error) {
       setToast({ type: "error", text: "No se pudo actualizar el estado." });
       return;
     }
-    setOrders((prev) => prev.map((o) => (o.id === orderId ? { ...o, status } : o)));
+    setOrders((prev) => prev.map((o) => (o.id === orderId ? { ...o, ...patch } : o)));
   }
 
   async function importOrders(importedOrders) {
@@ -576,6 +588,7 @@ export default function App() {
           setExpandedOrder={setExpandedOrder}
           theme={theme}
           onToggleTheme={toggleTheme}
+          updateStatus={updateStatus}
         />
       )}
 
@@ -1149,7 +1162,7 @@ function Confirm({ sucursal, lastOrder, onNewOrder, onHistory, onHome }) {
   );
 }
 
-function SucursalHistory({ sucursal, orders, loading, onBack, expandedOrder, setExpandedOrder, theme, onToggleTheme }) {
+function SucursalHistory({ sucursal, orders, loading, onBack, expandedOrder, setExpandedOrder, theme, onToggleTheme, updateStatus }) {
   return (
     <div style={styles.wrap}>
       <TopBar onBack={onBack} title={sucursal} subtitle="Historial de pedidos" theme={theme} onToggleTheme={onToggleTheme} />
@@ -1157,7 +1170,14 @@ function SucursalHistory({ sucursal, orders, loading, onBack, expandedOrder, set
       {!loading && orders.length === 0 && <div style={styles.emptyRow}>Todavía no enviaste ningún pedido.</div>}
       <div style={styles.orderCards}>
         {orders.map((o) => (
-          <OrderCard key={o.id} order={o} expanded={expandedOrder === o.id} onToggle={() => setExpandedOrder(expandedOrder === o.id ? null : o.id)} allOrders={orders} />
+          <OrderCard
+            key={o.id}
+            order={o}
+            expanded={expandedOrder === o.id}
+            onToggle={() => setExpandedOrder(expandedOrder === o.id ? null : o.id)}
+            allOrders={orders}
+            onCancel={() => updateStatus(o.id, "cancelado")}
+          />
         ))}
       </div>
     </div>
@@ -1324,7 +1344,7 @@ function Deposito({ onBack, loading, orders, allOrders, filterSucursal, setFilte
 
   const productSummary = useMemo(() => {
     const map = new Map();
-    orders.forEach((o) => {
+    orders.filter((o) => o.status !== "cancelado").forEach((o) => {
       o.items.forEach((it) => {
         const key = `${it.vendor}|${it.item}|${it.code}`;
         const qty = parseFloat(String(it.quantity).replace(",", ".")) || 0;
@@ -1560,20 +1580,37 @@ function ExportPanel({ orders, onImport }) {
   );
 }
 
-function OrderCard({ order, expanded, onToggle, showSucursal, actions, allOrders }) {
+function OrderCard({ order, expanded, onToggle, showSucursal, actions, allOrders, onCancel }) {
+  const [confirmingCancel, setConfirmingCancel] = useState(false);
   const meta = STATUS_META[order.status] || STATUS_META.pendiente;
+  const isCanceled = order.status === "cancelado";
+  const canCancel = !!onCancel && canCancelOrder(order);
+
+  function handleCancelClick(e) {
+    e.stopPropagation();
+    if (!confirmingCancel) {
+      setConfirmingCancel(true);
+      return;
+    }
+    setConfirmingCancel(false);
+    onCancel();
+  }
+
   return (
-    <div style={styles.orderCard}>
+    <div style={{ ...styles.orderCard, ...(isCanceled ? styles.orderCardCanceled : {}) }}>
       <button style={styles.orderCardHead} onClick={onToggle}>
         <div>
-          <div style={styles.orderCardTitle}>
+          <div style={{ ...styles.orderCardTitle, ...(isCanceled ? styles.orderCardTitleCanceled : {}) }}>
             {showSucursal ? order.sucursal : `Pedido ${getOrderShortCode(order, allOrders || [order])}`}
             <span style={{ ...styles.statusPill, background: meta.bg, color: meta.color }}>
               <Clock size={12} /> {meta.label}
             </span>
           </div>
-          <div style={styles.orderCode}>{getOrderCode(order, allOrders || [order])}</div>
+          <div style={{ ...styles.orderCode, ...(isCanceled ? styles.orderCardTitleCanceled : {}) }}>{getOrderCode(order, allOrders || [order])}</div>
           <div style={styles.orderCardDate}>{fmtDate(order.date)} · {order.items.length} ítems</div>
+          {isCanceled && order.canceled_at && (
+            <div style={styles.canceledAtLabel}>Cancelado el {fmtDate(order.canceled_at)}</div>
+          )}
         </div>
         {expanded ? <ChevronUp size={18} color="var(--muted-faint)" /> : <ChevronDown size={18} color="var(--muted-faint)" />}
       </button>
@@ -1596,6 +1633,11 @@ function OrderCard({ order, expanded, onToggle, showSucursal, actions, allOrders
             </div>
           )}
           {actions}
+          {canCancel && (
+            <button style={confirmingCancel ? styles.cancelOrderBtnConfirm : styles.cancelOrderBtn} onClick={handleCancelClick}>
+              {confirmingCancel ? "¿Seguro? Tocá de nuevo para cancelar" : "Cancelar este pedido"}
+            </button>
+          )}
         </div>
       )}
     </div>
@@ -1786,16 +1828,27 @@ const styles = {
   textLink: { marginTop: 20, background: "none", border: "none", color: "var(--muted)", fontSize: 13, cursor: "pointer", textDecoration: "underline" },
   orderCards: { display: "flex", flexDirection: "column", gap: 12 },
   orderCard: { background: "var(--paper)", border: "1px solid var(--line)", borderRadius: 14, overflow: "hidden" },
+  orderCardCanceled: { background: "var(--cream)", opacity: 0.72 },
   orderCardHead: {
     width: "100%", display: "flex", alignItems: "center", justifyContent: "space-between",
     padding: "16px 18px", background: "none", border: "none", cursor: "pointer", textAlign: "left",
   },
   orderCardTitle: { fontSize: 15, fontWeight: 600, color: "var(--ink)", display: "flex", alignItems: "center", gap: 10 },
+  orderCardTitleCanceled: { textDecoration: "line-through", textDecorationColor: "var(--muted)" },
   orderCode: {
     fontSize: 12, fontWeight: 700, color: "var(--plum)", marginTop: 4,
     letterSpacing: "0.02em",
   },
   orderCardDate: { fontSize: 12, color: "var(--muted-faint)", marginTop: 4 },
+  canceledAtLabel: { fontSize: 11, color: "#B3261E", fontWeight: 600, marginTop: 4 },
+  cancelOrderBtn: {
+    marginTop: 14, background: "none", border: "none", padding: 0, fontSize: 13, fontWeight: 600,
+    color: "#B3261E", cursor: "pointer", textDecoration: "underline",
+  },
+  cancelOrderBtnConfirm: {
+    marginTop: 14, background: "#B3261E", border: "none", borderRadius: 8, padding: "8px 14px",
+    fontSize: 13, fontWeight: 600, color: "#fff", cursor: "pointer",
+  },
   statusPill: { fontSize: 11, fontWeight: 600, padding: "3px 9px", borderRadius: 999, display: "inline-flex", alignItems: "center", gap: 4 },
   orderCardBody: { padding: "0 18px 18px", borderTop: "1px solid var(--line)" },
   vendorLabel: { fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.06em", color: "var(--pistachio-dark)", margin: "14px 0 6px" },

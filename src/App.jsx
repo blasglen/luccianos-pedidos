@@ -584,6 +584,7 @@ export default function App() {
           onCopyLastOrder={copyLastOrder}
           onClearDraft={clearDraft}
           recentOrder={recentOrder}
+          pastOrders={mySucursalOrders}
         />
       )}
 
@@ -955,19 +956,58 @@ function SucursalSelect({ onBack, onPick, theme, onToggleTheme }) {
   );
 }
 
-function OrderForm({ sucursal, onBack, onViewHistory, activeVendor, setActiveVendor, search, setSearch, draft, setQty, draftCount, notes, setNotes, onSubmit, submitting, theme, onToggleTheme, onCopyLastOrder, onClearDraft, recentOrder }) {
+function ItemRow({ p, activeVendor, draft, setQty }) {
+  const key = activeVendor + "|" + p.item;
+  return (
+    <div style={styles.itemRow}>
+      <div style={styles.itemInfo}>
+        <div style={styles.itemName}>{p.item}</div>
+        <div style={styles.itemCode}>{p.code}</div>
+      </div>
+      <input
+        className="qtyInput"
+        style={styles.qtyInput}
+        placeholder="cant."
+        inputMode="decimal"
+        value={draft[key] || ""}
+        onChange={(e) => setQty(activeVendor, p.item, sanitizeQty(e.target.value))}
+      />
+    </div>
+  );
+}
+
+function OrderForm({ sucursal, onBack, onViewHistory, activeVendor, setActiveVendor, search, setSearch, draft, setQty, draftCount, notes, setNotes, onSubmit, submitting, theme, onToggleTheme, onCopyLastOrder, onClearDraft, recentOrder, pastOrders }) {
   const filteredItems = VENDORS[activeVendor].filter((p) =>
     p.item.toLowerCase().includes(search.toLowerCase()) || p.code.toLowerCase().includes(search.toLowerCase())
   );
 
+  const itemFrequency = useMemo(() => {
+    const freq = {};
+    pastOrders
+      .filter((o) => o.status !== "cancelado")
+      .forEach((o) => {
+        const seenInThisOrder = new Set();
+        o.items.forEach((it) => {
+          if (it.vendor === activeVendor) seenInThisOrder.add(it.item);
+        });
+        seenInThisOrder.forEach((name) => {
+          freq[name] = (freq[name] || 0) + 1;
+        });
+      });
+    return freq;
+  }, [pastOrders, activeVendor]);
+
   const withQty = [];
-  const withoutQty = [];
+  const recurrent = [];
+  const rest = [];
   filteredItems.forEach((p) => {
     const key = activeVendor + "|" + p.item;
     if (draft[key] && draft[key].trim() !== "") {
       withQty.push(p);
+    } else if ((itemFrequency[p.item] || 0) >= 2) {
+      recurrent.push(p);
     } else {
-      withoutQty.push(p);
+      rest.push(p);
     }
   });
   withQty.sort((a, b) => {
@@ -975,7 +1015,7 @@ function OrderForm({ sucursal, onBack, onViewHistory, activeVendor, setActiveVen
     const rb = recentOrder.indexOf(activeVendor + "|" + b.item);
     return (ra === -1 ? Infinity : ra) - (rb === -1 ? Infinity : rb);
   });
-  const items = [...withQty, ...withoutQty];
+  recurrent.sort((a, b) => (itemFrequency[b.item] || 0) - (itemFrequency[a.item] || 0));
 
   return (
     <div style={styles.wrap}>
@@ -1011,26 +1051,20 @@ function OrderForm({ sucursal, onBack, onViewHistory, activeVendor, setActiveVen
           </div>
 
           <div style={styles.itemList}>
-            {items.map((p) => {
-              const key = activeVendor + "|" + p.item;
-              return (
-                <div key={key} style={styles.itemRow}>
-                  <div style={styles.itemInfo}>
-                    <div style={styles.itemName}>{p.item}</div>
-                    <div style={styles.itemCode}>{p.code}</div>
-                  </div>
-                  <input
-                    className="qtyInput"
-                    style={styles.qtyInput}
-                    placeholder="cant."
-                    inputMode="decimal"
-                    value={draft[key] || ""}
-                    onChange={(e) => setQty(activeVendor, p.item, sanitizeQty(e.target.value))}
-                  />
-                </div>
-              );
-            })}
-            {items.length === 0 && <div style={styles.emptyRow}>No hay productos que coincidan con "{search}".</div>}
+            {withQty.map((p) => (
+              <ItemRow key={activeVendor + "|" + p.item} p={p} activeVendor={activeVendor} draft={draft} setQty={setQty} />
+            ))}
+            {recurrent.length > 0 && <div style={styles.itemSectionLabel}>Recurrentes</div>}
+            {recurrent.map((p) => (
+              <ItemRow key={activeVendor + "|" + p.item} p={p} activeVendor={activeVendor} draft={draft} setQty={setQty} />
+            ))}
+            {rest.length > 0 && (withQty.length > 0 || recurrent.length > 0) && (
+              <div style={styles.itemSectionLabel}>Resto de productos</div>
+            )}
+            {rest.map((p) => (
+              <ItemRow key={activeVendor + "|" + p.item} p={p} activeVendor={activeVendor} draft={draft} setQty={setQty} />
+            ))}
+            {filteredItems.length === 0 && <div style={styles.emptyRow}>No hay productos que coincidan con "{search}".</div>}
           </div>
         </div>
 
@@ -1888,6 +1922,10 @@ const styles = {
   statusPill: { fontSize: 11, fontWeight: 600, padding: "3px 9px", borderRadius: 999, display: "inline-flex", alignItems: "center", gap: 4 },
   orderCardBody: { padding: "0 18px 18px", borderTop: "1px solid var(--line)" },
   vendorLabel: { fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.06em", color: "var(--pistachio-dark)", margin: "14px 0 6px" },
+  itemSectionLabel: {
+    fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.06em",
+    color: "var(--muted)", padding: "10px 16px", background: "var(--cream)",
+  },
   detailLine: { display: "flex", justifyContent: "space-between", fontSize: 13, padding: "4px 0", gap: 12 },
   detailCode: { color: "var(--muted-faint)", fontSize: 11 },
   detailQty: { fontWeight: 600, flexShrink: 0 },

@@ -383,6 +383,27 @@ export default function App() {
     setDraft((d) => ({ ...d, [vendor + "|" + item]: value }));
   }
 
+  function clearDraft() {
+    setDraft({});
+  }
+
+  function copyLastOrder() {
+    const sorted = [...mySucursalOrders].sort((a, b) => new Date(b.date) - new Date(a.date));
+    const last = sorted[0];
+    if (!last) {
+      setToast({ type: "error", text: "Todavía no hay pedidos anteriores para copiar." });
+      return;
+    }
+    setDraft((d) => {
+      const next = { ...d };
+      last.items.forEach((it) => {
+        next[it.vendor + "|" + it.item] = String(it.quantity);
+      });
+      return next;
+    });
+    setToast({ type: "success", text: "Cargamos las cantidades del último pedido." });
+  }
+
   async function submitOrder() {
     const items = [];
     Object.entries(draft).forEach(([key, qty]) => {
@@ -460,7 +481,7 @@ export default function App() {
   return (
     <div style={{ ...styles.page, ...THEMES[theme] }}>
       <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=Kaushan+Script&family=Baloo+2:wght@500;600;700;800&family=Bodoni+Moda:opsz,wght@6..96,700;6..96,800&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=Kaushan+Script&family=Baloo+2:wght@500;600;700;800&family=Bodoni+Moda:opsz,wght@6..96,700;6..96,800;6..96,900&display=swap');
         * { box-sizing: border-box; }
         body { margin: 0; }
         input, textarea, select, button { font-family: inherit; }
@@ -524,6 +545,8 @@ export default function App() {
           submitting={submitting}
           theme={theme}
           onToggleTheme={toggleTheme}
+          onCopyLastOrder={copyLastOrder}
+          onClearDraft={clearDraft}
         />
       )}
 
@@ -894,7 +917,7 @@ function SucursalSelect({ onBack, onPick, theme, onToggleTheme }) {
   );
 }
 
-function OrderForm({ sucursal, onBack, onViewHistory, activeVendor, setActiveVendor, search, setSearch, draft, setQty, draftCount, notes, setNotes, onSubmit, submitting, theme, onToggleTheme }) {
+function OrderForm({ sucursal, onBack, onViewHistory, activeVendor, setActiveVendor, search, setSearch, draft, setQty, draftCount, notes, setNotes, onSubmit, submitting, theme, onToggleTheme, onCopyLastOrder, onClearDraft }) {
   const items = VENDORS[activeVendor].filter((p) =>
     p.item.toLowerCase().includes(search.toLowerCase()) || p.code.toLowerCase().includes(search.toLowerCase())
   );
@@ -904,16 +927,22 @@ function OrderForm({ sucursal, onBack, onViewHistory, activeVendor, setActiveVen
       <TopBar onBack={onBack} title={sucursal} subtitle="Pedido semanal de stock" theme={theme} onToggleTheme={onToggleTheme} />
       <div className="order-layout" style={styles.formLayout}>
         <div style={styles.formMain}>
-          <div style={styles.tabs}>
-            {VENDOR_ORDER.map((v) => (
-              <button
-                key={v}
-                onClick={() => { setActiveVendor(v); setSearch(""); }}
-                style={{ ...styles.tab, ...(activeVendor === v ? styles.tabActive : {}) }}
-              >
-                {v}
-              </button>
-            ))}
+          <div style={styles.tabsRow}>
+            <div style={{ ...styles.tabs, marginBottom: 0 }}>
+              {VENDOR_ORDER.map((v) => (
+                <button
+                  key={v}
+                  onClick={() => { setActiveVendor(v); setSearch(""); }}
+                  style={{ ...styles.tab, ...(activeVendor === v ? styles.tabActive : {}) }}
+                >
+                  {v}
+                </button>
+              ))}
+            </div>
+            <div style={styles.tabsRowActions}>
+              <button style={styles.tabsRowActionBtn} onClick={onCopyLastOrder}>Copiar último pedido</button>
+              <button style={styles.tabsRowClearBtn} onClick={onClearDraft}>Borrar</button>
+            </div>
           </div>
 
           <div style={styles.searchBox}>
@@ -1614,7 +1643,7 @@ const styles = {
   },
   homeH1: { fontFamily: "'Baloo 2', sans-serif", fontWeight: 600, fontSize: 34, margin: "0 0 32px", color: "var(--ink)" },
   homeTagline: {
-    fontFamily: "'Bodoni Moda', serif", fontOpticalSizing: "auto", fontWeight: 700,
+    fontFamily: "'Bodoni Moda', serif", fontOpticalSizing: "auto", fontWeight: 900,
     textTransform: "uppercase", color: "var(--ink)", fontSize: 44, lineHeight: 1.05,
     letterSpacing: "0.01em", marginTop: "auto", paddingTop: 60,
   },
@@ -1685,12 +1714,22 @@ const styles = {
   },
   formLayout: {},
   formMain: {},
-  tabs: { display: "flex", gap: 8, marginBottom: 14 },
+  tabs: { display: "flex", gap: 8, marginBottom: 14, flexWrap: "wrap" },
   tab: {
     padding: "8px 16px", borderRadius: 999, border: "1px solid var(--line)",
     background: "var(--paper)", fontSize: 13, fontWeight: 600, cursor: "pointer", color: "var(--muted)",
   },
   tabActive: { background: "var(--plum)", color: "var(--on-accent)", borderColor: "var(--plum)" },
+  tabsRow: { display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 10, marginBottom: 14 },
+  tabsRowActions: { display: "flex", gap: 16, flexWrap: "wrap", alignItems: "center" },
+  tabsRowActionBtn: {
+    background: "none", border: "none", padding: 0, fontSize: 13, fontWeight: 600,
+    color: "var(--pistachio-dark)", cursor: "pointer", textDecoration: "underline",
+  },
+  tabsRowClearBtn: {
+    background: "none", border: "none", padding: 0, fontSize: 13, fontWeight: 600,
+    color: "var(--terracotta)", cursor: "pointer", textDecoration: "underline",
+  },
   searchBox: {
     display: "flex", alignItems: "center", gap: 8, background: "var(--paper)",
     border: "1px solid var(--line)", borderRadius: 10, padding: "9px 12px", marginBottom: 14,

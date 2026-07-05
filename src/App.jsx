@@ -145,6 +145,285 @@ function getAutoTheme() {
   return hour >= 7 && hour < 20 ? "day" : "night";
 }
 
+const STR = {
+  es: {
+    homeEyebrow: "Estados Unidos",
+    homeTitle: "Gestión de Compras",
+    sucursalTitle: "Sucursal",
+    sucursalDesc: "Responsable de Sucursal",
+    depositoTitle: "Depósito",
+    depositoDesc: "Responsable de Compras",
+    dbError: (msg) => `No se pudo conectar con la base de datos. Revisá que las variables de entorno de Supabase estén configuradas. (${msg})`,
+
+    authEyebrow: "Depósito",
+    loginTitle: "Ingresá a tu cuenta",
+    signupTitle: "Creá tu cuenta",
+    forgotTitle: "Recuperar contraseña",
+    loginSub: "Con el mail y contraseña que ya registraste.",
+    signupSub: "Elegí un mail y una contraseña para vos.",
+    forgotSub: "Te mandamos un link a tu mail para elegir una contraseña nueva.",
+    emailPlaceholder: "tu-mail@luccianos.us",
+    passwordPlaceholder: "Contraseña",
+    confirmPasswordPlaceholder: "Repetí la contraseña",
+    back: "Volver",
+    loadingWait: "Un momento...",
+    loginBtn: "Ingresar",
+    signupBtn: "Crear cuenta",
+    forgotBtn: "Enviar link",
+    forgotLink: "¿Olvidaste tu contraseña?",
+    toSignup: "¿No tenés cuenta? Creá una",
+    toLogin: "¿Ya tenés cuenta? Ingresá",
+    backToLogin: "Volver a ingresar",
+    errNeedEmail: "Ingresá tu mail para poder mandarte el link.",
+    errNeedBoth: "Completá mail y contraseña.",
+    errPasswordsMismatch: "Las contraseñas no coinciden.",
+    errNotAllowed: "Ese mail no está autorizado para crear una cuenta de Depósito. Consultá con quien administra la herramienta.",
+    errAlreadyRegistered: "Ese mail ya tiene una cuenta creada. Probá ingresar.",
+    errWrongCredentials: "Mail o contraseña incorrectos.",
+    infoResetSent: "Listo. Si ese mail tiene una cuenta, te llegó un link para elegir una contraseña nueva. Revisá también spam.",
+    infoAccountCreated: "Cuenta creada. Si te pide confirmar el mail, revisá tu casilla y después volvé acá a ingresar.",
+
+    resetTitle: "Elegí tu contraseña nueva",
+    resetSub: "Después de esto vas a entrar directo a Depósito.",
+    newPasswordPlaceholder: "Contraseña nueva",
+    confirmNewPasswordPlaceholder: "Repetí la contraseña nueva",
+    savePassword: "Guardar contraseña",
+    errChoosePassword: "Elegí una contraseña nueva.",
+
+    pinTitle: "Ingresá el PIN",
+    pinSub: "Pedíselo a quien administra la herramienta si no lo tenés.",
+    pinWrong: "PIN incorrecto. Probá de nuevo.",
+
+    sucursalSelectTitle: "Elegí tu sucursal",
+
+    orderSubtitle: "Pedido semanal de stock",
+    copyLast: "Copiar último pedido",
+    clearBtn: "Borrar",
+    searchPlaceholder: (v) => `Buscar en ${v}...`,
+    recurring: "Recurrentes",
+    restOfProducts: "Resto de productos",
+    noMatch: (s) => `No hay productos que coincidan con "${s}".`,
+    qtyPlaceholder: "cant.",
+    orderSummary: "Resumen del pedido",
+    itemLoaded: "ítem cargado",
+    itemsLoaded: "ítems cargados",
+    noItemsYet: "Todavía no cargaste productos.",
+    notesLabel: "Notas para depósito (opcional)",
+    notesPlaceholder: "Ej: urgente para el finde, entregar antes del jueves...",
+    sending: "Enviando...",
+    submitOrder: "Enviar pedido",
+    viewPrevious: "Ver pedidos anteriores",
+    errNoQty: "Todavía no hay pedidos anteriores para copiar.",
+    copiedLast: "Cargamos las cantidades del último pedido.",
+    errNoQtyToSubmit: "Cargá al menos una cantidad antes de enviar.",
+    errCouldNotSave: "No se pudo guardar el pedido. Probá de nuevo.",
+    errCouldNotUpdateStatus: "No se pudo actualizar el estado.",
+    errCouldNotRestore: "No se pudo restaurar el backup.",
+
+    orderSent: "Pedido enviado",
+    depositoCanSee: (s) => `Depósito ya puede ver el pedido de ${s}.`,
+    alsoByMail: (email) => "Para mandarlo también por mail a ",
+    stepCopyTable: 'Apretá "Copiar tabla con formato" abajo.',
+    stepOpenMail: (email) => `Abrí un mail nuevo a ${email} y pegalo con `,
+    stepSameFormat: "Va a quedar con el mismo formato de tabla que le mandamos siempre a los proveedores.",
+    copyTableBtn: "Copiar tabla con formato",
+    copiedPasteNow: "¡Copiado! Ahora pegalo en el mail",
+    copyFailed: "No se pudo copiar, probá con el texto de abajo",
+    plainTextFallback: "¿No se copió bien? Usar texto plano en su lugar",
+    selectAllText: "Seleccionar todo",
+    textSelected: "Texto seleccionado — ahora Ctrl+C",
+    openMailApp: 'O probar con "Abrir mi programa de mail"',
+    viewMyOrders: "Ver mis pedidos",
+    loadAnotherOrder: "Cargar otro pedido",
+    backHome: "Volver al inicio",
+
+    orderHistory: "Historial de pedidos",
+    loadingOrders: "Cargando pedidos...",
+    noOrdersYet: "Todavía no enviaste ningún pedido.",
+    order: "Pedido",
+    items: "ítems",
+    canceledOn: (d) => `Cancelado el ${d}`,
+    notes: "Notas",
+    cancelThisOrder: "Cancelar este pedido",
+    confirmCancel: "¿Seguro? Tocá de nuevo para cancelar",
+
+    selectDates: "Seleccionar fechas",
+    clearDates: "Limpiar",
+    today: "Hoy",
+    noOrdersMatchFilter: "No hay pedidos que coincidan con el filtro.",
+    connectedAs: "Conectado como",
+    logout: "Cerrar sesión",
+    hideBackup: "Ocultar respaldo",
+    exportAllOrders: "Exportar todos los pedidos",
+    byOrder: "Por pedido",
+    byProduct: "Por producto",
+    allBranches: "Todas las sucursales",
+    allStatuses: "Todos los estados",
+    statusPendiente: "Pendiente",
+    statusPedido: "Pedido",
+    statusCancelado: "Cancelado",
+    product: "Producto",
+    code: "Código",
+    vendor: "Proveedor",
+    totalQty: "Cantidad total",
+    pendingOrdersSubtitle: (n) => `${n} pedido${n === 1 ? "" : "s"} pendiente${n === 1 ? "" : "s"}`,
+
+    backupOf: (n) => `Respaldo de ${n} pedido${n === 1 ? "" : "s"}`,
+    backupNote: "Con la base de datos real, esto ya no debería perderse solo — pero sirve como respaldo extra.",
+    downloadJson: "Descargar backup (.json)",
+    downloadTxt: "Descargar .txt (lectura)",
+    selectedCtrlC: "Seleccionado — Ctrl+C",
+    selectTxtToCopy: "Seleccionar .txt para copiar",
+    hideRestore: "Ocultar restauración",
+    restoreFromBackup: "Restaurar pedidos desde un backup",
+    restoreOrders: "Restaurar pedidos",
+    errInvalidBackup: "Ese texto no es un backup JSON válido.",
+    errWrongFormat: "El archivo no tiene el formato esperado de pedidos.",
+    restoredOrders: (n) => `Se restauraron ${n} pedido(s).`,
+
+    langToggleLabel: "Cambiar idioma",
+    themeToggleLabel: "Cambiar tema día/noche",
+  },
+  en: {
+    homeEyebrow: "United States",
+    homeTitle: "Purchasing Management",
+    sucursalTitle: "Branch",
+    sucursalDesc: "Branch Manager",
+    depositoTitle: "Warehouse",
+    depositoDesc: "Purchasing Manager",
+    dbError: (msg) => `Could not connect to the database. Check that the Supabase environment variables are configured. (${msg})`,
+
+    authEyebrow: "Warehouse",
+    loginTitle: "Log in to your account",
+    signupTitle: "Create your account",
+    forgotTitle: "Recover password",
+    loginSub: "With the email and password you already registered.",
+    signupSub: "Choose an email and a password for yourself.",
+    forgotSub: "We'll send a link to your email so you can choose a new password.",
+    emailPlaceholder: "your-email@luccianos.us",
+    passwordPlaceholder: "Password",
+    confirmPasswordPlaceholder: "Repeat the password",
+    back: "Back",
+    loadingWait: "One moment...",
+    loginBtn: "Log in",
+    signupBtn: "Create account",
+    forgotBtn: "Send link",
+    forgotLink: "Forgot your password?",
+    toSignup: "Don't have an account? Create one",
+    toLogin: "Already have an account? Log in",
+    backToLogin: "Back to login",
+    errNeedEmail: "Enter your email so we can send you the link.",
+    errNeedBoth: "Fill in email and password.",
+    errPasswordsMismatch: "Passwords don't match.",
+    errNotAllowed: "That email isn't authorized to create a Warehouse account. Check with whoever manages this tool.",
+    errAlreadyRegistered: "That email already has an account. Try logging in.",
+    errWrongCredentials: "Wrong email or password.",
+    infoResetSent: "Done. If that email has an account, a link to choose a new password was sent to it. Check spam too.",
+    infoAccountCreated: "Account created. If it asks you to confirm your email, check your inbox and come back here to log in.",
+
+    resetTitle: "Choose your new password",
+    resetSub: "After this you'll go straight into Warehouse.",
+    newPasswordPlaceholder: "New password",
+    confirmNewPasswordPlaceholder: "Repeat the new password",
+    savePassword: "Save password",
+    errChoosePassword: "Choose a new password.",
+
+    pinTitle: "Enter the PIN",
+    pinSub: "Ask whoever manages this tool if you don't have it.",
+    pinWrong: "Wrong PIN. Try again.",
+
+    sucursalSelectTitle: "Choose your branch",
+
+    orderSubtitle: "Weekly stock order",
+    copyLast: "Copy last order",
+    clearBtn: "Clear",
+    searchPlaceholder: (v) => `Search in ${v}...`,
+    recurring: "Recurring",
+    restOfProducts: "Rest of products",
+    noMatch: (s) => `No products match "${s}".`,
+    qtyPlaceholder: "qty.",
+    orderSummary: "Order summary",
+    itemLoaded: "item loaded",
+    itemsLoaded: "items loaded",
+    noItemsYet: "You haven't loaded any products yet.",
+    notesLabel: "Notes for warehouse (optional)",
+    notesPlaceholder: "E.g.: urgent for the weekend, deliver before Thursday...",
+    sending: "Sending...",
+    submitOrder: "Send order",
+    viewPrevious: "View previous orders",
+    errNoQty: "There are no previous orders to copy yet.",
+    copiedLast: "We loaded the quantities from the last order.",
+    errNoQtyToSubmit: "Load at least one quantity before sending.",
+    errCouldNotSave: "Couldn't save the order. Try again.",
+    errCouldNotUpdateStatus: "Couldn't update the status.",
+    errCouldNotRestore: "Couldn't restore the backup.",
+
+    orderSent: "Order sent",
+    depositoCanSee: (s) => `Warehouse can now see ${s}'s order.`,
+    alsoByMail: (email) => "To also send it by email to ",
+    stepCopyTable: 'Tap "Copy formatted table" below.',
+    stepOpenMail: (email) => `Open a new email to ${email} and paste it with `,
+    stepSameFormat: "It will keep the same table format we always send to vendors.",
+    copyTableBtn: "Copy formatted table",
+    copiedPasteNow: "Copied! Now paste it in the email",
+    copyFailed: "Couldn't copy, try the text below",
+    plainTextFallback: "Didn't copy well? Use plain text instead",
+    selectAllText: "Select all",
+    textSelected: "Text selected — now Ctrl+C",
+    openMailApp: 'Or try "Open my email app"',
+    viewMyOrders: "View my orders",
+    loadAnotherOrder: "Load another order",
+    backHome: "Back to home",
+
+    orderHistory: "Order history",
+    loadingOrders: "Loading orders...",
+    noOrdersYet: "You haven't sent any orders yet.",
+    order: "Order",
+    items: "items",
+    canceledOn: (d) => `Canceled on ${d}`,
+    notes: "Notes",
+    cancelThisOrder: "Cancel this order",
+    confirmCancel: "Sure? Tap again to cancel",
+
+    selectDates: "Select dates",
+    clearDates: "Clear",
+    today: "Today",
+    noOrdersMatchFilter: "No orders match the filter.",
+    connectedAs: "Connected as",
+    logout: "Log out",
+    hideBackup: "Hide backup",
+    exportAllOrders: "Export all orders",
+    byOrder: "By order",
+    byProduct: "By product",
+    allBranches: "All branches",
+    allStatuses: "All statuses",
+    statusPendiente: "Pending",
+    statusPedido: "Ordered",
+    statusCancelado: "Canceled",
+    product: "Product",
+    code: "Code",
+    vendor: "Vendor",
+    totalQty: "Total quantity",
+    pendingOrdersSubtitle: (n) => `${n} pending order${n === 1 ? "" : "s"}`,
+
+    backupOf: (n) => `Backup of ${n} order${n === 1 ? "" : "s"}`,
+    backupNote: "With the real database this shouldn't get lost on its own anymore — but it's useful as an extra backup.",
+    downloadJson: "Download backup (.json)",
+    downloadTxt: "Download .txt (reading)",
+    selectedCtrlC: "Selected — Ctrl+C",
+    selectTxtToCopy: "Select .txt to copy",
+    hideRestore: "Hide restore",
+    restoreFromBackup: "Restore orders from a backup",
+    restoreOrders: "Restore orders",
+    errInvalidBackup: "That text isn't a valid JSON backup.",
+    errWrongFormat: "The file doesn't have the expected order format.",
+    restoredOrders: (n) => `Restored ${n} order(s).`,
+
+    langToggleLabel: "Switch language",
+    themeToggleLabel: "Switch day/night theme",
+  },
+};
+
 const THEMES = {
   day: {
     "--cream": "#FBF6EE", "--paper": "#FFFFFF", "--plum": "#4A1F2E", "--plum-light": "#6E3347",
@@ -182,10 +461,11 @@ function unlockScroll() {
   window.scrollTo(0, scrollLockY);
 }
 
-function fmtDate(iso) {
+function fmtDate(iso, lang = "es") {
+  const locale = lang === "en" ? "en-US" : "es-AR";
   const d = new Date(iso);
-  return d.toLocaleDateString("es-AR", { day: "2-digit", month: "short", year: "numeric" }) +
-    " · " + d.toLocaleTimeString("es-AR", { hour: "2-digit", minute: "2-digit" });
+  return d.toLocaleDateString(locale, { day: "2-digit", month: "short", year: "numeric" }) +
+    " · " + d.toLocaleTimeString(locale, { hour: "2-digit", minute: "2-digit" });
 }
 
 function fmtShortDate(iso) {
@@ -193,6 +473,11 @@ function fmtShortDate(iso) {
   const day = String(d.getDate()).padStart(2, "0");
   const month = String(d.getMonth() + 1).padStart(2, "0");
   return `${day}/${month}/${d.getFullYear()}`;
+}
+
+const STATUS_LABEL_KEY = { pendiente: "statusPendiente", pedido: "statusPedido", cancelado: "statusCancelado" };
+function getStatusLabel(status, lang) {
+  return STR[lang][STATUS_LABEL_KEY[status] || "statusPendiente"];
 }
 
 function sanitizeQty(value) {
@@ -323,6 +608,19 @@ export default function App() {
   function toggleTheme() {
     setTheme((t) => (t === "night" ? "day" : "night"));
   }
+
+  const [lang, setLang] = useState(() => {
+    if (typeof window === "undefined") return "es";
+    return localStorage.getItem("luccianos-lang") || "es";
+  });
+
+  useEffect(() => {
+    localStorage.setItem("luccianos-lang", lang);
+  }, [lang]);
+
+  function toggleLang() {
+    setLang((l) => (l === "es" ? "en" : "es"));
+  }
   const [expandedOrder, setExpandedOrder] = useState(null);
   const [lastOrder, setLastOrder] = useState(null);
   const [pendingRole, setPendingRole] = useState(null);
@@ -414,7 +712,7 @@ export default function App() {
     const sorted = [...mySucursalOrders].sort((a, b) => new Date(b.date) - new Date(a.date));
     const last = sorted[0];
     if (!last) {
-      setToast({ type: "error", text: "Todavía no hay pedidos anteriores para copiar." });
+      setToast({ type: "error", text: STR[lang].errNoQty });
       return;
     }
     setDraft((d) => {
@@ -428,7 +726,7 @@ export default function App() {
       ...last.items.map((it) => it.vendor + "|" + it.item),
       ...prev,
     ]);
-    setToast({ type: "success", text: "Cargamos las cantidades del último pedido." });
+    setToast({ type: "success", text: STR[lang].copiedLast });
   }
 
   async function submitOrder() {
@@ -443,7 +741,7 @@ export default function App() {
       }
     });
     if (items.length === 0) {
-      setToast({ type: "error", text: "Cargá al menos una cantidad antes de enviar." });
+      setToast({ type: "error", text: STR[lang].errNoQtyToSubmit });
       return;
     }
     const newOrder = {
@@ -458,7 +756,7 @@ export default function App() {
     const { error } = await supabase.from("orders").insert([newOrder]);
     setSubmitting(false);
     if (error) {
-      setToast({ type: "error", text: "No se pudo guardar el pedido. Probá de nuevo." });
+      setToast({ type: "error", text: STR[lang].errCouldNotSave });
       return;
     }
     setOrders((prev) => [newOrder, ...prev]);
@@ -480,7 +778,7 @@ export default function App() {
       error = retry.error;
     }
     if (error) {
-      setToast({ type: "error", text: "No se pudo actualizar el estado." });
+      setToast({ type: "error", text: STR[lang].errCouldNotUpdateStatus });
       return;
     }
     setOrders((prev) => prev.map((o) => (o.id === orderId ? { ...o, ...patch } : o)));
@@ -489,7 +787,7 @@ export default function App() {
   async function importOrders(importedOrders) {
     const { error } = await supabase.from("orders").upsert(importedOrders, { onConflict: "id" });
     if (error) {
-      setToast({ type: "error", text: "No se pudo restaurar el backup." });
+      setToast({ type: "error", text: STR[lang].errCouldNotRestore });
       return;
     }
     await loadOrders();
@@ -542,14 +840,14 @@ export default function App() {
 
       {loadError && screen === "home" && (
         <div style={{ ...styles.toast, ...styles.toastError, position: "static", margin: "16px auto", maxWidth: 520, textAlign: "center" }}>
-          No se pudo conectar con la base de datos. Revisá que las variables de entorno de Supabase estén configuradas. ({loadError})
+          {STR[lang].dbError(loadError)}
         </div>
       )}
 
-      {screen === "home" && <Home onSucursal={() => setScreen("sucursal-select")} onDeposito={() => setScreen(depositoSession ? "deposito" : "deposito-auth")} theme={theme} onToggleTheme={toggleTheme} />}
+      {screen === "home" && <Home onSucursal={() => setScreen("sucursal-select")} onDeposito={() => setScreen(depositoSession ? "deposito" : "deposito-auth")} theme={theme} onToggleTheme={toggleTheme} lang={lang} onToggleLang={toggleLang} />}
 
       {screen === "sucursal-select" && (
-        <SucursalSelect onBack={() => setScreen("home")} onPick={(s) => requestPin(s, "order-form")} theme={theme} onToggleTheme={toggleTheme} />
+        <SucursalSelect onBack={() => setScreen("home")} onPick={(s) => requestPin(s, "order-form")} theme={theme} onToggleTheme={toggleTheme} lang={lang} onToggleLang={toggleLang} />
       )}
 
       {screen === "pin" && pendingRole && (
@@ -560,6 +858,7 @@ export default function App() {
           error={pinError}
           onSubmit={checkPin}
           onBack={() => setScreen(pendingRole.key === "Depósito" ? "home" : "sucursal-select")}
+          lang={lang}
         />
       )}
 
@@ -585,6 +884,8 @@ export default function App() {
           onClearDraft={clearDraft}
           recentOrder={recentOrder}
           pastOrders={mySucursalOrders}
+          lang={lang}
+          onToggleLang={toggleLang}
         />
       )}
 
@@ -595,6 +896,7 @@ export default function App() {
           onNewOrder={() => setScreen("order-form")}
           onHistory={() => setScreen("sucursal-history")}
           onHome={() => { setSucursal(null); setScreen("home"); }}
+          lang={lang}
         />
       )}
 
@@ -609,6 +911,8 @@ export default function App() {
           theme={theme}
           onToggleTheme={toggleTheme}
           updateStatus={updateStatus}
+          lang={lang}
+          onToggleLang={toggleLang}
         />
       )}
 
@@ -616,11 +920,12 @@ export default function App() {
         <DepositoAuth
           onBack={() => setScreen("home")}
           onSuccess={() => setScreen("deposito")}
+          lang={lang}
         />
       )}
 
       {screen === "reset-password" && (
-        <ResetPassword onSuccess={() => setScreen("deposito")} />
+        <ResetPassword onSuccess={() => setScreen("deposito")} lang={lang} />
       )}
 
       {screen === "deposito" && (
@@ -647,32 +952,40 @@ export default function App() {
           onLogout={async () => { await supabase.auth.signOut(); setScreen("home"); }}
           theme={theme}
           onToggleTheme={toggleTheme}
+          lang={lang}
+          onToggleLang={toggleLang}
         />
       )}
     </div>
   );
 }
 
-function Home({ onSucursal, onDeposito, theme, onToggleTheme }) {
+function Home({ onSucursal, onDeposito, theme, onToggleTheme, lang, onToggleLang }) {
+  const t = STR[lang];
   return (
     <div className="no-scroll-screen" style={styles.homeDark}>
-      <button style={styles.homeThemeToggleBtn} onClick={onToggleTheme} aria-label="Cambiar tema día/noche">
-        {theme === "night" ? <Sun size={18} /> : <Moon size={18} />}
-      </button>
+      <div style={styles.homeToggleGroup}>
+        <button style={styles.homeThemeToggleBtn} onClick={onToggleLang} aria-label={t.langToggleLabel}>
+          {lang === "es" ? "EN" : "ES"}
+        </button>
+        <button style={styles.homeThemeToggleBtn} onClick={onToggleTheme} aria-label={t.themeToggleLabel}>
+          {theme === "night" ? <Sun size={18} /> : <Moon size={18} />}
+        </button>
+      </div>
       <div style={styles.homeInner}>
         <img src={`${import.meta.env.BASE_URL}logo-gold.png`} alt="Lucciano's" style={styles.homeLogoImg} />
-        <div style={styles.homeEyebrow}>Estados Unidos</div>
-        <h1 style={styles.homeH1}>Gestión de Compras</h1>
+        <div style={styles.homeEyebrow}>{t.homeEyebrow}</div>
+        <h1 style={styles.homeH1}>{t.homeTitle}</h1>
         <div style={styles.roleGrid}>
           <button style={styles.roleCard} onClick={onSucursal}>
             <Store size={28} color="var(--plum)" strokeWidth={1.6} />
-            <div style={styles.roleTitle}>Sucursal</div>
-            <div style={styles.roleDesc}>Responsable de Sucursal</div>
+            <div style={styles.roleTitle}>{t.sucursalTitle}</div>
+            <div style={styles.roleDesc}>{t.sucursalDesc}</div>
           </button>
           <button style={styles.roleCard} onClick={onDeposito}>
             <ClipboardList size={28} color="var(--plum)" strokeWidth={1.6} />
-            <div style={styles.roleTitle}>Depósito</div>
-            <div style={styles.roleDesc}>Responsable de Compras</div>
+            <div style={styles.roleTitle}>{t.depositoTitle}</div>
+            <div style={styles.roleDesc}>{t.depositoDesc}</div>
           </button>
         </div>
         <div style={styles.homeTagline}>
@@ -684,7 +997,8 @@ function Home({ onSucursal, onDeposito, theme, onToggleTheme }) {
   );
 }
 
-function DepositoAuth({ onBack, onSuccess }) {
+function DepositoAuth({ onBack, onSuccess, lang }) {
+  const t = STR[lang];
   const [mode, setMode] = useState("login"); // "login" | "signup" | "forgot"
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -700,7 +1014,7 @@ function DepositoAuth({ onBack, onSuccess }) {
 
     if (mode === "forgot") {
       if (!email.trim()) {
-        setError("Ingresá tu mail para poder mandarte el link.");
+        setError(t.errNeedEmail);
         return;
       }
       setLoading(true);
@@ -711,20 +1025,20 @@ function DepositoAuth({ onBack, onSuccess }) {
         setError(err.message);
         return;
       }
-      setInfo("Listo. Si ese mail tiene una cuenta, te llegó un link para elegir una contraseña nueva. Revisá también spam.");
+      setInfo(t.infoResetSent);
       return;
     }
 
     if (!email.trim() || !password.trim()) {
-      setError("Completá mail y contraseña.");
+      setError(t.errNeedBoth);
       return;
     }
     if (mode === "signup" && password !== confirmPassword) {
-      setError("Las contraseñas no coinciden.");
+      setError(t.errPasswordsMismatch);
       return;
     }
     if (mode === "signup" && !ALLOWED_DEPOSITO_EMAILS.includes(email.trim().toLowerCase())) {
-      setError("Ese mail no está autorizado para crear una cuenta de Depósito. Consultá con quien administra la herramienta.");
+      setError(t.errNotAllowed);
       return;
     }
     setLoading(true);
@@ -732,20 +1046,20 @@ function DepositoAuth({ onBack, onSuccess }) {
       const { data, error: err } = await supabase.auth.signUp({ email: email.trim(), password });
       setLoading(false);
       if (err) {
-        setError(err.message === "User already registered" ? "Ese mail ya tiene una cuenta creada. Probá ingresar." : err.message);
+        setError(err.message === "User already registered" ? t.errAlreadyRegistered : err.message);
         return;
       }
       if (data.session) {
         onSuccess();
       } else {
-        setInfo("Cuenta creada. Si te pide confirmar el mail, revisá tu casilla y después volvé acá a ingresar.");
+        setInfo(t.infoAccountCreated);
         setMode("login");
       }
     } else {
       const { error: err } = await supabase.auth.signInWithPassword({ email: email.trim(), password });
       setLoading(false);
       if (err) {
-        setError("Mail o contraseña incorrectos.");
+        setError(t.errWrongCredentials);
         return;
       }
       onSuccess();
@@ -755,20 +1069,20 @@ function DepositoAuth({ onBack, onSuccess }) {
   return (
     <div style={styles.center}>
       <Lock size={36} color="var(--plum)" strokeWidth={1.5} />
-      <div style={styles.eyebrow}>Depósito</div>
+      <div style={styles.eyebrow}>{t.authEyebrow}</div>
       <h1 style={styles.h1}>
-        {mode === "login" ? "Ingresá a tu cuenta" : mode === "signup" ? "Creá tu cuenta" : "Recuperar contraseña"}
+        {mode === "login" ? t.loginTitle : mode === "signup" ? t.signupTitle : t.forgotTitle}
       </h1>
       <p style={styles.sub}>
-        {mode === "login" && "Con el mail y contraseña que ya registraste."}
-        {mode === "signup" && "Elegí un mail y una contraseña para vos."}
-        {mode === "forgot" && "Te mandamos un link a tu mail para elegir una contraseña nueva."}
+        {mode === "login" && t.loginSub}
+        {mode === "signup" && t.signupSub}
+        {mode === "forgot" && t.forgotSub}
       </p>
 
       <div style={{ width: "100%", maxWidth: 320, marginTop: 20 }}>
         <input
           type="email"
-          placeholder="tu-mail@luccianos.us"
+          placeholder={t.emailPlaceholder}
           style={styles.authInput}
           value={email}
           onChange={(e) => setEmail(e.target.value)}
@@ -779,7 +1093,7 @@ function DepositoAuth({ onBack, onSuccess }) {
         {mode !== "forgot" && (
           <input
             type="password"
-            placeholder="Contraseña"
+            placeholder={t.passwordPlaceholder}
             style={styles.authInput}
             value={password}
             onChange={(e) => setPassword(e.target.value)}
@@ -791,7 +1105,7 @@ function DepositoAuth({ onBack, onSuccess }) {
         {mode === "signup" && (
           <input
             type="password"
-            placeholder="Repetí la contraseña"
+            placeholder={t.confirmPasswordPlaceholder}
             style={styles.authInput}
             value={confirmPassword}
             onChange={(e) => setConfirmPassword(e.target.value)}
@@ -806,15 +1120,15 @@ function DepositoAuth({ onBack, onSuccess }) {
       {info && <div style={{ color: "var(--pistachio-dark)", fontSize: 13, marginTop: 10, fontWeight: 600, maxWidth: 320 }}>{info}</div>}
 
       <div style={{ display: "flex", gap: 12, marginTop: 20 }}>
-        <button style={styles.secondaryBtn} onClick={onBack}>Volver</button>
+        <button style={styles.secondaryBtn} onClick={onBack}>{t.back}</button>
         <button style={styles.primaryBtnSm} onClick={handleSubmit} disabled={loading}>
-          {loading ? "Un momento..." : mode === "login" ? "Ingresar" : mode === "signup" ? "Crear cuenta" : "Enviar link"}
+          {loading ? t.loadingWait : mode === "login" ? t.loginBtn : mode === "signup" ? t.signupBtn : t.forgotBtn}
         </button>
       </div>
 
       {mode === "login" && (
         <button style={styles.textLink} onClick={() => { setMode("forgot"); setError(null); setInfo(null); }}>
-          ¿Olvidaste tu contraseña?
+          {t.forgotLink}
         </button>
       )}
 
@@ -822,13 +1136,14 @@ function DepositoAuth({ onBack, onSuccess }) {
         style={styles.textLink}
         onClick={() => { setMode(mode === "signup" ? "login" : mode === "forgot" ? "login" : "signup"); setError(null); setInfo(null); }}
       >
-        {mode === "signup" ? "¿Ya tenés cuenta? Ingresá" : mode === "forgot" ? "Volver a ingresar" : "¿No tenés cuenta? Creá una"}
+        {mode === "signup" ? t.toLogin : mode === "forgot" ? t.backToLogin : t.toSignup}
       </button>
     </div>
   );
 }
 
-function ResetPassword({ onSuccess }) {
+function ResetPassword({ onSuccess, lang }) {
+  const t = STR[lang];
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [loading, setLoading] = useState(false);
@@ -838,11 +1153,11 @@ function ResetPassword({ onSuccess }) {
   async function handleSubmit() {
     setError(null);
     if (!password.trim()) {
-      setError("Elegí una contraseña nueva.");
+      setError(t.errChoosePassword);
       return;
     }
     if (password !== confirmPassword) {
-      setError("Las contraseñas no coinciden.");
+      setError(t.errPasswordsMismatch);
       return;
     }
     setLoading(true);
@@ -858,14 +1173,14 @@ function ResetPassword({ onSuccess }) {
   return (
     <div style={styles.center}>
       <Lock size={36} color="var(--plum)" strokeWidth={1.5} />
-      <div style={styles.eyebrow}>Depósito</div>
-      <h1 style={styles.h1}>Elegí tu contraseña nueva</h1>
-      <p style={styles.sub}>Después de esto vas a entrar directo a Depósito.</p>
+      <div style={styles.eyebrow}>{t.authEyebrow}</div>
+      <h1 style={styles.h1}>{t.resetTitle}</h1>
+      <p style={styles.sub}>{t.resetSub}</p>
 
       <div style={{ width: "100%", maxWidth: 320, marginTop: 20 }}>
         <input
           type="password"
-          placeholder="Contraseña nueva"
+          placeholder={t.newPasswordPlaceholder}
           style={styles.authInput}
           value={password}
           onChange={(e) => setPassword(e.target.value)}
@@ -874,7 +1189,7 @@ function ResetPassword({ onSuccess }) {
         />
         <input
           type="password"
-          placeholder="Repetí la contraseña nueva"
+          placeholder={t.confirmNewPasswordPlaceholder}
           style={styles.authInput}
           value={confirmPassword}
           onChange={(e) => setConfirmPassword(e.target.value)}
@@ -887,20 +1202,21 @@ function ResetPassword({ onSuccess }) {
       {error && <div style={{ color: "var(--terracotta)", fontSize: 13, marginTop: 10, fontWeight: 600 }}>{error}</div>}
 
       <button style={{ ...styles.primaryBtnSm, marginTop: 20 }} onClick={handleSubmit} disabled={loading}>
-        {loading ? "Un momento..." : "Guardar contraseña"}
+        {loading ? t.loadingWait : t.savePassword}
       </button>
     </div>
   );
 }
 
-function PinScreen({ roleKey, value, setValue, error, onSubmit, onBack }) {
+function PinScreen({ roleKey, value, setValue, error, onSubmit, onBack, lang }) {
+  const t = STR[lang];
   useEffect(() => () => unlockScroll(), []);
   return (
     <div style={styles.center}>
       <Lock size={36} color="var(--plum)" strokeWidth={1.5} />
       <div style={styles.eyebrow}>{roleKey}</div>
-      <h1 style={styles.h1}>Ingresá el PIN</h1>
-      <p style={styles.sub}>Pedíselo a quien administra la herramienta si no lo tenés.</p>
+      <h1 style={styles.h1}>{t.pinTitle}</h1>
+      <p style={styles.sub}>{t.pinSub}</p>
       <input
         type="password"
         inputMode="numeric"
@@ -912,27 +1228,33 @@ function PinScreen({ roleKey, value, setValue, error, onSubmit, onBack }) {
         onKeyDown={(e) => { if (e.key === "Enter") onSubmit(); }}
         placeholder="••••"
       />
-      {error && <div style={{ color: "var(--terracotta)", fontSize: 13, marginTop: 10, fontWeight: 600 }}>PIN incorrecto. Probá de nuevo.</div>}
+      {error && <div style={{ color: "var(--terracotta)", fontSize: 13, marginTop: 10, fontWeight: 600 }}>{t.pinWrong}</div>}
       <div style={{ display: "flex", gap: 12, marginTop: 24 }}>
-        <button style={styles.secondaryBtn} onClick={onBack}>Volver</button>
-        <button style={styles.primaryBtnSm} onClick={onSubmit}>Ingresar</button>
+        <button style={styles.secondaryBtn} onClick={onBack}>{t.back}</button>
+        <button style={styles.primaryBtnSm} onClick={onSubmit}>{t.loginBtn}</button>
       </div>
     </div>
   );
 }
 
-function SucursalSelect({ onBack, onPick, theme, onToggleTheme }) {
+function SucursalSelect({ onBack, onPick, theme, onToggleTheme, lang, onToggleLang }) {
+  const t = STR[lang];
   return (
     <div style={styles.darkWrapScroll}>
       <div style={styles.darkInner}>
         <div style={styles.darkTopBar}>
           <button style={styles.darkBackBtn} onClick={onBack}><ArrowLeft size={18} color="var(--ink)" /></button>
           <div style={{ flex: 1 }}>
-            <div style={styles.darkTopTitle}>Elegí tu sucursal</div>
+            <div style={styles.darkTopTitle}>{t.sucursalSelectTitle}</div>
           </div>
-          <button style={styles.themeToggleBtn} onClick={onToggleTheme} aria-label="Cambiar tema día/noche">
-            {theme === "night" ? <Sun size={18} /> : <Moon size={18} />}
-          </button>
+          <div style={{ display: "flex", gap: 8 }}>
+            <button style={styles.themeToggleBtn} onClick={onToggleLang} aria-label={t.langToggleLabel}>
+              {lang === "es" ? "EN" : "ES"}
+            </button>
+            <button style={styles.themeToggleBtn} onClick={onToggleTheme} aria-label={t.themeToggleLabel}>
+              {theme === "night" ? <Sun size={18} /> : <Moon size={18} />}
+            </button>
+          </div>
         </div>
         <div style={styles.darkLogoWrapSmall}>
           <img src={`${import.meta.env.BASE_URL}logo-gold.png`} alt="Lucciano's" style={styles.darkLogoImgSmall} />
@@ -956,7 +1278,7 @@ function SucursalSelect({ onBack, onPick, theme, onToggleTheme }) {
   );
 }
 
-function ItemRow({ p, activeVendor, draft, setQty }) {
+function ItemRow({ p, activeVendor, draft, setQty, lang }) {
   const key = activeVendor + "|" + p.item;
   return (
     <div style={styles.itemRow}>
@@ -967,7 +1289,7 @@ function ItemRow({ p, activeVendor, draft, setQty }) {
       <input
         className="qtyInput"
         style={styles.qtyInput}
-        placeholder="cant."
+        placeholder={STR[lang].qtyPlaceholder}
         inputMode="decimal"
         value={draft[key] || ""}
         onChange={(e) => setQty(activeVendor, p.item, sanitizeQty(e.target.value))}
@@ -976,7 +1298,8 @@ function ItemRow({ p, activeVendor, draft, setQty }) {
   );
 }
 
-function OrderForm({ sucursal, onBack, onViewHistory, activeVendor, setActiveVendor, search, setSearch, draft, setQty, draftCount, notes, setNotes, onSubmit, submitting, theme, onToggleTheme, onCopyLastOrder, onClearDraft, recentOrder, pastOrders }) {
+function OrderForm({ sucursal, onBack, onViewHistory, activeVendor, setActiveVendor, search, setSearch, draft, setQty, draftCount, notes, setNotes, onSubmit, submitting, theme, onToggleTheme, onCopyLastOrder, onClearDraft, recentOrder, pastOrders, lang, onToggleLang }) {
+  const t = STR[lang];
   const filteredItems = VENDORS[activeVendor].filter((p) =>
     p.item.toLowerCase().includes(search.toLowerCase()) || p.code.toLowerCase().includes(search.toLowerCase())
   );
@@ -1019,7 +1342,7 @@ function OrderForm({ sucursal, onBack, onViewHistory, activeVendor, setActiveVen
 
   return (
     <div style={styles.wrap}>
-      <TopBar onBack={onBack} title={sucursal} subtitle="Pedido semanal de stock" theme={theme} onToggleTheme={onToggleTheme} />
+      <TopBar onBack={onBack} title={sucursal} subtitle={t.orderSubtitle} theme={theme} onToggleTheme={onToggleTheme} lang={lang} onToggleLang={onToggleLang} />
       <div className="order-layout" style={styles.formLayout}>
         <div style={styles.formMain}>
           <div style={styles.tabsRow}>
@@ -1035,8 +1358,8 @@ function OrderForm({ sucursal, onBack, onViewHistory, activeVendor, setActiveVen
               ))}
             </div>
             <div style={styles.tabsRowActions}>
-              <button style={styles.tabsRowActionBtn} onClick={onCopyLastOrder}>Copiar último pedido</button>
-              <button style={styles.tabsRowClearBtn} onClick={onClearDraft}>Borrar</button>
+              <button style={styles.tabsRowActionBtn} onClick={onCopyLastOrder}>{t.copyLast}</button>
+              <button style={styles.tabsRowClearBtn} onClick={onClearDraft}>{t.clearBtn}</button>
             </div>
           </div>
 
@@ -1044,7 +1367,7 @@ function OrderForm({ sucursal, onBack, onViewHistory, activeVendor, setActiveVen
             <Search size={16} color="var(--muted-faint)" />
             <input
               style={styles.searchInput}
-              placeholder={`Buscar en ${activeVendor}...`}
+              placeholder={t.searchPlaceholder(activeVendor)}
               value={search}
               onChange={(e) => setSearch(e.target.value)}
             />
@@ -1052,32 +1375,32 @@ function OrderForm({ sucursal, onBack, onViewHistory, activeVendor, setActiveVen
 
           <div style={styles.itemList}>
             {withQty.map((p) => (
-              <ItemRow key={activeVendor + "|" + p.item} p={p} activeVendor={activeVendor} draft={draft} setQty={setQty} />
+              <ItemRow key={activeVendor + "|" + p.item} p={p} activeVendor={activeVendor} draft={draft} setQty={setQty} lang={lang} />
             ))}
-            {recurrent.length > 0 && <div style={styles.itemSectionLabel}>Recurrentes</div>}
+            {recurrent.length > 0 && <div style={styles.itemSectionLabel}>{t.recurring}</div>}
             {recurrent.map((p) => (
-              <ItemRow key={activeVendor + "|" + p.item} p={p} activeVendor={activeVendor} draft={draft} setQty={setQty} />
+              <ItemRow key={activeVendor + "|" + p.item} p={p} activeVendor={activeVendor} draft={draft} setQty={setQty} lang={lang} />
             ))}
             {rest.length > 0 && (withQty.length > 0 || recurrent.length > 0) && (
-              <div style={styles.itemSectionLabel}>Resto de productos</div>
+              <div style={styles.itemSectionLabel}>{t.restOfProducts}</div>
             )}
             {rest.map((p) => (
-              <ItemRow key={activeVendor + "|" + p.item} p={p} activeVendor={activeVendor} draft={draft} setQty={setQty} />
+              <ItemRow key={activeVendor + "|" + p.item} p={p} activeVendor={activeVendor} draft={draft} setQty={setQty} lang={lang} />
             ))}
-            {filteredItems.length === 0 && <div style={styles.emptyRow}>No hay productos que coincidan con "{search}".</div>}
+            {filteredItems.length === 0 && <div style={styles.emptyRow}>{t.noMatch(search)}</div>}
           </div>
         </div>
 
         <div className="order-ticket" style={styles.ticket}>
           <div style={styles.ticketHeader}>
             <Package size={16} color="var(--plum)" />
-            <span>Resumen del pedido</span>
+            <span>{t.orderSummary}</span>
           </div>
-          <div style={styles.ticketCount}>{draftCount} {draftCount === 1 ? "ítem cargado" : "ítems cargados"}</div>
+          <div style={styles.ticketCount}>{draftCount} {draftCount === 1 ? t.itemLoaded : t.itemsLoaded}</div>
           <div style={styles.ticketDivider} />
           <div style={styles.ticketItems}>
             {Object.entries(draft).filter(([, v]) => v && v.trim() !== "").length === 0 && (
-              <div style={styles.ticketEmpty}>Todavía no cargaste productos.</div>
+              <div style={styles.ticketEmpty}>{t.noItemsYet}</div>
             )}
             {Object.entries(draft).filter(([, v]) => v && v.trim() !== "").map(([key, qty]) => {
               const sep = key.indexOf("|");
@@ -1091,26 +1414,27 @@ function OrderForm({ sucursal, onBack, onViewHistory, activeVendor, setActiveVen
             })}
           </div>
           <div style={styles.ticketDivider} />
-          <label style={styles.notesLabel}>Notas para depósito (opcional)</label>
+          <label style={styles.notesLabel}>{t.notesLabel}</label>
           <textarea
             style={styles.notesInput}
-            placeholder="Ej: urgente para el finde, entregar antes del jueves..."
+            placeholder={t.notesPlaceholder}
             value={notes}
             onChange={(e) => setNotes(e.target.value)}
             rows={3}
           />
           <button style={styles.submitBtn} onClick={onSubmit} disabled={submitting}>
             {submitting ? <Loader2 size={16} style={{ animation: "spin 1s linear infinite" }} /> : <Send size={16} />}
-            {submitting ? "Enviando..." : "Enviar pedido"}
+            {submitting ? t.sending : t.submitOrder}
           </button>
-          <button style={styles.historyLink} onClick={onViewHistory}>Ver pedidos anteriores</button>
+          <button style={styles.historyLink} onClick={onViewHistory}>{t.viewPrevious}</button>
         </div>
       </div>
     </div>
   );
 }
 
-function Confirm({ sucursal, lastOrder, onNewOrder, onHistory, onHome }) {
+function Confirm({ sucursal, lastOrder, onNewOrder, onHistory, onHome, lang }) {
+  const t = STR[lang];
   const textRef = useRef(null);
   const [selected, setSelected] = useState(false);
   const [copiedTable, setCopiedTable] = useState(false);
@@ -1151,17 +1475,17 @@ function Confirm({ sucursal, lastOrder, onNewOrder, onHistory, onHome }) {
   return (
     <div style={styles.center}>
       <CheckCircle2 size={48} color="var(--pistachio-dark)" strokeWidth={1.5} />
-      <h1 style={styles.h1}>Pedido enviado</h1>
-      <p style={styles.sub}>Depósito ya puede ver el pedido de {sucursal}.</p>
+      <h1 style={styles.h1}>{t.orderSent}</h1>
+      <p style={styles.sub}>{t.depositoCanSee(sucursal)}</p>
       <p style={{ ...styles.sub, fontSize: 13, marginTop: 4 }}>
-        Para mandarlo también por mail a <strong>{ORDER_EMAIL}</strong>:
+        {t.alsoByMail(ORDER_EMAIL)}<strong>{ORDER_EMAIL}</strong>:
       </p>
       {lastOrder && (
         <div style={{ width: "100%", maxWidth: 460, marginTop: 14 }}>
           <ol style={{ textAlign: "left", fontSize: 13, color: "var(--muted-strong)", paddingLeft: 20, margin: "0 0 12px" }}>
-            <li>Apretá "Copiar tabla con formato" abajo.</li>
-            <li>Abrí un mail nuevo a {ORDER_EMAIL} y pegalo con <strong>Ctrl+V</strong> (o Cmd+V en Mac).</li>
-            <li>Va a quedar con el mismo formato de tabla que le mandamos siempre a los proveedores.</li>
+            <li>{t.stepCopyTable}</li>
+            <li>{t.stepOpenMail(ORDER_EMAIL)}<strong>Ctrl+V</strong> ({lang === "en" ? "or Cmd+V on Mac" : "o Cmd+V en Mac"}).</li>
+            <li>{t.stepSameFormat}</li>
           </ol>
           <button
             onClick={copyFormattedTable}
@@ -1169,10 +1493,10 @@ function Confirm({ sucursal, lastOrder, onNewOrder, onHistory, onHome }) {
           >
             {copiedTable ? <CheckCircle2 size={16} /> : <ClipboardList size={16} />}
             {copiedTable
-              ? "¡Copiado! Ahora pegalo en el mail"
+              ? t.copiedPasteNow
               : copyError
-              ? "No se pudo copiar, probá con el texto de abajo"
-              : "Copiar tabla con formato"}
+              ? t.copyFailed
+              : t.copyTableBtn}
           </button>
 
           <div style={styles.tablePreviewWrap}>
@@ -1200,7 +1524,7 @@ function Confirm({ sucursal, lastOrder, onNewOrder, onHistory, onHome }) {
           </div>
 
           <details style={{ marginTop: 6 }}>
-            <summary style={styles.textLink}>¿No se copió bien? Usar texto plano en su lugar</summary>
+            <summary style={styles.textLink}>{t.plainTextFallback}</summary>
             <textarea
               ref={textRef}
               readOnly
@@ -1214,30 +1538,31 @@ function Confirm({ sucursal, lastOrder, onNewOrder, onHistory, onHome }) {
               style={{ ...styles.secondaryBtn, width: "100%", marginTop: 10, display: "flex", alignItems: "center", justifyContent: "center", gap: 8 }}
             >
               {selected ? <CheckCircle2 size={16} color="var(--pistachio-dark)" /> : null}
-              {selected ? "Texto seleccionado — ahora Ctrl+C" : "Seleccionar todo"}
+              {selected ? t.textSelected : t.selectAllText}
             </button>
           </details>
 
           <a href={buildMailto(lastOrder)} style={{ ...styles.historyLink, display: "block", textAlign: "center" }}>
-            O probar con "Abrir mi programa de mail"
+            {t.openMailApp}
           </a>
         </div>
       )}
       <div style={{ display: "flex", gap: 12, marginTop: 20, flexWrap: "wrap", justifyContent: "center" }}>
-        <button style={styles.secondaryBtn} onClick={onHistory}>Ver mis pedidos</button>
-        <button style={styles.secondaryBtn} onClick={onNewOrder}>Cargar otro pedido</button>
+        <button style={styles.secondaryBtn} onClick={onHistory}>{t.viewMyOrders}</button>
+        <button style={styles.secondaryBtn} onClick={onNewOrder}>{t.loadAnotherOrder}</button>
       </div>
-      <button style={styles.textLink} onClick={onHome}>Volver al inicio</button>
+      <button style={styles.textLink} onClick={onHome}>{t.backHome}</button>
     </div>
   );
 }
 
-function SucursalHistory({ sucursal, orders, loading, onBack, expandedOrder, setExpandedOrder, theme, onToggleTheme, updateStatus }) {
+function SucursalHistory({ sucursal, orders, loading, onBack, expandedOrder, setExpandedOrder, theme, onToggleTheme, updateStatus, lang, onToggleLang }) {
+  const t = STR[lang];
   return (
     <div style={styles.wrap}>
-      <TopBar onBack={onBack} title={sucursal} subtitle="Historial de pedidos" theme={theme} onToggleTheme={onToggleTheme} />
-      {loading && <div style={styles.emptyRow}>Cargando pedidos...</div>}
-      {!loading && orders.length === 0 && <div style={styles.emptyRow}>Todavía no enviaste ningún pedido.</div>}
+      <TopBar onBack={onBack} title={sucursal} subtitle={t.orderHistory} theme={theme} onToggleTheme={onToggleTheme} lang={lang} onToggleLang={onToggleLang} />
+      {loading && <div style={styles.emptyRow}>{t.loadingOrders}</div>}
+      {!loading && orders.length === 0 && <div style={styles.emptyRow}>{t.noOrdersYet}</div>}
       <div style={styles.orderCards}>
         {orders.map((o) => (
           <OrderCard
@@ -1247,6 +1572,7 @@ function SucursalHistory({ sucursal, orders, loading, onBack, expandedOrder, set
             onToggle={() => setExpandedOrder(expandedOrder === o.id ? null : o.id)}
             allOrders={orders}
             onCancel={() => updateStatus(o.id, "cancelado")}
+            lang={lang}
           />
         ))}
       </div>
@@ -1272,12 +1598,20 @@ function formatDisplayDate(iso) {
 }
 
 const WEEKDAYS_ES = ["Do", "Lu", "Ma", "Mi", "Ju", "Vi", "Sa"];
+const WEEKDAYS_EN = ["Su", "Mo", "Tu", "We", "Th", "Fr", "Sa"];
 const MONTH_NAMES_ES = [
   "enero", "febrero", "marzo", "abril", "mayo", "junio",
   "julio", "agosto", "septiembre", "octubre", "noviembre", "diciembre",
 ];
+const MONTH_NAMES_EN = [
+  "January", "February", "March", "April", "May", "June",
+  "July", "August", "September", "October", "November", "December",
+];
 
-function DateRangePicker({ from, to, setFrom, setTo }) {
+function DateRangePicker({ from, to, setFrom, setTo, lang }) {
+  const t = STR[lang];
+  const weekdays = lang === "en" ? WEEKDAYS_EN : WEEKDAYS_ES;
+  const monthNames = lang === "en" ? MONTH_NAMES_EN : MONTH_NAMES_ES;
   const [open, setOpen] = useState(false);
   const today = new Date();
   const initial = from ? parseISODate(from) : today;
@@ -1354,7 +1688,7 @@ function DateRangePicker({ from, to, setFrom, setTo }) {
   for (let d = 1; d <= daysInMonth; d++) cells.push(d);
 
   const label = !from
-    ? "Seleccionar fechas"
+    ? t.selectDates
     : !to
     ? `${formatDisplayDate(from)} – …`
     : `${formatDisplayDate(from)} – ${formatDisplayDate(to)}`;
@@ -1366,18 +1700,18 @@ function DateRangePicker({ from, to, setFrom, setTo }) {
         <span style={styles.dateTriggerText}>{label}</span>
       </button>
       {hasFilter && (
-        <button type="button" style={styles.dateClearBtnFloating} onClick={handleClear} aria-label="Limpiar fechas">×</button>
+        <button type="button" style={styles.dateClearBtnFloating} onClick={handleClear} aria-label={t.clearDates}>×</button>
       )}
 
       {open && (
         <div style={styles.calendarPopup}>
           <div style={styles.calendarHeader}>
             <button type="button" style={styles.calendarNavBtn} onClick={goPrevMonth}>‹</button>
-            <span style={styles.calendarMonthLabel}>{MONTH_NAMES_ES[viewMonth]} {viewYear}</span>
+            <span style={styles.calendarMonthLabel}>{monthNames[viewMonth]} {viewYear}</span>
             <button type="button" style={styles.calendarNavBtn} onClick={goNextMonth}>›</button>
           </div>
           <div style={styles.calendarWeekRow}>
-            {WEEKDAYS_ES.map((wd) => <div key={wd} style={styles.calendarWeekDay}>{wd}</div>)}
+            {weekdays.map((wd, i) => <div key={i} style={styles.calendarWeekDay}>{wd}</div>)}
           </div>
           <div style={styles.calendarGrid}>
             {cells.map((d, idx) => {
@@ -1399,8 +1733,8 @@ function DateRangePicker({ from, to, setFrom, setTo }) {
             })}
           </div>
           <div style={styles.calendarFooter}>
-            <button type="button" style={styles.calendarFooterBtn} onClick={handleClear}>Limpiar</button>
-            <button type="button" style={styles.calendarFooterBtn} onClick={handleToday}>Hoy</button>
+            <button type="button" style={styles.calendarFooterBtn} onClick={handleClear}>{t.clearDates}</button>
+            <button type="button" style={styles.calendarFooterBtn} onClick={handleToday}>{t.today}</button>
           </div>
         </div>
       )}
@@ -1408,7 +1742,8 @@ function DateRangePicker({ from, to, setFrom, setTo }) {
   );
 }
 
-function Deposito({ onBack, loading, orders, allOrders, filterSucursal, setFilterSucursal, filterStatus, setFilterStatus, filterDateFrom, setFilterDateFrom, filterDateTo, setFilterDateTo, depositoView, setDepositoView, expandedOrder, setExpandedOrder, updateStatus, onImportOrders, userEmail, onLogout, theme, onToggleTheme }) {
+function Deposito({ onBack, loading, orders, allOrders, filterSucursal, setFilterSucursal, filterStatus, setFilterStatus, filterDateFrom, setFilterDateFrom, filterDateTo, setFilterDateTo, depositoView, setDepositoView, expandedOrder, setExpandedOrder, updateStatus, onImportOrders, userEmail, onLogout, theme, onToggleTheme, lang, onToggleLang }) {
+  const t = STR[lang];
   const pendingCount = allOrders.filter((o) => o.status === "pendiente").length;
   const [showExport, setShowExport] = useState(false);
 
@@ -1429,53 +1764,54 @@ function Deposito({ onBack, loading, orders, allOrders, filterSucursal, setFilte
 
   return (
     <div style={styles.wrap}>
-      <TopBar onBack={onBack} title="Depósito" subtitle={`${pendingCount} pedido${pendingCount === 1 ? "" : "s"} pendiente${pendingCount === 1 ? "" : "s"}`} theme={theme} onToggleTheme={onToggleTheme} />
+      <TopBar onBack={onBack} title={t.depositoTitle} subtitle={t.pendingOrdersSubtitle(pendingCount)} theme={theme} onToggleTheme={onToggleTheme} lang={lang} onToggleLang={onToggleLang} />
 
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 14, flexWrap: "wrap", gap: 10 }}>
-        {userEmail && <div style={{ fontSize: 12, color: "var(--muted)" }}>Conectado como <strong>{userEmail}</strong> · <button onClick={onLogout} style={{ ...styles.textLink, marginTop: 0, display: "inline" }}>Cerrar sesión</button></div>}
+        {userEmail && <div style={{ fontSize: 12, color: "var(--muted)" }}>{t.connectedAs} <strong>{userEmail}</strong> · <button onClick={onLogout} style={{ ...styles.textLink, marginTop: 0, display: "inline" }}>{t.logout}</button></div>}
         <button style={styles.secondaryBtn} onClick={() => setShowExport((v) => !v)}>
-          {showExport ? "Ocultar respaldo" : "Exportar todos los pedidos"}
+          {showExport ? t.hideBackup : t.exportAllOrders}
         </button>
       </div>
 
-      {showExport && <ExportPanel orders={allOrders} onImport={onImportOrders} />}
+      {showExport && <ExportPanel orders={allOrders} onImport={onImportOrders} lang={lang} />}
 
       <div style={styles.tabs}>
         <button
           style={{ ...styles.tab, ...(depositoView === "pedido" ? styles.tabActive : {}) }}
           onClick={() => setDepositoView("pedido")}
         >
-          Por pedido
+          {t.byOrder}
         </button>
         <button
           style={{ ...styles.tab, ...(depositoView === "producto" ? styles.tabActive : {}) }}
           onClick={() => setDepositoView("producto")}
         >
-          Por producto
+          {t.byProduct}
         </button>
       </div>
 
       <div style={styles.filters}>
         <select style={styles.select} value={filterSucursal} onChange={(e) => setFilterSucursal(e.target.value)}>
-          <option value="Todas">Todas las sucursales</option>
+          <option value="Todas">{t.allBranches}</option>
           {SUCURSALES.map((s) => <option key={s} value={s}>{s}</option>)}
         </select>
         <select style={styles.select} value={filterStatus} onChange={(e) => setFilterStatus(e.target.value)}>
-          <option value="todas">Todos los estados</option>
-          <option value="pendiente">Pendiente</option>
-          <option value="pedido">Pedido</option>
-          <option value="cancelado">Cancelado</option>
+          <option value="todas">{t.allStatuses}</option>
+          <option value="pendiente">{t.statusPendiente}</option>
+          <option value="pedido">{t.statusPedido}</option>
+          <option value="cancelado">{t.statusCancelado}</option>
         </select>
         <DateRangePicker
           from={filterDateFrom}
           to={filterDateTo}
           setFrom={setFilterDateFrom}
           setTo={setFilterDateTo}
+          lang={lang}
         />
       </div>
 
-      {loading && <div style={styles.emptyRow}>Cargando pedidos...</div>}
-      {!loading && orders.length === 0 && <div style={styles.emptyRow}>No hay pedidos que coincidan con el filtro.</div>}
+      {loading && <div style={styles.emptyRow}>{t.loadingOrders}</div>}
+      {!loading && orders.length === 0 && <div style={styles.emptyRow}>{t.noOrdersMatchFilter}</div>}
 
       {!loading && orders.length > 0 && depositoView === "pedido" && (
         <div style={styles.orderCards}>
@@ -1487,6 +1823,7 @@ function Deposito({ onBack, loading, orders, allOrders, filterSucursal, setFilte
               onToggle={() => setExpandedOrder(expandedOrder === o.id ? null : o.id)}
               showSucursal
               allOrders={allOrders}
+              lang={lang}
               actions={
                 <div style={styles.statusBtns}>
                   {Object.entries(STATUS_META).map(([key, meta]) => (
@@ -1498,7 +1835,7 @@ function Deposito({ onBack, loading, orders, allOrders, filterSucursal, setFilte
                         ...(o.status === key ? { background: meta.color, color: meta.on, borderColor: meta.color } : {}),
                       }}
                     >
-                      {meta.label}
+                      {getStatusLabel(key, lang)}
                     </button>
                   ))}
                 </div>
@@ -1513,10 +1850,10 @@ function Deposito({ onBack, loading, orders, allOrders, filterSucursal, setFilte
           <table style={styles.productSummaryTable}>
             <thead>
               <tr>
-                <th style={styles.productSummaryHeaderCell}>Producto</th>
-                <th style={{ ...styles.productSummaryHeaderCell, textAlign: "center" }}>Código</th>
-                <th style={{ ...styles.productSummaryHeaderCell, textAlign: "center" }}>Proveedor</th>
-                <th style={{ ...styles.productSummaryHeaderCell, textAlign: "right" }}>Cantidad total</th>
+                <th style={styles.productSummaryHeaderCell}>{t.product}</th>
+                <th style={{ ...styles.productSummaryHeaderCell, textAlign: "center" }}>{t.code}</th>
+                <th style={{ ...styles.productSummaryHeaderCell, textAlign: "center" }}>{t.vendor}</th>
+                <th style={{ ...styles.productSummaryHeaderCell, textAlign: "right" }}>{t.totalQty}</th>
               </tr>
             </thead>
             <tbody>
@@ -1536,27 +1873,33 @@ function Deposito({ onBack, loading, orders, allOrders, filterSucursal, setFilte
   );
 }
 
-function buildAllOrdersExport(orders) {
-  if (orders.length === 0) return "No hay pedidos cargados todavía.";
-  let text = `Respaldo de pedidos - Lucciano's\nGenerado: ${fmtDate(new Date().toISOString())}\nTotal de pedidos: ${orders.length}\n\n${"=".repeat(40)}\n\n`;
+function buildAllOrdersExport(orders, lang = "es") {
+  const en = lang === "en";
+  if (orders.length === 0) return en ? "No orders loaded yet." : "No hay pedidos cargados todavía.";
+  let text = en
+    ? `Lucciano's order backup\nGenerated: ${fmtDate(new Date().toISOString(), lang)}\nTotal orders: ${orders.length}\n\n${"=".repeat(40)}\n\n`
+    : `Respaldo de pedidos - Lucciano's\nGenerado: ${fmtDate(new Date().toISOString(), lang)}\nTotal de pedidos: ${orders.length}\n\n${"=".repeat(40)}\n\n`;
   orders.forEach((o) => {
-    text += `Sucursal: ${o.sucursal}\nFecha: ${fmtDate(o.date)}\nEstado: ${(STATUS_META[o.status] || STATUS_META.pendiente).label}\n`;
+    text += en
+      ? `Branch: ${o.sucursal}\nDate: ${fmtDate(o.date, lang)}\nStatus: ${getStatusLabel(o.status, lang)}\n`
+      : `Sucursal: ${o.sucursal}\nFecha: ${fmtDate(o.date, lang)}\nEstado: ${getStatusLabel(o.status, lang)}\n`;
     VENDOR_ORDER.filter((v) => o.items.some((it) => it.vendor === v)).forEach((v) => {
       text += `  ${v}\n`;
       o.items.filter((it) => it.vendor === v).forEach((it) => {
         text += `    - ${it.item} (${it.code}): ${it.quantity}\n`;
       });
     });
-    if (o.notes) text += `  Notas: ${o.notes}\n`;
+    if (o.notes) text += en ? `  Notes: ${o.notes}\n` : `  Notas: ${o.notes}\n`;
     text += `\n${"-".repeat(40)}\n\n`;
   });
   return text;
 }
 
-function ExportPanel({ orders, onImport }) {
+function ExportPanel({ orders, onImport, lang }) {
+  const t = STR[lang];
   const textRef = useRef(null);
   const [selected, setSelected] = useState(false);
-  const exportText = buildAllOrdersExport(orders);
+  const exportText = buildAllOrdersExport(orders, lang);
 
   const [showImport, setShowImport] = useState(false);
   const [importText, setImportText] = useState("");
@@ -1583,18 +1926,18 @@ function ExportPanel({ orders, onImport }) {
     let parsed;
     try {
       parsed = JSON.parse(importText.trim());
-      if (!Array.isArray(parsed)) throw new Error("no es una lista");
+      if (!Array.isArray(parsed)) throw new Error("not a list");
     } catch (e) {
-      setImportMsg({ type: "error", text: "Ese texto no es un backup JSON válido." });
+      setImportMsg({ type: "error", text: t.errInvalidBackup });
       return;
     }
     const valid = parsed.every((o) => o && o.id && o.sucursal && Array.isArray(o.items));
     if (!valid) {
-      setImportMsg({ type: "error", text: "El archivo no tiene el formato esperado de pedidos." });
+      setImportMsg({ type: "error", text: t.errWrongFormat });
       return;
     }
     onImport(parsed);
-    setImportMsg({ type: "success", text: `Se restauraron ${parsed.length} pedido(s).` });
+    setImportMsg({ type: "success", text: t.restoredOrders(parsed.length) });
     setImportText("");
   }
 
@@ -1602,21 +1945,21 @@ function ExportPanel({ orders, onImport }) {
     <div style={styles.exportPanel}>
       <div style={styles.ticketHeader}>
         <ClipboardList size={16} color="var(--plum)" />
-        <span>Respaldo de {orders.length} pedido{orders.length === 1 ? "" : "s"}</span>
+        <span>{t.backupOf(orders.length)}</span>
       </div>
       <p style={{ fontSize: 12, color: "var(--muted)", margin: "6px 0 12px" }}>
-        Con la base de datos real, esto ya no debería perderse solo — pero sirve como respaldo extra.
+        {t.backupNote}
       </p>
       <div style={{ display: "flex", gap: 10, marginBottom: 12, flexWrap: "wrap" }}>
         <a href={jsonUrl} download={jsonFilename} style={{ ...styles.primaryBtnSm, textDecoration: "none", display: "inline-flex", alignItems: "center", gap: 8 }}>
-          Descargar backup (.json)
+          {t.downloadJson}
         </a>
         <a href={downloadUrl} download={filename} style={{ ...styles.secondaryBtn, textDecoration: "none", display: "inline-flex", alignItems: "center", gap: 8 }}>
-          Descargar .txt (lectura)
+          {t.downloadTxt}
         </a>
         <button onClick={selectAll} style={{ ...styles.secondaryBtn, display: "inline-flex", alignItems: "center", gap: 8 }}>
           {selected ? <CheckCircle2 size={16} color="var(--pistachio-dark)" /> : null}
-          {selected ? "Seleccionado — Ctrl+C" : "Seleccionar .txt para copiar"}
+          {selected ? t.selectedCtrlC : t.selectTxtToCopy}
         </button>
       </div>
       <textarea ref={textRef} readOnly value={exportText} style={{ ...styles.copyBox, minHeight: 140 }} rows={8} onFocus={(e) => e.target.select()} />
@@ -1624,7 +1967,7 @@ function ExportPanel({ orders, onImport }) {
       <div style={styles.ticketDivider} />
 
       <button style={styles.secondaryBtn} onClick={() => setShowImport((v) => !v)}>
-        {showImport ? "Ocultar restauración" : "Restaurar pedidos desde un backup"}
+        {showImport ? t.hideRestore : t.restoreFromBackup}
       </button>
 
       {showImport && (
@@ -1642,7 +1985,7 @@ function ExportPanel({ orders, onImport }) {
             </div>
           )}
           <button style={{ ...styles.primaryBtnSm, marginTop: 10 }} onClick={handleImport} disabled={!importText.trim()}>
-            Restaurar pedidos
+            {t.restoreOrders}
           </button>
         </div>
       )}
@@ -1650,7 +1993,8 @@ function ExportPanel({ orders, onImport }) {
   );
 }
 
-function OrderCard({ order, expanded, onToggle, showSucursal, actions, allOrders, onCancel }) {
+function OrderCard({ order, expanded, onToggle, showSucursal, actions, allOrders, onCancel, lang = "es" }) {
+  const t = STR[lang];
   const [confirmingCancel, setConfirmingCancel] = useState(false);
   const meta = STATUS_META[order.status] || STATUS_META.pendiente;
   const isCanceled = order.status === "cancelado";
@@ -1671,15 +2015,15 @@ function OrderCard({ order, expanded, onToggle, showSucursal, actions, allOrders
       <button style={styles.orderCardHead} onClick={onToggle}>
         <div>
           <div style={{ ...styles.orderCardTitle, ...(isCanceled ? styles.orderCardTitleCanceled : {}) }}>
-            {showSucursal ? order.sucursal : `Pedido ${getOrderShortCode(order, allOrders || [order])}`}
+            {showSucursal ? order.sucursal : `${t.order} ${getOrderShortCode(order, allOrders || [order])}`}
             <span style={{ ...styles.statusPill, background: meta.bg, color: meta.color }}>
-              <Clock size={12} /> {meta.label}
+              <Clock size={12} /> {getStatusLabel(order.status, lang)}
             </span>
           </div>
           <div style={{ ...styles.orderCode, ...(isCanceled ? styles.orderCardTitleCanceled : {}) }}>{getOrderCode(order, allOrders || [order])}</div>
-          <div style={styles.orderCardDate}>{fmtDate(order.date)} · {order.items.length} ítems</div>
+          <div style={styles.orderCardDate}>{fmtDate(order.date, lang)} · {order.items.length} {t.items}</div>
           {isCanceled && order.canceled_at && (
-            <div style={styles.canceledAtLabel}>Cancelado el {fmtDate(order.canceled_at)}</div>
+            <div style={styles.canceledAtLabel}>{t.canceledOn(fmtDate(order.canceled_at, lang))}</div>
           )}
         </div>
         {expanded ? <ChevronUp size={18} color="var(--muted-faint)" /> : <ChevronDown size={18} color="var(--muted-faint)" />}
@@ -1699,13 +2043,13 @@ function OrderCard({ order, expanded, onToggle, showSucursal, actions, allOrders
           ))}
           {order.notes && (
             <div style={styles.notesBox}>
-              <strong>Notas:</strong> {order.notes}
+              <strong>{t.notes}:</strong> {order.notes}
             </div>
           )}
           {actions}
           {canCancel && (
             <button style={confirmingCancel ? styles.cancelOrderBtnConfirm : styles.cancelOrderBtn} onClick={handleCancelClick}>
-              {confirmingCancel ? "¿Seguro? Tocá de nuevo para cancelar" : "Cancelar este pedido"}
+              {confirmingCancel ? t.confirmCancel : t.cancelThisOrder}
             </button>
           )}
         </div>
@@ -1714,7 +2058,7 @@ function OrderCard({ order, expanded, onToggle, showSucursal, actions, allOrders
   );
 }
 
-function TopBar({ onBack, title, subtitle, theme, onToggleTheme }) {
+function TopBar({ onBack, title, subtitle, theme, onToggleTheme, lang, onToggleLang }) {
   return (
     <div style={styles.topBar}>
       <button style={styles.backBtn} onClick={onBack}><ArrowLeft size={18} /></button>
@@ -1722,11 +2066,18 @@ function TopBar({ onBack, title, subtitle, theme, onToggleTheme }) {
         <div style={styles.topTitle}>{title}</div>
         {subtitle && <div style={styles.topSubtitle}>{subtitle}</div>}
       </div>
-      {onToggleTheme && (
-        <button style={styles.themeToggleBtn} onClick={onToggleTheme} aria-label="Cambiar tema día/noche">
-          {theme === "night" ? <Sun size={18} /> : <Moon size={18} />}
-        </button>
-      )}
+      <div style={{ display: "flex", gap: 8 }}>
+        {onToggleLang && (
+          <button style={styles.themeToggleBtn} onClick={onToggleLang} aria-label={STR[lang].langToggleLabel}>
+            {lang === "es" ? "EN" : "ES"}
+          </button>
+        )}
+        {onToggleTheme && (
+          <button style={styles.themeToggleBtn} onClick={onToggleTheme} aria-label={STR[lang || "es"].themeToggleLabel}>
+            {theme === "night" ? <Sun size={18} /> : <Moon size={18} />}
+          </button>
+        )}
+      </div>
     </div>
   );
 }
@@ -1744,11 +2095,14 @@ const styles = {
     height: "100vh", overflow: "hidden", background: "var(--cream)", display: "flex", flexDirection: "column",
     alignItems: "center", width: "100%", padding: "100px 24px 50px", position: "relative",
   },
-  homeThemeToggleBtn: {
+  homeToggleGroup: {
     position: "absolute", top: "calc(28px + env(safe-area-inset-top, 0px))", right: 20,
+    display: "flex", gap: 8, zIndex: 5,
+  },
+  homeThemeToggleBtn: {
     width: 36, height: 36, borderRadius: 10, border: "1px solid var(--line)",
     background: "var(--paper)", display: "flex", alignItems: "center", justifyContent: "center",
-    cursor: "pointer", color: "var(--ink)", zIndex: 5,
+    cursor: "pointer", color: "var(--ink)", fontSize: 12, fontWeight: 700,
   },
   homeInner: {
     width: "100%", maxWidth: 520, display: "flex", flexDirection: "column",
@@ -1820,7 +2174,7 @@ const styles = {
   themeToggleBtn: {
     width: 36, height: 36, borderRadius: 10, border: "1px solid var(--line)",
     background: "var(--paper)", display: "flex", alignItems: "center", justifyContent: "center",
-    cursor: "pointer", flexShrink: 0, color: "var(--ink)",
+    cursor: "pointer", flexShrink: 0, color: "var(--ink)", fontSize: 12, fontWeight: 700,
   },
   topTitle: { fontFamily: "'Baloo 2', sans-serif", fontWeight: 600, fontSize: 22, color: "var(--plum)" },
   topSubtitle: { fontSize: 13, color: "var(--muted)", marginTop: 2 },

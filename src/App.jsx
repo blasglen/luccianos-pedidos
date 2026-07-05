@@ -220,6 +220,12 @@ function getOrderCode(order, allOrders) {
   return `ORDEN ${fmtShortDate(order.date)} - #${abbr}-${num ?? "?"}`;
 }
 
+function getOrderShortCode(order, allOrders) {
+  const abbr = SUCURSAL_ABBR[order.sucursal] || order.sucursal.slice(0, 3).toUpperCase();
+  const num = getSucursalOrderNumber(order, allOrders);
+  return `#${abbr}-${num ?? "?"}`;
+}
+
 function buildMailBody(order) {
   let body = `Pedido de stock\nSucursal: ${order.sucursal}\nFecha: ${fmtDate(order.date)}\n\n`;
   VENDOR_ORDER.filter((v) => order.items.some((it) => it.vendor === v)).forEach((v) => {
@@ -1561,7 +1567,7 @@ function OrderCard({ order, expanded, onToggle, showSucursal, actions, allOrders
       <button style={styles.orderCardHead} onClick={onToggle}>
         <div>
           <div style={styles.orderCardTitle}>
-            {showSucursal ? order.sucursal : `Pedido #${order.id.slice(-4)}`}
+            {showSucursal ? order.sucursal : `Pedido ${getOrderShortCode(order, allOrders || [order])}`}
             <span style={{ ...styles.statusPill, background: meta.bg, color: meta.color }}>
               <Clock size={12} /> {meta.label}
             </span>

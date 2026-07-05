@@ -140,6 +140,11 @@ const SUCURSAL_ABBR = {
 const ORDER_EMAIL = "admin@luccianos.us";
 const ALLOWED_DEPOSITO_EMAILS = ["contabilidad@luccianos.com.ar", "admin@luccianos.us"];
 
+function getAutoTheme() {
+  const hour = new Date().getHours();
+  return hour >= 7 && hour < 20 ? "day" : "night";
+}
+
 const THEMES = {
   day: {
     "--cream": "#FBF6EE", "--paper": "#FFFFFF", "--plum": "#4A1F2E", "--plum-light": "#6E3347",
@@ -290,7 +295,9 @@ export default function App() {
   const [depositoView, setDepositoView] = useState("pedido");
   const [theme, setTheme] = useState(() => {
     if (typeof window === "undefined") return "night";
-    return localStorage.getItem("luccianos-theme") || "night";
+    const saved = localStorage.getItem("luccianos-theme");
+    if (saved === "day" || saved === "night") return saved;
+    return getAutoTheme();
   });
 
   useEffect(() => {
@@ -453,7 +460,7 @@ export default function App() {
   return (
     <div style={{ ...styles.page, ...THEMES[theme] }}>
       <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=Kaushan+Script&family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=Bodoni+Moda:opsz,wght@6..96,700;6..96,800&family=Inter:wght@400;500;600;700&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=Kaushan+Script&family=Baloo+2:wght@500;600;700;800&family=Bodoni+Moda:opsz,wght@6..96,700;6..96,800&display=swap');
         * { box-sizing: border-box; }
         body { margin: 0; }
         input, textarea, select, button { font-family: inherit; }
@@ -485,7 +492,7 @@ export default function App() {
       {screen === "home" && <Home onSucursal={() => setScreen("sucursal-select")} onDeposito={() => setScreen(depositoSession ? "deposito" : "deposito-auth")} theme={theme} onToggleTheme={toggleTheme} />}
 
       {screen === "sucursal-select" && (
-        <SucursalSelect onBack={() => setScreen("home")} onPick={(s) => requestPin(s, "order-form")} />
+        <SucursalSelect onBack={() => setScreen("home")} onPick={(s) => requestPin(s, "order-form")} theme={theme} onToggleTheme={toggleTheme} />
       )}
 
       {screen === "pin" && pendingRole && (
@@ -852,13 +859,18 @@ function PinScreen({ roleKey, value, setValue, error, onSubmit, onBack }) {
   );
 }
 
-function SucursalSelect({ onBack, onPick }) {
+function SucursalSelect({ onBack, onPick, theme, onToggleTheme }) {
   return (
     <div style={styles.darkWrapScroll}>
       <div style={styles.darkInner}>
         <div style={styles.darkTopBar}>
           <button style={styles.darkBackBtn} onClick={onBack}><ArrowLeft size={18} color="var(--ink)" /></button>
-          <div style={styles.darkTopTitle}>Elegí tu sucursal</div>
+          <div style={{ flex: 1 }}>
+            <div style={styles.darkTopTitle}>Elegí tu sucursal</div>
+          </div>
+          <button style={styles.themeToggleBtn} onClick={onToggleTheme} aria-label="Cambiar tema día/noche">
+            {theme === "night" ? <Sun size={18} /> : <Moon size={18} />}
+          </button>
         </div>
         <div style={styles.darkLogoWrapSmall}>
           <img src={`${import.meta.env.BASE_URL}logo-gold.png`} alt="Lucciano's" style={styles.darkLogoImgSmall} />
@@ -1575,7 +1587,7 @@ function TopBar({ onBack, title, subtitle, theme, onToggleTheme }) {
 const styles = {
   page: {
     minHeight: "100vh", background: "var(--cream)", color: "var(--ink)",
-    fontFamily: "'Inter', system-ui, sans-serif",
+    fontFamily: "'Baloo 2', system-ui, sans-serif",
   },
   center: {
     display: "flex", flexDirection: "column", alignItems: "center",
@@ -1586,7 +1598,7 @@ const styles = {
     alignItems: "center", width: "100%", padding: "100px 24px 50px", position: "relative",
   },
   homeThemeToggleBtn: {
-    position: "absolute", top: 20, right: 20,
+    position: "absolute", top: "calc(28px + env(safe-area-inset-top, 0px))", right: 20,
     width: 36, height: 36, borderRadius: 10, border: "1px solid var(--line)",
     background: "var(--paper)", display: "flex", alignItems: "center", justifyContent: "center",
     cursor: "pointer", color: "var(--ink)", zIndex: 5,
@@ -1600,7 +1612,7 @@ const styles = {
     fontSize: 12, letterSpacing: "0.12em", textTransform: "uppercase",
     color: "var(--plum)", fontWeight: 600, marginBottom: 12,
   },
-  homeH1: { fontFamily: "'Fraunces', serif", fontWeight: 600, fontSize: 34, margin: "0 0 32px", color: "var(--ink)" },
+  homeH1: { fontFamily: "'Baloo 2', sans-serif", fontWeight: 600, fontSize: 34, margin: "0 0 32px", color: "var(--ink)" },
   homeTagline: {
     fontFamily: "'Bodoni Moda', serif", fontOpticalSizing: "auto", fontWeight: 700,
     textTransform: "uppercase", color: "var(--ink)", fontSize: 44, lineHeight: 1.05,
@@ -1611,7 +1623,7 @@ const styles = {
     fontSize: 12, letterSpacing: "0.12em", textTransform: "uppercase",
     color: "var(--pistachio-dark)", fontWeight: 600, marginBottom: 12,
   },
-  h1: { fontFamily: "'Fraunces', serif", fontWeight: 600, fontSize: 34, margin: "0 0 8px", color: "var(--plum)" },
+  h1: { fontFamily: "'Baloo 2', sans-serif", fontWeight: 600, fontSize: 34, margin: "0 0 8px", color: "var(--plum)" },
   sub: { color: "var(--muted-strong)", fontSize: 15, margin: 0 },
   roleGrid: { display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16, marginTop: 36, width: "100%" },
   roleCard: {
@@ -1619,7 +1631,7 @@ const styles = {
     padding: "28px 18px", display: "flex", flexDirection: "column", alignItems: "center",
     gap: 8, cursor: "pointer", boxShadow: "0 1px 2px rgba(0,0,0,0.3)",
   },
-  roleTitle: { fontFamily: "'Fraunces', serif", fontWeight: 600, fontSize: 18, color: "var(--plum)" },
+  roleTitle: { fontFamily: "'Baloo 2', sans-serif", fontWeight: 600, fontSize: 18, color: "var(--plum)" },
   roleDesc: { fontSize: 13, color: "var(--muted)", textAlign: "center" },
   wrap: { maxWidth: 980, margin: "0 auto", padding: "calc(20px + env(safe-area-inset-top, 0px)) 24px 60px" },
   wrapFull: { maxWidth: 980, margin: "0 auto", padding: "28px 24px 0", minHeight: "calc(100vh - 60px)", display: "flex", flexDirection: "column" },
@@ -1635,7 +1647,7 @@ const styles = {
     background: "var(--paper)", display: "flex", alignItems: "center", justifyContent: "center",
     cursor: "pointer", flexShrink: 0,
   },
-  darkTopTitle: { fontFamily: "'Fraunces', serif", fontWeight: 600, fontSize: 22, color: "var(--ink)" },
+  darkTopTitle: { fontFamily: "'Baloo 2', sans-serif", fontWeight: 600, fontSize: 22, color: "var(--ink)" },
   darkLogoWrap: { display: "flex", justifyContent: "center", margin: "56px 0 16px" },
   darkLogoImg: { width: 210, height: "auto" },
   darkLogoWrapSmall: { display: "flex", justifyContent: "center", margin: "24px 0 20px" },
@@ -1648,7 +1660,7 @@ const styles = {
     padding: "16px 18px", overflow: "hidden",
   },
   branchCardName: {
-    fontFamily: "'Bodoni Moda', serif", fontOpticalSizing: "auto", fontWeight: 700,
+    fontFamily: "'Baloo 2', sans-serif", fontWeight: 700,
     textTransform: "uppercase", color: "#FFFFFF", fontSize: 22, letterSpacing: "0.01em",
     textShadow: "0 2px 8px rgba(0,0,0,0.55)", textAlign: "left",
   },
@@ -1663,7 +1675,7 @@ const styles = {
     background: "var(--paper)", display: "flex", alignItems: "center", justifyContent: "center",
     cursor: "pointer", flexShrink: 0, color: "var(--ink)",
   },
-  topTitle: { fontFamily: "'Fraunces', serif", fontWeight: 600, fontSize: 22, color: "var(--plum)" },
+  topTitle: { fontFamily: "'Baloo 2', sans-serif", fontWeight: 600, fontSize: 22, color: "var(--plum)" },
   topSubtitle: { fontSize: 13, color: "var(--muted)", marginTop: 2 },
   sucGrid: { display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 12, width: "100%" },
   sucCard: {

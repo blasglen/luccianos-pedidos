@@ -395,12 +395,19 @@ export default function App() {
     [draft]
   );
 
+  const [recentOrder, setRecentOrder] = useState([]);
+
   function setQty(vendor, item, value) {
-    setDraft((d) => ({ ...d, [vendor + "|" + item]: value }));
+    const key = vendor + "|" + item;
+    setDraft((d) => ({ ...d, [key]: value }));
+    if (value && value.trim() !== "") {
+      setRecentOrder((prev) => [key, ...prev.filter((k) => k !== key)]);
+    }
   }
 
   function clearDraft() {
     setDraft({});
+    setRecentOrder([]);
   }
 
   function copyLastOrder() {
@@ -417,6 +424,10 @@ export default function App() {
       });
       return next;
     });
+    setRecentOrder((prev) => [
+      ...last.items.map((it) => it.vendor + "|" + it.item),
+      ...prev,
+    ]);
     setToast({ type: "success", text: "Cargamos las cantidades del último pedido." });
   }
 
@@ -452,6 +463,7 @@ export default function App() {
     }
     setOrders((prev) => [newOrder, ...prev]);
     setDraft({});
+    setRecentOrder([]);
     setNotes("");
     setLastOrder(newOrder);
     setScreen("sucursal-confirm");
@@ -460,7 +472,13 @@ export default function App() {
   async function updateStatus(orderId, status) {
     const patch = { status };
     if (status === "cancelado") patch.canceled_at = new Date().toISOString();
-    const { error } = await supabase.from("orders").update(patch).eq("id", orderId);
+    let { error } = await supabase.from("orders").update(patch).eq("id", orderId);
+    if (error && patch.canceled_at) {
+      // Probablemente la columna canceled_at todavía no existe en Supabase: reintentamos sin ella.
+      delete patch.canceled_at;
+      const retry = await supabase.from("orders").update(patch).eq("id", orderId);
+      error = retry.error;
+    }
     if (error) {
       setToast({ type: "error", text: "No se pudo actualizar el estado." });
       return;
@@ -565,6 +583,7 @@ export default function App() {
           onToggleTheme={toggleTheme}
           onCopyLastOrder={copyLastOrder}
           onClearDraft={clearDraft}
+          recentOrder={recentOrder}
         />
       )}
 
@@ -936,10 +955,27 @@ function SucursalSelect({ onBack, onPick, theme, onToggleTheme }) {
   );
 }
 
-function OrderForm({ sucursal, onBack, onViewHistory, activeVendor, setActiveVendor, search, setSearch, draft, setQty, draftCount, notes, setNotes, onSubmit, submitting, theme, onToggleTheme, onCopyLastOrder, onClearDraft }) {
-  const items = VENDORS[activeVendor].filter((p) =>
+function OrderForm({ sucursal, onBack, onViewHistory, activeVendor, setActiveVendor, search, setSearch, draft, setQty, draftCount, notes, setNotes, onSubmit, submitting, theme, onToggleTheme, onCopyLastOrder, onClearDraft, recentOrder }) {
+  const filteredItems = VENDORS[activeVendor].filter((p) =>
     p.item.toLowerCase().includes(search.toLowerCase()) || p.code.toLowerCase().includes(search.toLowerCase())
   );
+
+  const withQty = [];
+  const withoutQty = [];
+  filteredItems.forEach((p) => {
+    const key = activeVendor + "|" + p.item;
+    if (draft[key] && draft[key].trim() !== "") {
+      withQty.push(p);
+    } else {
+      withoutQty.push(p);
+    }
+  });
+  withQty.sort((a, b) => {
+    const ra = recentOrder.indexOf(activeVendor + "|" + a.item);
+    const rb = recentOrder.indexOf(activeVendor + "|" + b.item);
+    return (ra === -1 ? Infinity : ra) - (rb === -1 ? Infinity : rb);
+  });
+  const items = [...withQty, ...withoutQty];
 
   return (
     <div style={styles.wrap}>

@@ -1,7 +1,7 @@
 import { useState, useEffect, useMemo, useRef } from "react";
 import {
   Search, Package, ClipboardList, Store, CheckCircle2, Clock, Loader2,
-  ArrowLeft, Send, ChevronDown, ChevronUp, Lock, CalendarDays,
+  ArrowLeft, Send, ChevronDown, ChevronUp, Lock, CalendarDays, Sun, Moon,
 } from "lucide-react";
 import { supabase } from "./supabaseClient";
 
@@ -140,6 +140,23 @@ const SUCURSAL_ABBR = {
 const ORDER_EMAIL = "admin@luccianos.us";
 const ALLOWED_DEPOSITO_EMAILS = ["contabilidad@luccianos.com.ar", "admin@luccianos.us"];
 
+const THEMES = {
+  day: {
+    "--cream": "#FBF6EE", "--paper": "#FFFFFF", "--plum": "#4A1F2E", "--plum-light": "#6E3347",
+    "--pistachio": "#8CA876", "--pistachio-dark": "#5F7A4C", "--terracotta": "#C9714E",
+    "--ink": "#2B2320", "--line": "#E7DFCF",
+    "--muted-strong": "#6B5D4B", "--muted": "#8A7B68", "--muted-faint": "#A99A86",
+    "--on-accent": "#FFFFFF",
+  },
+  night: {
+    "--cream": "#161616", "--paper": "#202020", "--plum": "#C7A75F", "--plum-light": "#D6BC7F",
+    "--pistachio": "#A9C2B0", "--pistachio-dark": "#8CA895", "--terracotta": "#B98A5A",
+    "--ink": "#EAEAE7", "--line": "#333333",
+    "--muted-strong": "#D6CDBB", "--muted": "#AFA491", "--muted-faint": "#8C8272",
+    "--on-accent": "#1A1409",
+  },
+};
+
 const STATUS_META = {
   pendiente: { label: "Pendiente", color: "var(--terracotta)", bg: "#FBEAE0", on: "var(--on-accent)" },
   pedido: { label: "Pedido", color: "var(--pistachio-dark)", bg: "#EAF1E3", on: "var(--on-accent)" },
@@ -271,6 +288,18 @@ export default function App() {
   const [filterDateFrom, setFilterDateFrom] = useState("");
   const [filterDateTo, setFilterDateTo] = useState("");
   const [depositoView, setDepositoView] = useState("pedido");
+  const [theme, setTheme] = useState(() => {
+    if (typeof window === "undefined") return "night";
+    return localStorage.getItem("luccianos-theme") || "night";
+  });
+
+  useEffect(() => {
+    localStorage.setItem("luccianos-theme", theme);
+  }, [theme]);
+
+  function toggleTheme() {
+    setTheme((t) => (t === "night" ? "day" : "night"));
+  }
   const [expandedOrder, setExpandedOrder] = useState(null);
   const [lastOrder, setLastOrder] = useState(null);
   const [pendingRole, setPendingRole] = useState(null);
@@ -422,14 +451,14 @@ export default function App() {
   }, [orders, filterSucursal, filterStatus, filterDateFrom, filterDateTo]);
 
   return (
-    <div style={styles.page}>
+    <div style={{ ...styles.page, ...THEMES[theme] }}>
       <style>{`
         @import url('https://fonts.googleapis.com/css2?family=Kaushan+Script&family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=Bodoni+Moda:opsz,wght@6..96,700;6..96,800&family=Inter:wght@400;500;600;700&display=swap');
         * { box-sizing: border-box; }
         body { margin: 0; }
         input, textarea, select, button { font-family: inherit; }
         input:focus, textarea:focus, button:focus-visible { outline: 2px solid var(--plum); outline-offset: 1px; }
-        ::placeholder { color: #B8AA98; }
+        ::placeholder { color: var(--muted-faint); }
         html, body { overscroll-behavior: none; }
         .no-scroll-screen { touch-action: none; overscroll-behavior: none; }
 
@@ -453,7 +482,7 @@ export default function App() {
         </div>
       )}
 
-      {screen === "home" && <Home onSucursal={() => setScreen("sucursal-select")} onDeposito={() => setScreen(depositoSession ? "deposito" : "deposito-auth")} />}
+      {screen === "home" && <Home onSucursal={() => setScreen("sucursal-select")} onDeposito={() => setScreen(depositoSession ? "deposito" : "deposito-auth")} theme={theme} onToggleTheme={toggleTheme} />}
 
       {screen === "sucursal-select" && (
         <SucursalSelect onBack={() => setScreen("home")} onPick={(s) => requestPin(s, "order-form")} />
@@ -486,6 +515,8 @@ export default function App() {
           setNotes={setNotes}
           onSubmit={submitOrder}
           submitting={submitting}
+          theme={theme}
+          onToggleTheme={toggleTheme}
         />
       )}
 
@@ -507,6 +538,8 @@ export default function App() {
           onBack={() => setScreen("order-form")}
           expandedOrder={expandedOrder}
           setExpandedOrder={setExpandedOrder}
+          theme={theme}
+          onToggleTheme={toggleTheme}
         />
       )}
 
@@ -543,15 +576,20 @@ export default function App() {
           onImportOrders={importOrders}
           userEmail={depositoSession?.user?.email}
           onLogout={async () => { await supabase.auth.signOut(); setScreen("home"); }}
+          theme={theme}
+          onToggleTheme={toggleTheme}
         />
       )}
     </div>
   );
 }
 
-function Home({ onSucursal, onDeposito }) {
+function Home({ onSucursal, onDeposito, theme, onToggleTheme }) {
   return (
     <div className="no-scroll-screen" style={styles.homeDark}>
+      <button style={styles.homeThemeToggleBtn} onClick={onToggleTheme} aria-label="Cambiar tema día/noche">
+        {theme === "night" ? <Sun size={18} /> : <Moon size={18} />}
+      </button>
       <div style={styles.homeInner}>
         <img src={`${import.meta.env.BASE_URL}logo-gold.png`} alt="Lucciano's" style={styles.homeLogoImg} />
         <div style={styles.homeEyebrow}>Estados Unidos</div>
@@ -819,11 +857,11 @@ function SucursalSelect({ onBack, onPick }) {
     <div style={styles.darkWrapScroll}>
       <div style={styles.darkInner}>
         <div style={styles.darkTopBar}>
-          <button style={styles.darkBackBtn} onClick={onBack}><ArrowLeft size={18} color="#fff" /></button>
+          <button style={styles.darkBackBtn} onClick={onBack}><ArrowLeft size={18} color="var(--ink)" /></button>
           <div style={styles.darkTopTitle}>Elegí tu sucursal</div>
         </div>
         <div style={styles.darkLogoWrapSmall}>
-          <img src={`${import.meta.env.BASE_URL}logo-white.png`} alt="Lucciano's" style={styles.darkLogoImgSmall} />
+          <img src={`${import.meta.env.BASE_URL}logo-gold.png`} alt="Lucciano's" style={styles.darkLogoImgSmall} />
         </div>
         <div style={styles.branchList}>
           {SUCURSALES.map((s) => (
@@ -844,14 +882,14 @@ function SucursalSelect({ onBack, onPick }) {
   );
 }
 
-function OrderForm({ sucursal, onBack, onViewHistory, activeVendor, setActiveVendor, search, setSearch, draft, setQty, draftCount, notes, setNotes, onSubmit, submitting }) {
+function OrderForm({ sucursal, onBack, onViewHistory, activeVendor, setActiveVendor, search, setSearch, draft, setQty, draftCount, notes, setNotes, onSubmit, submitting, theme, onToggleTheme }) {
   const items = VENDORS[activeVendor].filter((p) =>
     p.item.toLowerCase().includes(search.toLowerCase()) || p.code.toLowerCase().includes(search.toLowerCase())
   );
 
   return (
     <div style={styles.wrap}>
-      <TopBar onBack={onBack} title={sucursal} subtitle="Pedido semanal de stock" />
+      <TopBar onBack={onBack} title={sucursal} subtitle="Pedido semanal de stock" theme={theme} onToggleTheme={onToggleTheme} />
       <div className="order-layout" style={styles.formLayout}>
         <div style={styles.formMain}>
           <div style={styles.tabs}>
@@ -1064,10 +1102,10 @@ function Confirm({ sucursal, lastOrder, onNewOrder, onHistory, onHome }) {
   );
 }
 
-function SucursalHistory({ sucursal, orders, loading, onBack, expandedOrder, setExpandedOrder }) {
+function SucursalHistory({ sucursal, orders, loading, onBack, expandedOrder, setExpandedOrder, theme, onToggleTheme }) {
   return (
     <div style={styles.wrap}>
-      <TopBar onBack={onBack} title={sucursal} subtitle="Historial de pedidos" />
+      <TopBar onBack={onBack} title={sucursal} subtitle="Historial de pedidos" theme={theme} onToggleTheme={onToggleTheme} />
       {loading && <div style={styles.emptyRow}>Cargando pedidos...</div>}
       {!loading && orders.length === 0 && <div style={styles.emptyRow}>Todavía no enviaste ningún pedido.</div>}
       <div style={styles.orderCards}>
@@ -1233,7 +1271,7 @@ function DateRangePicker({ from, to, setFrom, setTo }) {
   );
 }
 
-function Deposito({ onBack, loading, orders, allOrders, filterSucursal, setFilterSucursal, filterStatus, setFilterStatus, filterDateFrom, setFilterDateFrom, filterDateTo, setFilterDateTo, depositoView, setDepositoView, expandedOrder, setExpandedOrder, updateStatus, onImportOrders, userEmail, onLogout }) {
+function Deposito({ onBack, loading, orders, allOrders, filterSucursal, setFilterSucursal, filterStatus, setFilterStatus, filterDateFrom, setFilterDateFrom, filterDateTo, setFilterDateTo, depositoView, setDepositoView, expandedOrder, setExpandedOrder, updateStatus, onImportOrders, userEmail, onLogout, theme, onToggleTheme }) {
   const pendingCount = allOrders.filter((o) => o.status === "pendiente").length;
   const [showExport, setShowExport] = useState(false);
 
@@ -1254,7 +1292,7 @@ function Deposito({ onBack, loading, orders, allOrders, filterSucursal, setFilte
 
   return (
     <div style={styles.wrap}>
-      <TopBar onBack={onBack} title="Depósito" subtitle={`${pendingCount} pedido${pendingCount === 1 ? "" : "s"} pendiente${pendingCount === 1 ? "" : "s"}`} />
+      <TopBar onBack={onBack} title="Depósito" subtitle={`${pendingCount} pedido${pendingCount === 1 ? "" : "s"} pendiente${pendingCount === 1 ? "" : "s"}`} theme={theme} onToggleTheme={onToggleTheme} />
 
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 14, flexWrap: "wrap", gap: 10 }}>
         {userEmail && <div style={{ fontSize: 12, color: "var(--muted)" }}>Conectado como <strong>{userEmail}</strong> · <button onClick={onLogout} style={{ ...styles.textLink, marginTop: 0, display: "inline" }}>Cerrar sesión</button></div>}
@@ -1517,25 +1555,25 @@ function OrderCard({ order, expanded, onToggle, showSucursal, actions, allOrders
   );
 }
 
-function TopBar({ onBack, title, subtitle }) {
+function TopBar({ onBack, title, subtitle, theme, onToggleTheme }) {
   return (
     <div style={styles.topBar}>
       <button style={styles.backBtn} onClick={onBack}><ArrowLeft size={18} /></button>
-      <div>
+      <div style={{ flex: 1 }}>
         <div style={styles.topTitle}>{title}</div>
         {subtitle && <div style={styles.topSubtitle}>{subtitle}</div>}
       </div>
+      {onToggleTheme && (
+        <button style={styles.themeToggleBtn} onClick={onToggleTheme} aria-label="Cambiar tema día/noche">
+          {theme === "night" ? <Sun size={18} /> : <Moon size={18} />}
+        </button>
+      )}
     </div>
   );
 }
 
 const styles = {
   page: {
-    "--cream": "#161616", "--paper": "#202020", "--plum": "#C7A75F", "--plum-light": "#D6BC7F",
-    "--pistachio": "#A9C2B0", "--pistachio-dark": "#8CA895", "--terracotta": "#B98A5A",
-    "--ink": "#EAEAE7", "--line": "#333333",
-    "--muted-strong": "#D6CDBB", "--muted": "#AFA491", "--muted-faint": "#8C8272",
-    "--on-accent": "#1A1409",
     minHeight: "100vh", background: "var(--cream)", color: "var(--ink)",
     fontFamily: "'Inter', system-ui, sans-serif",
   },
@@ -1544,8 +1582,14 @@ const styles = {
     textAlign: "center", padding: "80px 24px 40px", maxWidth: 520, margin: "0 auto",
   },
   homeDark: {
-    height: "100vh", overflow: "hidden", background: "#111111", display: "flex", flexDirection: "column",
-    alignItems: "center", width: "100%", padding: "100px 24px 50px",
+    height: "100vh", overflow: "hidden", background: "var(--cream)", display: "flex", flexDirection: "column",
+    alignItems: "center", width: "100%", padding: "100px 24px 50px", position: "relative",
+  },
+  homeThemeToggleBtn: {
+    position: "absolute", top: 20, right: 20,
+    width: 36, height: 36, borderRadius: 10, border: "1px solid var(--line)",
+    background: "var(--paper)", display: "flex", alignItems: "center", justifyContent: "center",
+    cursor: "pointer", color: "var(--ink)", zIndex: 5,
   },
   homeInner: {
     width: "100%", maxWidth: 520, display: "flex", flexDirection: "column",
@@ -1554,12 +1598,12 @@ const styles = {
   homeLogoImg: { width: 280, height: "auto", marginBottom: 24 },
   homeEyebrow: {
     fontSize: 12, letterSpacing: "0.12em", textTransform: "uppercase",
-    color: "#C9A24C", fontWeight: 600, marginBottom: 12,
+    color: "var(--plum)", fontWeight: 600, marginBottom: 12,
   },
-  homeH1: { fontFamily: "'Fraunces', serif", fontWeight: 600, fontSize: 34, margin: "0 0 32px", color: "#F4E9C9" },
+  homeH1: { fontFamily: "'Fraunces', serif", fontWeight: 600, fontSize: 34, margin: "0 0 32px", color: "var(--ink)" },
   homeTagline: {
     fontFamily: "'Bodoni Moda', serif", fontOpticalSizing: "auto", fontWeight: 700,
-    textTransform: "uppercase", color: "#FFFFFF", fontSize: 44, lineHeight: 1.05,
+    textTransform: "uppercase", color: "var(--ink)", fontSize: 44, lineHeight: 1.05,
     letterSpacing: "0.01em", marginTop: "auto", paddingTop: 60,
   },
   logoImg: { width: 150, height: "auto", marginBottom: 4 },
@@ -1581,17 +1625,17 @@ const styles = {
   wrapFull: { maxWidth: 980, margin: "0 auto", padding: "28px 24px 0", minHeight: "calc(100vh - 60px)", display: "flex", flexDirection: "column" },
   sucGridWrap: { flex: 1, display: "flex", alignItems: "center", justifyContent: "center" },
   darkWrapScroll: {
-    minHeight: "100vh", background: "#111111", display: "flex", flexDirection: "column",
+    minHeight: "100vh", background: "var(--cream)", display: "flex", flexDirection: "column",
     alignItems: "center", padding: "56px 24px 40px", width: "100%",
   },
   darkInner: { width: "100%", maxWidth: 980 },
   darkTopBar: { display: "flex", alignItems: "center", gap: 14 },
   darkBackBtn: {
-    width: 36, height: 36, borderRadius: 10, border: "1px solid rgba(255,255,255,0.25)",
-    background: "transparent", display: "flex", alignItems: "center", justifyContent: "center",
+    width: 36, height: 36, borderRadius: 10, border: "1px solid var(--line)",
+    background: "var(--paper)", display: "flex", alignItems: "center", justifyContent: "center",
     cursor: "pointer", flexShrink: 0,
   },
-  darkTopTitle: { fontFamily: "'Fraunces', serif", fontWeight: 600, fontSize: 22, color: "#F4E9C9" },
+  darkTopTitle: { fontFamily: "'Fraunces', serif", fontWeight: 600, fontSize: 22, color: "var(--ink)" },
   darkLogoWrap: { display: "flex", justifyContent: "center", margin: "56px 0 16px" },
   darkLogoImg: { width: 210, height: "auto" },
   darkLogoWrapSmall: { display: "flex", justifyContent: "center", margin: "24px 0 20px" },
@@ -1613,6 +1657,11 @@ const styles = {
     width: 36, height: 36, borderRadius: 10, border: "1px solid var(--line)",
     background: "var(--paper)", display: "flex", alignItems: "center", justifyContent: "center",
     cursor: "pointer", flexShrink: 0,
+  },
+  themeToggleBtn: {
+    width: 36, height: 36, borderRadius: 10, border: "1px solid var(--line)",
+    background: "var(--paper)", display: "flex", alignItems: "center", justifyContent: "center",
+    cursor: "pointer", flexShrink: 0, color: "var(--ink)",
   },
   topTitle: { fontFamily: "'Fraunces', serif", fontWeight: 600, fontSize: 22, color: "var(--plum)" },
   topSubtitle: { fontSize: 13, color: "var(--muted)", marginTop: 2 },

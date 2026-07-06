@@ -330,6 +330,10 @@ const STR = {
     notesPlaceholder: "Ej: urgente para el finde, entregar antes del jueves...",
     sending: "Enviando...",
     submitOrder: "Enviar pedido",
+    confirmSendTitle: "¿Confirmás el envío?",
+    confirmSendBody: (n) => `Vas a enviar un pedido con ${n} ${n === 1 ? "ítem" : "ítems"}. Una vez enviado, depósito ya lo puede ver.`,
+    confirmSendCancel: "Cancelar",
+    confirmSendOk: "Sí, enviar pedido",
     viewPrevious: "Ver pedidos anteriores",
     errNoQty: "Todavía no hay pedidos anteriores para copiar.",
     copiedLast: "Cargamos las cantidades del último pedido.",
@@ -470,6 +474,10 @@ const STR = {
     notesPlaceholder: "E.g.: urgent for the weekend, deliver before Thursday...",
     sending: "Sending...",
     submitOrder: "Send order",
+    confirmSendTitle: "Confirm sending?",
+    confirmSendBody: (n) => `You're about to send an order with ${n} ${n === 1 ? "item" : "items"}. Once sent, the warehouse can already see it.`,
+    confirmSendCancel: "Cancel",
+    confirmSendOk: "Yes, send order",
     viewPrevious: "View previous orders",
     errNoQty: "There are no previous orders to copy yet.",
     copiedLast: "We loaded the quantities from the last order.",
@@ -1436,6 +1444,7 @@ function ItemRow({ p, activeVendor, draft, setQty, lang }) {
 
 function OrderForm({ sucursal, onBack, onViewHistory, activeVendor, setActiveVendor, search, setSearch, draft, setQty, draftCount, notes, setNotes, onSubmit, submitting, theme, onToggleTheme, onCopyLastOrder, onClearDraft, recentOrder, pastOrders, lang, onToggleLang }) {
   const t = STR[lang];
+  const [showConfirm, setShowConfirm] = useState(false);
   const filteredItems = VENDORS[activeVendor].filter((p) =>
     p.item.toLowerCase().includes(search.toLowerCase()) || p.code.toLowerCase().includes(search.toLowerCase())
   );
@@ -1558,13 +1567,32 @@ function OrderForm({ sucursal, onBack, onViewHistory, activeVendor, setActiveVen
             onChange={(e) => setNotes(e.target.value)}
             rows={3}
           />
-          <button style={styles.submitBtn} onClick={onSubmit} disabled={submitting}>
+          <button style={styles.submitBtn} onClick={() => setShowConfirm(true)} disabled={submitting || draftCount === 0}>
             {submitting ? <Loader2 size={16} style={{ animation: "spin 1s linear infinite" }} /> : <Send size={16} />}
             {submitting ? t.sending : t.submitOrder}
           </button>
           <button style={styles.historyLink} onClick={onViewHistory}>{t.viewPrevious}</button>
         </div>
       </div>
+
+      {showConfirm && (
+        <div style={styles.modalOverlay} onClick={() => setShowConfirm(false)}>
+          <div style={styles.modalBox} onClick={(e) => e.stopPropagation()}>
+            <h2 style={styles.modalTitle}>{t.confirmSendTitle}</h2>
+            <p style={styles.modalBody}>{t.confirmSendBody(draftCount)}</p>
+            <div style={styles.modalActions}>
+              <button style={styles.secondaryBtn} onClick={() => setShowConfirm(false)}>{t.confirmSendCancel}</button>
+              <button
+                style={{ ...styles.submitBtn, width: "auto", padding: "10px 18px" }}
+                onClick={() => { setShowConfirm(false); onSubmit(); }}
+                disabled={submitting}
+              >
+                {t.confirmSendOk}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
@@ -2387,6 +2415,17 @@ const styles = {
     padding: "12px 0", fontSize: 14, fontWeight: 600, display: "flex", alignItems: "center",
     justifyContent: "center", gap: 8, cursor: "pointer",
   },
+  modalOverlay: {
+    position: "fixed", inset: 0, background: "rgba(0,0,0,0.5)", display: "flex",
+    alignItems: "center", justifyContent: "center", zIndex: 100, padding: 24,
+  },
+  modalBox: {
+    background: "var(--paper)", borderRadius: 16, padding: 24, maxWidth: 380, width: "100%",
+    boxShadow: "0 12px 32px rgba(0,0,0,0.25)",
+  },
+  modalTitle: { fontFamily: "'Baloo 2', sans-serif", fontWeight: 600, fontSize: 20, color: "var(--plum)", margin: "0 0 10px" },
+  modalBody: { fontSize: 14, color: "var(--muted-strong)", margin: "0 0 20px", lineHeight: 1.5 },
+  modalActions: { display: "flex", gap: 10, justifyContent: "flex-end" },
   historyLink: {
     width: "100%", background: "none", border: "none", color: "var(--pistachio-dark)",
     fontSize: 13, fontWeight: 600, marginTop: 10, cursor: "pointer", textDecoration: "underline",

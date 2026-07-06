@@ -333,6 +333,8 @@ const STR = {
     viewPrevious: "Ver pedidos anteriores",
     errNoQty: "Todavía no hay pedidos anteriores para copiar.",
     copiedLast: "Cargamos las cantidades del último pedido.",
+    useAsBase: "Usar este pedido como base",
+    replicatedOrder: "Cargamos los productos de ese pedido.",
     errNoQtyToSubmit: "Cargá al menos una cantidad antes de enviar.",
     errCouldNotSave: "No se pudo guardar el pedido. Probá de nuevo.",
     errCouldNotUpdateStatus: "No se pudo actualizar el estado.",
@@ -471,6 +473,8 @@ const STR = {
     viewPrevious: "View previous orders",
     errNoQty: "There are no previous orders to copy yet.",
     copiedLast: "We loaded the quantities from the last order.",
+    useAsBase: "Use this order as a base",
+    replicatedOrder: "We loaded that order's products.",
     errNoQtyToSubmit: "Load at least one quantity before sending.",
     errCouldNotSave: "Couldn't save the order. Try again.",
     errCouldNotUpdateStatus: "Couldn't update the status.",
@@ -847,6 +851,19 @@ export default function App() {
     setToast({ type: "success", text: STR[lang].copiedLast });
   }
 
+  function replicateOrder(order) {
+    setDraft(() => {
+      const next = {};
+      order.items.forEach((it) => {
+        next[it.vendor + "|" + it.item] = String(it.quantity);
+      });
+      return next;
+    });
+    setRecentOrder(order.items.map((it) => it.vendor + "|" + it.item));
+    setToast({ type: "success", text: STR[lang].replicatedOrder });
+    setScreen("order-form");
+  }
+
   async function submitOrder() {
     const items = [];
     Object.entries(draft).forEach(([key, qty]) => {
@@ -1029,6 +1046,7 @@ export default function App() {
           theme={theme}
           onToggleTheme={toggleTheme}
           updateStatus={updateStatus}
+          onReplicateOrder={replicateOrder}
           lang={lang}
           onToggleLang={toggleLang}
         />
@@ -1674,7 +1692,7 @@ function Confirm({ sucursal, lastOrder, onNewOrder, onHistory, onHome, lang }) {
   );
 }
 
-function SucursalHistory({ sucursal, orders, loading, onBack, expandedOrder, setExpandedOrder, theme, onToggleTheme, updateStatus, lang, onToggleLang }) {
+function SucursalHistory({ sucursal, orders, loading, onBack, expandedOrder, setExpandedOrder, theme, onToggleTheme, updateStatus, onReplicateOrder, lang, onToggleLang }) {
   const t = STR[lang];
   return (
     <div style={styles.wrap}>
@@ -1690,6 +1708,7 @@ function SucursalHistory({ sucursal, orders, loading, onBack, expandedOrder, set
             onToggle={() => setExpandedOrder(expandedOrder === o.id ? null : o.id)}
             allOrders={orders}
             onCancel={() => updateStatus(o.id, "cancelado")}
+            onReplicate={() => onReplicateOrder(o)}
             lang={lang}
           />
         ))}
@@ -2111,7 +2130,7 @@ function ExportPanel({ orders, onImport, lang }) {
   );
 }
 
-function OrderCard({ order, expanded, onToggle, showSucursal, actions, allOrders, onCancel, lang = "es" }) {
+function OrderCard({ order, expanded, onToggle, showSucursal, actions, allOrders, onCancel, onReplicate, lang = "es" }) {
   const t = STR[lang];
   const [confirmingCancel, setConfirmingCancel] = useState(false);
   const meta = STATUS_META[order.status] || STATUS_META.pendiente;
@@ -2165,11 +2184,21 @@ function OrderCard({ order, expanded, onToggle, showSucursal, actions, allOrders
             </div>
           )}
           {actions}
-          {canCancel && (
-            <button style={confirmingCancel ? styles.cancelOrderBtnConfirm : styles.cancelOrderBtn} onClick={handleCancelClick}>
-              {confirmingCancel ? t.confirmCancel : t.cancelThisOrder}
-            </button>
-          )}
+          <div style={{ display: "flex", gap: 12, flexWrap: "wrap", alignItems: "center" }}>
+            {onReplicate && (
+              <button
+                style={styles.replicateOrderBtn}
+                onClick={(e) => { e.stopPropagation(); onReplicate(); }}
+              >
+                {t.useAsBase}
+              </button>
+            )}
+            {canCancel && (
+              <button style={confirmingCancel ? styles.cancelOrderBtnConfirm : styles.cancelOrderBtn} onClick={handleCancelClick}>
+                {confirmingCancel ? t.confirmCancel : t.cancelThisOrder}
+              </button>
+            )}
+          </div>
         </div>
       )}
     </div>
@@ -2386,6 +2415,10 @@ const styles = {
   cancelOrderBtn: {
     marginTop: 14, background: "none", border: "none", padding: 0, fontSize: 13, fontWeight: 600,
     color: "#B3261E", cursor: "pointer", textDecoration: "underline",
+  },
+  replicateOrderBtn: {
+    marginTop: 14, background: "none", border: "none", padding: 0, fontSize: 13, fontWeight: 600,
+    color: "var(--pistachio-dark)", cursor: "pointer", textDecoration: "underline",
   },
   cancelOrderBtnConfirm: {
     marginTop: 14, background: "#B3261E", border: "none", borderRadius: 8, padding: "8px 14px",

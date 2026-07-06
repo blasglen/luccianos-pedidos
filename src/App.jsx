@@ -115,10 +115,6 @@ const VENDORS = {
     { item: "Variegato Wafer x 5kg", code: "14349" },
     { item: "Yoghin - Kosher", code: "8011" },
   ],
-  "Conos": [
-    { item: "Sugar Cone #310 400 un", code: "LUCCSC" },
-    { item: "Waffle Classic cone #5288 288 un", code: "LUCCWC" },
-  ],
   "Dulce de Leche": [
     { item: "Dulce de Leche Ice Cream", code: "VAC026" },
     { item: "Dulce de Leche Classic 12units", code: "VAC011" },
@@ -139,6 +135,8 @@ const VENDORS = {
     { item: "Dark Chocolate 72% 70-30-38NV-595", code: "LUCCdark" },
   ],
   "Packaging": [
+    { item: "Sugar Cone #310 400 un", code: "LUCCSC" },
+    { item: "Waffle Classic cone #5288 288 un", code: "LUCCWC" },
     { item: "Cone Sleeves", code: "LUCICS" },
     { item: "Dome Lids Clear", code: "LUC90" },
     { item: "Flat Lids Clear", code: "LUC91" },
@@ -211,7 +209,35 @@ const VENDORS = {
   ],
 };
 
-const VENDOR_ORDER = ["Mec3", "Conos", "Dulce de Leche", "Varios", "Disaronno", "Chocolate", "Packaging", "Merchandising", "Equipamiento", "Uniformes"];
+const VENDOR_ORDER = ["Mec3", "Dulce de Leche", "Varios", "Disaronno", "Chocolate", "Packaging", "Merchandising", "Equipamiento", "Uniformes"];
+
+const VENDOR_LABELS = {
+  es: {
+    "Mec3": "Mec3",
+    "Dulce de Leche": "Dulce de Leche",
+    "Varios": "Varios",
+    "Disaronno": "Disaronno",
+    "Chocolate": "Chocolate",
+    "Packaging": "Packaging",
+    "Merchandising": "Merchandising",
+    "Equipamiento": "Equipamiento",
+    "Uniformes": "Uniformes",
+  },
+  en: {
+    "Mec3": "Mec3",
+    "Dulce de Leche": "Dulce de Leche",
+    "Varios": "Other",
+    "Disaronno": "Disaronno",
+    "Chocolate": "Chocolate",
+    "Packaging": "Packaging",
+    "Merchandising": "Merchandise",
+    "Equipamiento": "Equipment",
+    "Uniformes": "Uniforms",
+  },
+};
+function getVendorLabel(key, lang) {
+  return (VENDOR_LABELS[lang] && VENDOR_LABELS[lang][key]) || key;
+}
 const SUCURSALES = ["American Dream", "Aventura", "Sawgrass", "Florida Mall", "Vineland", "Weston"];
 const SUCURSAL_PHOTOS = {
   "American Dream": "american-dream.jpg",
@@ -1445,7 +1471,7 @@ function OrderForm({ sucursal, onBack, onViewHistory, activeVendor, setActiveVen
                   onClick={() => { setActiveVendor(v); setSearch(""); }}
                   style={{ ...styles.tab, ...(activeVendor === v ? styles.tabActive : {}) }}
                 >
-                  {v}
+                  {getVendorLabel(v, lang)}
                 </button>
               ))}
             </div>
@@ -1459,7 +1485,7 @@ function OrderForm({ sucursal, onBack, onViewHistory, activeVendor, setActiveVen
             <Search size={16} color="var(--muted-faint)" />
             <input
               style={styles.searchInput}
-              placeholder={t.searchPlaceholder(activeVendor)}
+              placeholder={t.searchPlaceholder(getVendorLabel(activeVendor, lang))}
               value={search}
               onChange={(e) => setSearch(e.target.value)}
             />
@@ -2124,7 +2150,7 @@ function OrderCard({ order, expanded, onToggle, showSucursal, actions, allOrders
         <div style={styles.orderCardBody}>
           {VENDOR_ORDER.filter((v) => order.items.some((it) => it.vendor === v)).map((v) => (
             <div key={v} style={{ marginBottom: 10 }}>
-              <div style={styles.vendorLabel}>{v}</div>
+              <div style={styles.vendorLabel}>{getVendorLabel(v, lang)}</div>
               {order.items.filter((it) => it.vendor === v).map((it, i) => (
                 <div key={i} style={styles.detailLine}>
                   <span>{it.item} <span style={styles.detailCode}>({it.code})</span></span>

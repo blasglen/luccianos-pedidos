@@ -558,7 +558,7 @@ const THEMES = {
   day: {
     "--cream": "#E8DAB8", "--paper": "#FFFFFF", "--plum": "#4A1F2E", "--plum-light": "#6E3347",
     "--pistachio": "#8CA876", "--pistachio-dark": "#5F7A4C", "--terracotta": "#C9714E",
-    "--ink": "#2B2320", "--line": "#B99F6E",
+    "--ink": "#2B2320", "--line": "#000000",
     "--muted-strong": "#6B5D4B", "--muted": "#8A7B68", "--muted-faint": "#A99A86",
     "--on-accent": "#FFFFFF",
   },
@@ -2379,7 +2379,7 @@ const styles = {
   formMain: {},
   tabs: { display: "flex", gap: 8, marginBottom: 14, flexWrap: "wrap" },
   tab: {
-    padding: "8px 16px", borderRadius: 999, border: "1px solid var(--line)",
+    padding: "8px 16px", borderRadius: 999, border: "2px solid var(--line)",
     background: "var(--paper)", fontSize: 13, fontWeight: 600, cursor: "pointer", color: "var(--muted)",
   },
   tabActive: { background: "var(--plum)", color: "var(--on-accent)", borderColor: "var(--plum)" },
@@ -2395,10 +2395,10 @@ const styles = {
   },
   searchBox: {
     display: "flex", alignItems: "center", gap: 8, background: "var(--paper)",
-    border: "1px solid var(--line)", borderRadius: 10, padding: "9px 12px", marginBottom: 14,
+    border: "2px solid var(--line)", borderRadius: 10, padding: "9px 12px", marginBottom: 14,
   },
   searchInput: { border: "none", outline: "none", background: "transparent", fontSize: 14, width: "100%", color: "var(--ink)" },
-  itemList: { background: "var(--paper)", border: "1.5px solid var(--line)", borderRadius: 14, maxHeight: 520, overflowY: "auto", boxShadow: "0 2px 8px rgba(43,35,32,0.12)" },
+  itemList: { background: "var(--paper)", border: "2px solid var(--line)", borderRadius: 14, maxHeight: 520, overflowY: "auto", boxShadow: "0 2px 8px rgba(43,35,32,0.12)" },
   itemRow: {
     display: "flex", alignItems: "center", justifyContent: "space-between",
     padding: "12px 16px", borderBottom: "1px solid var(--line)", gap: 12,
@@ -2407,11 +2407,11 @@ const styles = {
   itemName: { fontSize: 14, fontWeight: 500, color: "var(--ink)" },
   itemCode: { fontSize: 11, color: "var(--muted-faint)", marginTop: 2, letterSpacing: "0.02em" },
   qtyInput: {
-    width: 84, padding: "7px 10px", borderRadius: 8, border: "1px solid var(--line)",
+    width: 84, padding: "7px 10px", borderRadius: 8, border: "2px solid var(--line)",
     fontSize: 13, textAlign: "center", flexShrink: 0, background: "var(--paper)", color: "var(--ink)",
   },
   emptyRow: { padding: "24px 16px", color: "var(--muted-faint)", fontSize: 14, textAlign: "center" },
-  ticket: { background: "var(--paper)", border: "1.5px solid var(--line)", borderRadius: 16, padding: 20, boxShadow: "0 2px 8px rgba(43,35,32,0.12)" },
+  ticket: { background: "var(--paper)", border: "2px solid var(--line)", borderRadius: 16, padding: 20, boxShadow: "0 2px 8px rgba(43,35,32,0.12)" },
   ticketHeader: { display: "flex", alignItems: "center", gap: 8, fontWeight: 600, fontSize: 14, color: "var(--plum)" },
   ticketCount: { fontSize: 12, color: "var(--muted)", marginTop: 4 },
   ticketDivider: { borderTop: "1px dashed var(--line)", margin: "14px 0" },
@@ -2453,7 +2453,7 @@ const styles = {
   primaryBtnSm: { padding: "10px 20px", borderRadius: 10, border: "none", background: "var(--plum)", color: "var(--on-accent)", fontSize: 14, fontWeight: 600, cursor: "pointer" },
   textLink: { marginTop: 20, background: "none", border: "none", color: "var(--muted)", fontSize: 13, cursor: "pointer", textDecoration: "underline" },
   orderCards: { display: "flex", flexDirection: "column", gap: 12 },
-  orderCard: { background: "var(--paper)", border: "1.5px solid var(--line)", borderRadius: 14, overflow: "hidden", boxShadow: "0 2px 8px rgba(43,35,32,0.12)" },
+  orderCard: { background: "var(--paper)", border: "2px solid var(--line)", borderRadius: 14, overflow: "hidden", boxShadow: "0 2px 8px rgba(43,35,32,0.12)" },
   orderCardCanceled: { background: "var(--cream)", opacity: 0.72 },
   orderCardHead: {
     width: "100%", display: "flex", alignItems: "center", justifyContent: "space-between",
@@ -2561,12 +2561,12 @@ const styles = {
   tablePreviewDataCell: {
     border: "1px solid #000", padding: "6px 10px", background: "#d9d9d9", color: "#000",
   },
-  productSummaryWrap: { background: "var(--paper)", border: "1.5px solid var(--line)", borderRadius: 14, overflow: "hidden", boxShadow: "0 2px 8px rgba(43,35,32,0.12)" },
+  productSummaryWrap: { background: "var(--paper)", border: "2px solid var(--line)", borderRadius: 14, overflow: "hidden", boxShadow: "0 2px 8px rgba(43,35,32,0.12)" },
   productSummaryTable: { width: "100%", borderCollapse: "collapse", fontSize: 13 },
   productSummaryHeaderCell: {
     textAlign: "left", padding: "12px 16px", fontSize: 11, fontWeight: 700, textTransform: "uppercase",
     letterSpacing: "0.04em", color: "var(--muted)", borderBottom: "1px solid var(--line)", background: "var(--cream)",
   },
   productSummaryCell: { padding: "10px 16px", borderBottom: "1px solid var(--line)", color: "var(--ink)" },
-  exportPanel: { background: "var(--paper)", border: "1.5px solid var(--line)", borderRadius: 14, padding: 18, marginBottom: 18, boxShadow: "0 2px 8px rgba(43,35,32,0.12)" },
+  exportPanel: { background: "var(--paper)", border: "2px solid var(--line)", borderRadius: 14, padding: 18, marginBottom: 18, boxShadow: "0 2px 8px rgba(43,35,32,0.12)" },
 };

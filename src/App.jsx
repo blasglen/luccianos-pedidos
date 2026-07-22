@@ -587,6 +587,9 @@ const STR = {
     confirmSendBody: (n) => `Vas a enviar un pedido con ${n} ${n === 1 ? "ítem" : "ítems"}. Una vez enviado, depósito ya lo puede ver.`,
     confirmSendCancel: "Cancelar",
     confirmSendOk: "Sí, enviar pedido",
+    confirmSendStockTitle: "¿Confirmás el envío del conteo?",
+    confirmSendStockBody: (n) => `Vas a enviar un conteo con ${n} ${n === 1 ? "ítem" : "ítems"}. Una vez enviado, depósito ya lo puede ver.`,
+    confirmSendStockOk: "Sí, enviar conteo",
     viewPrevious: "Ver pedidos anteriores",
     errNoQty: "Todavía no hay pedidos anteriores para copiar.",
     copiedLast: "Cargamos las cantidades del último pedido.",
@@ -759,6 +762,9 @@ const STR = {
     confirmSendBody: (n) => `You're about to send an order with ${n} ${n === 1 ? "item" : "items"}. Once sent, the warehouse can already see it.`,
     confirmSendCancel: "Cancel",
     confirmSendOk: "Yes, send order",
+    confirmSendStockTitle: "Confirm sending the count?",
+    confirmSendStockBody: (n) => `You're about to send a count with ${n} ${n === 1 ? "item" : "items"}. Once sent, the warehouse can already see it.`,
+    confirmSendStockOk: "Yes, send count",
     viewPrevious: "View previous orders",
     errNoQty: "There are no previous orders to copy yet.",
     copiedLast: "We loaded the quantities from the last order.",
@@ -2145,6 +2151,7 @@ function StockForm({ sucursal, onBack, activeVendor, setActiveVendor, search, se
   const [newItemName, setNewItemName] = useState("");
   const [showAddConfirm, setShowAddConfirm] = useState(false);
   const [addingProduct, setAddingProduct] = useState(false);
+  const [showConfirm, setShowConfirm] = useState(false);
 
   function handleFocusItem(key) {
     frozenHadValueRef.current = !!(draft[key] && draft[key].trim() !== "");
@@ -2297,12 +2304,31 @@ function StockForm({ sucursal, onBack, activeVendor, setActiveVendor, search, se
             })}
           </div>
           <div style={styles.ticketDivider} />
-          <button style={styles.submitBtn} onClick={onSubmit} disabled={submitting || draftCount === 0}>
+          <button style={styles.submitBtn} onClick={() => setShowConfirm(true)} disabled={submitting || draftCount === 0}>
             {submitting ? <Loader2 size={16} style={{ animation: "spin 1s linear infinite" }} /> : <Send size={16} />}
             {submitting ? t.sending : t.sendCount}
           </button>
         </div>
       </div>
+
+      {showConfirm && (
+        <div style={styles.modalOverlay} onClick={() => setShowConfirm(false)}>
+          <div style={styles.modalBox} onClick={(e) => e.stopPropagation()}>
+            <h2 style={styles.modalTitle}>{t.confirmSendStockTitle}</h2>
+            <p style={styles.modalBody}>{t.confirmSendStockBody(draftCount)}</p>
+            <div style={styles.modalActions}>
+              <button style={styles.secondaryBtn} onClick={() => setShowConfirm(false)}>{t.confirmSendCancel}</button>
+              <button
+                style={{ ...styles.submitBtn, width: "auto", padding: "10px 18px" }}
+                onClick={() => { setShowConfirm(false); onSubmit(); }}
+                disabled={submitting}
+              >
+                {t.confirmSendStockOk}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {showAddConfirm && (
         <div style={styles.modalOverlay} onClick={() => setShowAddConfirm(false)}>

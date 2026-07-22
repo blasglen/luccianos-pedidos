@@ -1422,7 +1422,7 @@ function SucursalSelect({ onBack, onPick, theme, onToggleTheme, lang, onToggleLa
   );
 }
 
-function ItemRow({ p, activeVendor, draft, setQty, lang }) {
+function ItemRow({ p, activeVendor, draft, setQty, lang, onFocusItem, onBlurItem }) {
   const key = activeVendor + "|" + p.item;
   return (
     <div style={styles.itemRow}>
@@ -1437,6 +1437,9 @@ function ItemRow({ p, activeVendor, draft, setQty, lang }) {
         inputMode="decimal"
         value={draft[key] || ""}
         onChange={(e) => setQty(activeVendor, p.item, sanitizeQty(e.target.value))}
+        onFocus={() => onFocusItem(key)}
+        onBlur={() => onBlurItem()}
+        onKeyDown={(e) => { if (e.key === "Enter") e.target.blur(); }}
       />
     </div>
   );
@@ -1445,6 +1448,17 @@ function ItemRow({ p, activeVendor, draft, setQty, lang }) {
 function OrderForm({ sucursal, onBack, onViewHistory, activeVendor, setActiveVendor, search, setSearch, draft, setQty, draftCount, notes, setNotes, onSubmit, submitting, theme, onToggleTheme, onCopyLastOrder, onClearDraft, recentOrder, pastOrders, lang, onToggleLang }) {
   const t = STR[lang];
   const [showConfirm, setShowConfirm] = useState(false);
+  const [focusedKey, setFocusedKey] = useState(null);
+  const frozenHadValueRef = useRef(false);
+
+  function handleFocusItem(key) {
+    frozenHadValueRef.current = !!(draft[key] && draft[key].trim() !== "");
+    setFocusedKey(key);
+  }
+  function handleBlurItem() {
+    setFocusedKey(null);
+  }
+
   const filteredItems = VENDORS[activeVendor].filter((p) =>
     p.item.toLowerCase().includes(search.toLowerCase()) || p.code.toLowerCase().includes(search.toLowerCase())
   );
@@ -1470,7 +1484,9 @@ function OrderForm({ sucursal, onBack, onViewHistory, activeVendor, setActiveVen
   const rest = [];
   filteredItems.forEach((p) => {
     const key = activeVendor + "|" + p.item;
-    if (draft[key] && draft[key].trim() !== "") {
+    const liveHasValue = !!(draft[key] && draft[key].trim() !== "");
+    const hasValue = key === focusedKey ? frozenHadValueRef.current : liveHasValue;
+    if (hasValue) {
       withQty.push(p);
     } else if ((itemFrequency[p.item] || 0) >= 2) {
       recurrent.push(p);
@@ -1520,17 +1536,17 @@ function OrderForm({ sucursal, onBack, onViewHistory, activeVendor, setActiveVen
 
           <div style={styles.itemList}>
             {withQty.map((p) => (
-              <ItemRow key={activeVendor + "|" + p.item} p={p} activeVendor={activeVendor} draft={draft} setQty={setQty} lang={lang} />
+              <ItemRow key={activeVendor + "|" + p.item} p={p} activeVendor={activeVendor} draft={draft} setQty={setQty} lang={lang} onFocusItem={handleFocusItem} onBlurItem={handleBlurItem} />
             ))}
             {recurrent.length > 0 && <div style={styles.itemSectionLabel}>{t.recurring}</div>}
             {recurrent.map((p) => (
-              <ItemRow key={activeVendor + "|" + p.item} p={p} activeVendor={activeVendor} draft={draft} setQty={setQty} lang={lang} />
+              <ItemRow key={activeVendor + "|" + p.item} p={p} activeVendor={activeVendor} draft={draft} setQty={setQty} lang={lang} onFocusItem={handleFocusItem} onBlurItem={handleBlurItem} />
             ))}
             {rest.length > 0 && (withQty.length > 0 || recurrent.length > 0) && (
               <div style={styles.itemSectionLabel}>{t.restOfProducts}</div>
             )}
             {rest.map((p) => (
-              <ItemRow key={activeVendor + "|" + p.item} p={p} activeVendor={activeVendor} draft={draft} setQty={setQty} lang={lang} />
+              <ItemRow key={activeVendor + "|" + p.item} p={p} activeVendor={activeVendor} draft={draft} setQty={setQty} lang={lang} onFocusItem={handleFocusItem} onBlurItem={handleBlurItem} />
             ))}
             {filteredItems.length === 0 && <div style={styles.emptyRow}>{t.noMatch(search)}</div>}
           </div>

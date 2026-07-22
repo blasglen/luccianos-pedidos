@@ -207,9 +207,10 @@ const VENDORS = {
     { item: "White Chef Pants LAB (XL)", code: "" },
     { item: "White Chef Pants LAB (XXL)", code: "" },
   ],
+  "Todos": [],
 };
 
-const VENDOR_ORDER = ["Mec3", "Dulce de Leche", "Varios", "Disaronno", "Chocolate", "Packaging", "Merchandising", "Equipamiento", "Uniformes"];
+const VENDOR_ORDER = ["Mec3", "Dulce de Leche", "Varios", "Disaronno", "Chocolate", "Packaging", "Merchandising", "Equipamiento", "Uniformes", "Todos"];
 
 const VENDOR_LABELS = {
   es: {
@@ -222,6 +223,7 @@ const VENDOR_LABELS = {
     "Merchandising": "Merchandising",
     "Equipamiento": "Equipamiento",
     "Uniformes": "Uniformes",
+    "Todos": "Todos",
   },
   en: {
     "Mec3": "Mec3",
@@ -233,6 +235,7 @@ const VENDOR_LABELS = {
     "Merchandising": "Merchandise",
     "Equipamiento": "Equipment",
     "Uniformes": "Uniforms",
+    "Todos": "All",
   },
 };
 function getVendorLabel(key, lang) {
@@ -257,6 +260,238 @@ const SUCURSAL_ABBR = {
 };
 const ORDER_EMAIL = "admin@luccianos.us";
 const ALLOWED_DEPOSITO_EMAILS = ["contabilidad@luccianos.com.ar", "admin@luccianos.us"];
+
+const OWN_SUCURSALES = ["Florida Mall", "Vineland", "Weston"];
+
+const STOCK_VENDORS = {
+  "PAPER": [
+    { item: "BAKERY BOX ( Paper box for cakes to go )", code: "" },
+    { item: "PASTRY BAG ( Small paper bag for pastries )", code: "" },
+    { item: "HANDLE PAPER BAG ( Paper bag to go )", code: "" },
+    { item: "CLEAR CUP 16oz LOGO ( Shake-Smoothie)", code: "" },
+    { item: "CONE SLEEVE ( For premium cone )", code: "" },
+    { item: "CONTAINER TO GO WITH LID MEDIUM", code: "" },
+    { item: "CONTAINER TO GO WITH LID XL", code: "" },
+    { item: "PACKAGING SLEEVE MEDIUM for container to go", code: "" },
+    { item: "PACKAGING SLEEVE XLARGE for container to go", code: "" },
+    { item: "DOME LID for 16oz cup", code: "" },
+    { item: "FLAT LID for 16oz cup", code: "" },
+    { item: "LOGO-GOLD 4oz SMALL PAPER CUP", code: "" },
+    { item: "LOGO-GOLD 6oz MEDIUM PAPER CUP", code: "" },
+    { item: "LOGO-GOLD 8oz LARGE PAPER CUP", code: "" },
+    { item: "LOGO-WHITE 4oz SMALL PAPER CUP", code: "" },
+    { item: "LOGO-WHITE 6oz MEDIUM PAPER CUP", code: "" },
+    { item: "LOGO-WHITE 8oz LARGE PAPER CUP", code: "" },
+    { item: "NAPKINS WITH LOGO", code: "" },
+    { item: "PAPER STRAW WRAPPED BLACK & WHITE", code: "" },
+    { item: "LARGE BLACK SPOON 18cm", code: "" },
+    { item: "SMALL BLACK SPOON 9.5cm", code: "" },
+    { item: "STICKER LOGO for paper bags.", code: "" },
+  ],
+  "COFFEE CORNER": [
+    { item: "NESPRESSO 12oz LID for paper cup", code: "" },
+    { item: "NESPRESSO 12oz PAPER CUP", code: "" },
+    { item: "NESPRESSO 4oz LID for paper cup", code: "" },
+    { item: "NESPRESSO 4oz PAPER CUP", code: "" },
+    { item: "NESPRESSO 8oz LID for paper cup", code: "" },
+    { item: "NESPRESSO 8oz PAPER CUP", code: "" },
+    { item: "NESPRESSO COFFEE CAPSULE ESPRESSO CARAMEL", code: "" },
+    { item: "NESPRESSO COFFEE CAPSULE ESPRESSO DECAFFEINATO", code: "" },
+    { item: "NESPRESSO COFFEE CAPSULE ESPRESSO LEGGERO", code: "" },
+    { item: "NESPRESSO COFFEE CAPSULE ESPRESSO ORIGIN BRAZIL", code: "" },
+    { item: "NESPRESSO COFFEE CAPSULE LUNGO FORTE", code: "" },
+    { item: "NESPRESSO COFFEE CAPSULE LUNGO LEGGERO", code: "" },
+    { item: "NESPRESSO COFFEE CAPSULE RISTRETTO", code: "" },
+    { item: "PAPER CUP HOLDER for cups to go", code: "" },
+    { item: "PAPER SLEEVE FOR NESPRESSO CUP LARGE", code: "" },
+    { item: "PAPER SLEEVE FOR NESPRESSO CUP SMALL", code: "" },
+    { item: "STIR for coffee cup", code: "" },
+    { item: "SWEETNER STICK PACKET LOGO - for coffee", code: "" },
+    { item: "WHITE SUGAR STICK PACKET LOGO - for coffee", code: "" },
+  ],
+  "GRAB & GO": [
+    { item: "BOTTLE OF SPARKLING WATER", code: "" },
+    { item: "BOTTLE OF COKE ZERO", code: "" },
+    { item: "BOTTLE OF SPRITE", code: "" },
+    { item: "BOTTLE OF REGULAR COKE", code: "" },
+    { item: "BOTTLE OF WATER", code: "" },
+    { item: "BERRY CAKE", code: "" },
+    { item: "CHOCOLATE CAKE", code: "" },
+    { item: "APPLE TART", code: "" },
+    { item: "CHOCOLATE TEMPTATION", code: "" },
+    { item: "MACARONS", code: "" },
+    { item: "NOCCIOLA CAKE", code: "" },
+    { item: "RICOTTA PISTACCHIO TART", code: "" },
+    { item: "TORTA DE LA NONNA", code: "" },
+    { item: "MINI KEY LIME CHEESECAKE", code: "" },
+    { item: "INDIV PORTION OTHER SPECIFY", code: "" },
+    { item: "INDIV PORTION TIRAMISU", code: "" },
+    { item: "OTHER BOTTLE - SPECIFY", code: "" },
+    { item: "PUMPKIN CHEESCKE", code: "" },
+    { item: "MINI CROISSANT", code: "" },
+    { item: "RED VELVET CAKE", code: "" },
+    { item: "DULCE DE LECHE CHEESECAKE", code: "" },
+  ],
+  "OTHERS": [
+    { item: "CIALDINO - WAFFLE COOKIE", code: "" },
+    { item: "KIDS CONE", code: "" },
+    { item: "REGULAR WAFFLE CONE", code: "" },
+    { item: "WHIPPED CREAM", code: "" },
+    { item: "WHOLE MILK", code: "" },
+    { item: "ICE POPS LOGO STICKS", code: "" },
+    { item: "LARGE BOTTLE OF SPARKLING WATER", code: "" },
+    { item: "STUFF TOYS", code: "" },
+  ],
+  "INGREDIENTS": [
+    { item: "COPERTURA AL GUSTO DI CIOCC FONDENTE 2 / 5.5kg", code: "" },
+    { item: "FIORDIAMARENA x 2 / 3kg", code: "" },
+    { item: "FIORDIBOSCO x 2 / 3 kg", code: "" },
+    { item: "FIORDIMARACUJA x2 / 3kg", code: "" },
+    { item: "FROLLINI COOKIES BLACK x 4 / 1kg", code: "" },
+    { item: "GRANELLA DI NOCCIOLE x 6 / 2kg", code: "" },
+    { item: "INSTACRUMBLE 1 / 2.5 kg", code: "" },
+    { item: "Instacrumble Pistacchio Salato gluten free", code: "" },
+    { item: "ITALIAN WHOLE ROASTED HAZELNUT 6 / 2kg", code: "" },
+    { item: "MECROCK PLUS x 2 / 5kg", code: "" },
+    { item: "Morettina Pepita x 5.5kg", code: "" },
+    { item: "PISTACCHIO GRAINS 6 / 1 kg", code: "" },
+    { item: "QUELLA DI NOCCIOLE x 2 / 6kg", code: "" },
+    { item: "QUELLA PISTACCHIO x 2 / 6kg", code: "" },
+    { item: "QUELLA PISTACCHIO CRUNCHY 2 / 2.3 kg", code: "" },
+    { item: "QUELLO (Caramel) x 2 / 6 kg", code: "" },
+    { item: "VARIEGATO DUBAI CHOCOLATE x 1 / 5.5 kg", code: "" },
+    { item: "VARIEGATO LIMETTA X 6 / 1.5kg", code: "" },
+    { item: "CANOLA OIL PAN", code: "" },
+    { item: "COCOA POWDER 22-24 22.68kg", code: "" },
+    { item: "SEMI SWEET CHOCOLATE 56% 2/10kg", code: "" },
+    { item: "GIRARDELLI CARAMEL", code: "" },
+    { item: "GIRARDELLI CHOCOLATE", code: "" },
+    { item: "DULCE DE LECHE CLASSIC", code: "" },
+    { item: "SHREDDED COCONUT", code: "" },
+  ],
+  "ALFAJORES": [
+    { item: "ALFAJOR SEMISWEET CHOCOLATE", code: "" },
+    { item: "ALFAJOR DARK 70% CHOCOLATE", code: "" },
+    { item: "ALFAJOR WHITE CHOCOLATE", code: "" },
+    { item: "ALFAJOR WHITE CHOCOLATE WITH WALNUT", code: "" },
+    { item: "ALFAJOR BAGS", code: "" },
+    { item: "BOX OF 6 ALFAJOR SEMIWEET CHOCOLATE", code: "" },
+    { item: "BOX OF 6 ALFAJOR DARK 70% CHOCOLATE", code: "" },
+    { item: "BOX OF 6 ALFAJOR WHITE CHOCOLATE", code: "" },
+    { item: "BOX OF 6 ALFAJOR WHITE CHOCOLATE WITH WALNUT", code: "" },
+    { item: "BOX OF 6 ALFAJOR MIXED", code: "" },
+    { item: "BOX OF 6 ALFAJOR SORTED", code: "" },
+    { item: "BOX OF 10 ALFAJOR MIXED", code: "" },
+    { item: "BOX OF 10 ALFAJOR SORTED", code: "" },
+  ],
+  "ICE POPS": [
+    { item: "CHOCOLATE & DULCE DE LECHE", code: "" },
+    { item: "CHOCOLATE 72%", code: "" },
+    { item: "COOKIES & CREAM", code: "" },
+    { item: "CRISPY CHOCOLATE", code: "" },
+    { item: "CRISPY DULCE DE LECHE", code: "" },
+    { item: "DARK DOUBLE CHOCOLATE", code: "" },
+    { item: "DULCE DE LECHE & DULCE DE LECHE", code: "" },
+    { item: "ENZO - DULCE DE LECHE & GIANDUIA", code: "" },
+    { item: "HAZELNUT & CHOCOLATE", code: "" },
+    { item: "KING NERO", code: "" },
+    { item: "LEMON", code: "" },
+    { item: "MASCARPONE & BERRIES", code: "" },
+    { item: "MINION - KING & WHITE CHOCOLATE", code: "" },
+    { item: "OLI KING", code: "" },
+    { item: "PASSION FRUIT", code: "" },
+    { item: "PASSION FRUIT & COCONUT", code: "" },
+    { item: "PISTACCHIO", code: "" },
+    { item: "SMILE KING", code: "" },
+    { item: "SORBET PATAGONIA", code: "" },
+    { item: "STRAWBERRY", code: "" },
+    { item: "STRAWBERRY & WHIPPED CREAM", code: "" },
+    { item: "TANGERINE", code: "" },
+    { item: "TONIO - COOKIES & CREAM", code: "" },
+    { item: "WHIPPED CREAM & CRISPY CHOCOLATE", code: "" },
+    { item: "WHITE DOUBLE CHOCOLATE", code: "" },
+    { item: "MANGO", code: "" },
+    { item: "COOKIES & CREAM DIPPED", code: "" },
+    { item: "DULCE DE LECHE & COOKIES", code: "" },
+    { item: "CHOCOLATE LUCCIANO'S & HAZELNUT", code: "" },
+    { item: "MILK CHOCOLATE 0% SUGAR ADDED", code: "" },
+    { item: "PASSION FRUIT CHEESECAKE", code: "" },
+    { item: "OTHER - SPECIFY", code: "" },
+    { item: "OTHER - SPECIFY", code: "" },
+    { item: "OTHER - SPECIFY", code: "" },
+    { item: "OTHER - SPECIFY", code: "" },
+  ],
+  "GELATO": [
+    { item: "BANANA SPLIT", code: "" },
+    { item: "CARAMELIZED POP CORN", code: "" },
+    { item: "CHERRY VANILLA", code: "" },
+    { item: "CHOCOLATE DUBAI", code: "" },
+    { item: "COCO ROCK", code: "" },
+    { item: "COOKIES & CREAM", code: "" },
+    { item: "DARK CHOCOLATE SORBET 81%", code: "" },
+    { item: "DULCE DE LECHE", code: "" },
+    { item: "DULCE DE LECHE WITH BROWNIE", code: "" },
+    { item: "DULCE DE LECHE WITH STRACCIATELLA", code: "" },
+    { item: "HAZELNUT CHOCOLATE 0% ADDED SUGAR", code: "" },
+    { item: "HAZELNUT CREAM CHOCOLATE", code: "" },
+    { item: "KING BIANCO", code: "" },
+    { item: "KING NERO", code: "" },
+    { item: "LEMON PIE", code: "" },
+    { item: "LIME", code: "" },
+    { item: "LUCCIANO'S SIGNATURE CHOCOLATE", code: "" },
+    { item: "MANGO", code: "" },
+    { item: "MASCARPONE & BERRIES", code: "" },
+    { item: "MINT & CHOCOLATE", code: "" },
+    { item: "PASSION FRUIT", code: "" },
+    { item: "PASSION FRUIT CHEESECAKE", code: "" },
+    { item: "PISTACCHIO", code: "" },
+    { item: "RASPBERRY CHOCOLATE", code: "" },
+    { item: "STRAWBERRY", code: "" },
+    { item: "TIRAMISU", code: "" },
+    { item: "VANILLA", code: "" },
+    { item: "WHITE CHOCOLATE PISTACCHIO CRUNCH", code: "" },
+    { item: "WHITE GIANDUIA & SALTED CARAMEL", code: "" },
+    { item: "GIANDUIA CHOCOLATE SLAB", code: "" },
+    { item: "GIANDUIOTTO", code: "" },
+    { item: "NOCCIOLA SUPREMA", code: "" },
+    { item: "PISTACCHIO CHEESECAKE", code: "" },
+    { item: "TIRAMISU PISTACCHIO", code: "" },
+    { item: "OTHER SPECIFY", code: "" },
+    { item: "OTHER SPECIFY", code: "" },
+    { item: "OTHER SPECIFY", code: "" },
+    { item: "OTHER SPECIFY", code: "" },
+    { item: "OTHER SPECIFY", code: "" },
+    { item: "OTHER SPECIFY", code: "" },
+  ],
+};
+
+const STOCK_VENDOR_ORDER = ["PAPER", "COFFEE CORNER", "GRAB & GO", "OTHERS", "INGREDIENTS", "ALFAJORES", "ICE POPS", "GELATO"];
+
+const STOCK_VENDOR_LABELS = {
+  es: {
+    "PAPER": "Papel",
+    "COFFEE CORNER": "Rincón Café",
+    "GRAB & GO": "Grab & Go",
+    "OTHERS": "Otros",
+    "INGREDIENTS": "Ingredientes",
+    "ALFAJORES": "Alfajores",
+    "ICE POPS": "Ice Pops",
+    "GELATO": "Gelato",
+  },
+  en: {
+    "PAPER": "Paper",
+    "COFFEE CORNER": "Coffee Corner",
+    "GRAB & GO": "Grab & Go",
+    "OTHERS": "Others",
+    "INGREDIENTS": "Ingredients",
+    "ALFAJORES": "Alfajores",
+    "ICE POPS": "Ice Pops",
+    "GELATO": "Gelato",
+  },
+};
+function getStockVendorLabel(key, lang) {
+  return (STOCK_VENDOR_LABELS[lang] && STOCK_VENDOR_LABELS[lang][key]) || key;
+}
 
 function getAutoTheme() {
   const hour = new Date().getHours();
@@ -313,6 +548,21 @@ const STR = {
     pinWrong: "PIN incorrecto. Probá de nuevo.",
 
     sucursalSelectTitle: "Elegí tu sucursal",
+    menuTitle: "¿Qué querés hacer?",
+    comprasTitle: "Compras",
+    comprasDesc: "Armar y enviar el pedido semanal",
+    stocksTitle: "Stocks",
+    stocksDesc: "Hacer un raconto de inventario",
+    stockSubtitle: "Raconto de inventario",
+    stockCountLoaded: "ítem contado",
+    stockCountsLoaded: "ítems contados",
+    stockNoItemsYet: "Todavía no cargaste ningún conteo.",
+    stockSummary: "Resumen del conteo",
+    sendCount: "Enviar conteo",
+    stockSent: "Conteo enviado",
+    stockConfirmSub: (s) => `El conteo de stock de ${s} quedó guardado.`,
+    newCount: "Hacer otro conteo",
+    backToMenu: "Volver al menú",
 
     orderSubtitle: "Pedido semanal de stock",
     copyLast: "Copiar último pedido",
@@ -321,6 +571,9 @@ const STR = {
     recurring: "Recurrentes",
     restOfProducts: "Resto de productos",
     noMatch: (s) => `No hay productos que coincidan con "${s}".`,
+    customItemPlaceholder: "Nombre del producto",
+    addItem: "Agregar",
+    noCustomItemsYet: "Todavía no agregaste ningún producto libre.",
     qtyPlaceholder: "cant.",
     orderSummary: "Resumen del pedido",
     itemLoaded: "ítem cargado",
@@ -457,6 +710,21 @@ const STR = {
     pinWrong: "Wrong PIN. Try again.",
 
     sucursalSelectTitle: "Choose your branch",
+    menuTitle: "What do you want to do?",
+    comprasTitle: "Orders",
+    comprasDesc: "Build and send the weekly order",
+    stocksTitle: "Stock count",
+    stocksDesc: "Do an inventory count",
+    stockSubtitle: "Inventory count",
+    stockCountLoaded: "item counted",
+    stockCountsLoaded: "items counted",
+    stockNoItemsYet: "You haven't loaded any counts yet.",
+    stockSummary: "Count summary",
+    sendCount: "Send count",
+    stockSent: "Count sent",
+    stockConfirmSub: (s) => `${s}'s stock count was saved.`,
+    newCount: "Do another count",
+    backToMenu: "Back to menu",
 
     orderSubtitle: "Weekly stock order",
     copyLast: "Copy last order",
@@ -465,6 +733,9 @@ const STR = {
     recurring: "Recurring",
     restOfProducts: "Rest of products",
     noMatch: (s) => `No products match "${s}".`,
+    customItemPlaceholder: "Product name",
+    addItem: "Add",
+    noCustomItemsYet: "You haven't added any custom products yet.",
     qtyPlaceholder: "qty.",
     orderSummary: "Order summary",
     itemLoaded: "item loaded",
@@ -716,6 +987,11 @@ export default function App() {
   const [activeVendor, setActiveVendor] = useState("Mec3");
   const [search, setSearch] = useState("");
   const [draft, setDraft] = useState({});
+  const [stockActiveVendor, setStockActiveVendor] = useState(STOCK_VENDOR_ORDER[0]);
+  const [stockSearch, setStockSearch] = useState("");
+  const [stockDraft, setStockDraft] = useState({});
+  const [stockSubmitting, setStockSubmitting] = useState(false);
+  const [lastStockCount, setLastStockCount] = useState(null);
   const [notes, setNotes] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [toast, setToast] = useState(null);
@@ -910,6 +1186,42 @@ export default function App() {
     setScreen("sucursal-confirm");
   }
 
+  function setStockQty(vendor, item, value) {
+    setStockDraft((d) => ({ ...d, [vendor + "|" + item]: value }));
+  }
+
+  async function submitStockCount() {
+    const items = [];
+    Object.entries(stockDraft).forEach(([key, qty]) => {
+      if (qty && qty.trim() !== "") {
+        const sep = key.indexOf("|");
+        const vendor = key.slice(0, sep);
+        const itemName = key.slice(sep + 1);
+        items.push({ vendor, item: itemName, code: "", quantity: qty.trim() });
+      }
+    });
+    if (items.length === 0) {
+      setToast({ type: "error", text: STR[lang].errNoQtyToSubmit });
+      return;
+    }
+    const newCount = {
+      id: (crypto.randomUUID ? crypto.randomUUID() : Date.now().toString()),
+      sucursal,
+      date: new Date().toISOString(),
+      items,
+    };
+    setStockSubmitting(true);
+    const { error } = await supabase.from("stock_counts").insert([newCount]);
+    setStockSubmitting(false);
+    if (error) {
+      setToast({ type: "error", text: STR[lang].errCouldNotSave });
+      return;
+    }
+    setStockDraft({});
+    setLastStockCount(newCount);
+    setScreen("stock-confirm");
+  }
+
   async function updateStatus(orderId, status) {
     const patch = { status };
     if (status === "cancelado") patch.canceled_at = new Date().toISOString();
@@ -990,7 +1302,7 @@ export default function App() {
       {screen === "home" && <Home onSucursal={() => setScreen("sucursal-select")} onDeposito={() => setScreen(depositoSession ? "deposito" : "deposito-auth")} theme={theme} onToggleTheme={toggleTheme} lang={lang} onToggleLang={toggleLang} />}
 
       {screen === "sucursal-select" && (
-        <SucursalSelect onBack={() => setScreen("home")} onPick={(s) => requestPin(s, "order-form")} theme={theme} onToggleTheme={toggleTheme} lang={lang} onToggleLang={toggleLang} />
+        <SucursalSelect onBack={() => setScreen("home")} onPick={(s) => requestPin(s, OWN_SUCURSALES.includes(s) ? "sucursal-menu" : "order-form")} theme={theme} onToggleTheme={toggleTheme} lang={lang} onToggleLang={toggleLang} />
       )}
 
       {screen === "pin" && pendingRole && (
@@ -1005,10 +1317,23 @@ export default function App() {
         />
       )}
 
+      {screen === "sucursal-menu" && (
+        <SucursalMenu
+          sucursal={sucursal}
+          onBack={() => setScreen("sucursal-select")}
+          onCompras={() => setScreen("order-form")}
+          onStocks={() => setScreen("stock-form")}
+          theme={theme}
+          onToggleTheme={toggleTheme}
+          lang={lang}
+          onToggleLang={toggleLang}
+        />
+      )}
+
       {screen === "order-form" && (
         <OrderForm
           sucursal={sucursal}
-          onBack={() => setScreen("sucursal-select")}
+          onBack={() => setScreen(OWN_SUCURSALES.includes(sucursal) ? "sucursal-menu" : "sucursal-select")}
           onViewHistory={() => setScreen("sucursal-history")}
           activeVendor={activeVendor}
           setActiveVendor={setActiveVendor}
@@ -1038,6 +1363,36 @@ export default function App() {
           lastOrder={lastOrder}
           onNewOrder={() => setScreen("order-form")}
           onHistory={() => setScreen("sucursal-history")}
+          onHome={() => { setSucursal(null); setScreen("home"); }}
+          lang={lang}
+        />
+      )}
+
+      {screen === "stock-form" && (
+        <StockForm
+          sucursal={sucursal}
+          onBack={() => setScreen("sucursal-menu")}
+          activeVendor={stockActiveVendor}
+          setActiveVendor={setStockActiveVendor}
+          search={stockSearch}
+          setSearch={setStockSearch}
+          draft={stockDraft}
+          setQty={setStockQty}
+          onSubmit={submitStockCount}
+          submitting={stockSubmitting}
+          theme={theme}
+          onToggleTheme={toggleTheme}
+          lang={lang}
+          onToggleLang={toggleLang}
+        />
+      )}
+
+      {screen === "stock-confirm" && (
+        <StockConfirm
+          sucursal={sucursal}
+          lastStockCount={lastStockCount}
+          onNewCount={() => setScreen("stock-form")}
+          onMenu={() => setScreen("sucursal-menu")}
           onHome={() => { setSucursal(null); setScreen("home"); }}
           lang={lang}
         />
@@ -1422,6 +1777,27 @@ function SucursalSelect({ onBack, onPick, theme, onToggleTheme, lang, onToggleLa
   );
 }
 
+function SucursalMenu({ sucursal, onBack, onCompras, onStocks, theme, onToggleTheme, lang, onToggleLang }) {
+  const t = STR[lang];
+  return (
+    <div style={styles.wrap}>
+      <TopBar onBack={onBack} title={sucursal} subtitle={t.menuTitle} theme={theme} onToggleTheme={onToggleTheme} lang={lang} onToggleLang={onToggleLang} />
+      <div style={{ ...styles.roleGrid, marginTop: 8, maxWidth: 520 }}>
+        <button style={styles.roleCard} onClick={onCompras}>
+          <Package size={28} color="var(--plum)" strokeWidth={1.6} />
+          <div style={styles.roleTitle}>{t.comprasTitle}</div>
+          <div style={styles.roleDesc}>{t.comprasDesc}</div>
+        </button>
+        <button style={styles.roleCard} onClick={onStocks}>
+          <ClipboardList size={28} color="var(--plum)" strokeWidth={1.6} />
+          <div style={styles.roleTitle}>{t.stocksTitle}</div>
+          <div style={styles.roleDesc}>{t.stocksDesc}</div>
+        </button>
+      </div>
+    </div>
+  );
+}
+
 function ItemRow({ p, activeVendor, draft, setQty, lang, onFocusItem, onBlurItem }) {
   const key = activeVendor + "|" + p.item;
   return (
@@ -1450,6 +1826,15 @@ function OrderForm({ sucursal, onBack, onViewHistory, activeVendor, setActiveVen
   const [showConfirm, setShowConfirm] = useState(false);
   const [focusedKey, setFocusedKey] = useState(null);
   const frozenHadValueRef = useRef(false);
+  const [customName, setCustomName] = useState("");
+  const [customQty, setCustomQty] = useState("");
+
+  function handleAddCustom() {
+    if (!customName.trim()) return;
+    setQty("Todos", customName.trim(), customQty.trim() || "1");
+    setCustomName("");
+    setCustomQty("");
+  }
 
   function handleFocusItem(key) {
     frozenHadValueRef.current = !!(draft[key] && draft[key].trim() !== "");
@@ -1501,6 +1886,10 @@ function OrderForm({ sucursal, onBack, onViewHistory, activeVendor, setActiveVen
   });
   recurrent.sort((a, b) => (itemFrequency[b.item] || 0) - (itemFrequency[a.item] || 0));
 
+  const customItems = Object.keys(draft)
+    .filter((k) => k.startsWith("Todos|") && draft[k] && draft[k].trim() !== "")
+    .map((k) => ({ item: k.slice(6), code: "" }));
+
   return (
     <div style={styles.wrap}>
       <TopBar onBack={onBack} title={sucursal} subtitle={t.orderSubtitle} theme={theme} onToggleTheme={onToggleTheme} lang={lang} onToggleLang={onToggleLang} />
@@ -1524,32 +1913,63 @@ function OrderForm({ sucursal, onBack, onViewHistory, activeVendor, setActiveVen
             </div>
           </div>
 
-          <div style={styles.searchBox}>
-            <Search size={16} color="var(--muted-faint)" />
-            <input
-              style={styles.searchInput}
-              placeholder={t.searchPlaceholder(getVendorLabel(activeVendor, lang))}
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-            />
-          </div>
+          {activeVendor === "Todos" ? (
+            <>
+              <div style={styles.customEntryRow}>
+                <input
+                  style={styles.customEntryInput}
+                  placeholder={t.customItemPlaceholder}
+                  value={customName}
+                  onChange={(e) => setCustomName(e.target.value)}
+                  onKeyDown={(e) => { if (e.key === "Enter") handleAddCustom(); }}
+                />
+                <input
+                  style={{ ...styles.qtyInput, flexShrink: 0 }}
+                  placeholder={t.qtyPlaceholder}
+                  inputMode="decimal"
+                  value={customQty}
+                  onChange={(e) => setCustomQty(sanitizeQty(e.target.value))}
+                  onKeyDown={(e) => { if (e.key === "Enter") handleAddCustom(); }}
+                />
+                <button style={styles.customEntryAddBtn} onClick={handleAddCustom}>{t.addItem}</button>
+              </div>
+              <div style={styles.itemList}>
+                {customItems.length === 0 && <div style={styles.emptyRow}>{t.noCustomItemsYet}</div>}
+                {customItems.map((p) => (
+                  <ItemRow key={"Todos|" + p.item} p={p} activeVendor="Todos" draft={draft} setQty={setQty} lang={lang} onFocusItem={handleFocusItem} onBlurItem={handleBlurItem} />
+                ))}
+              </div>
+            </>
+          ) : (
+            <>
+              <div style={styles.searchBox}>
+                <Search size={16} color="var(--muted-faint)" />
+                <input
+                  style={styles.searchInput}
+                  placeholder={t.searchPlaceholder(getVendorLabel(activeVendor, lang))}
+                  value={search}
+                  onChange={(e) => setSearch(e.target.value)}
+                />
+              </div>
 
-          <div style={styles.itemList}>
-            {withQty.map((p) => (
-              <ItemRow key={activeVendor + "|" + p.item} p={p} activeVendor={activeVendor} draft={draft} setQty={setQty} lang={lang} onFocusItem={handleFocusItem} onBlurItem={handleBlurItem} />
-            ))}
-            {recurrent.length > 0 && <div style={styles.itemSectionLabel}>{t.recurring}</div>}
-            {recurrent.map((p) => (
-              <ItemRow key={activeVendor + "|" + p.item} p={p} activeVendor={activeVendor} draft={draft} setQty={setQty} lang={lang} onFocusItem={handleFocusItem} onBlurItem={handleBlurItem} />
-            ))}
-            {rest.length > 0 && (withQty.length > 0 || recurrent.length > 0) && (
-              <div style={styles.itemSectionLabel}>{t.restOfProducts}</div>
-            )}
-            {rest.map((p) => (
-              <ItemRow key={activeVendor + "|" + p.item} p={p} activeVendor={activeVendor} draft={draft} setQty={setQty} lang={lang} onFocusItem={handleFocusItem} onBlurItem={handleBlurItem} />
-            ))}
-            {filteredItems.length === 0 && <div style={styles.emptyRow}>{t.noMatch(search)}</div>}
-          </div>
+              <div style={styles.itemList}>
+                {withQty.map((p) => (
+                  <ItemRow key={activeVendor + "|" + p.item} p={p} activeVendor={activeVendor} draft={draft} setQty={setQty} lang={lang} onFocusItem={handleFocusItem} onBlurItem={handleBlurItem} />
+                ))}
+                {recurrent.length > 0 && <div style={styles.itemSectionLabel}>{t.recurring}</div>}
+                {recurrent.map((p) => (
+                  <ItemRow key={activeVendor + "|" + p.item} p={p} activeVendor={activeVendor} draft={draft} setQty={setQty} lang={lang} onFocusItem={handleFocusItem} onBlurItem={handleBlurItem} />
+                ))}
+                {rest.length > 0 && (withQty.length > 0 || recurrent.length > 0) && (
+                  <div style={styles.itemSectionLabel}>{t.restOfProducts}</div>
+                )}
+                {rest.map((p) => (
+                  <ItemRow key={activeVendor + "|" + p.item} p={p} activeVendor={activeVendor} draft={draft} setQty={setQty} lang={lang} onFocusItem={handleFocusItem} onBlurItem={handleBlurItem} />
+                ))}
+                {filteredItems.length === 0 && <div style={styles.emptyRow}>{t.noMatch(search)}</div>}
+              </div>
+            </>
+          )}
         </div>
 
         <div className="order-ticket" style={styles.ticket}>
@@ -1609,6 +2029,105 @@ function OrderForm({ sucursal, onBack, onViewHistory, activeVendor, setActiveVen
           </div>
         </div>
       )}
+    </div>
+  );
+}
+
+function StockForm({ sucursal, onBack, activeVendor, setActiveVendor, search, setSearch, draft, setQty, onSubmit, submitting, theme, onToggleTheme, lang, onToggleLang }) {
+  const t = STR[lang];
+  const [focusedKey, setFocusedKey] = useState(null);
+  const frozenHadValueRef = useRef(false);
+
+  function handleFocusItem(key) {
+    frozenHadValueRef.current = !!(draft[key] && draft[key].trim() !== "");
+    setFocusedKey(key);
+  }
+  function handleBlurItem() {
+    setFocusedKey(null);
+  }
+
+  const filteredItems = STOCK_VENDORS[activeVendor].filter((p) =>
+    p.item.toLowerCase().includes(search.toLowerCase())
+  );
+
+  const draftCount = Object.values(draft).filter((v) => v && v.trim() !== "").length;
+
+  const withQty = [];
+  const rest = [];
+  filteredItems.forEach((p) => {
+    const key = activeVendor + "|" + p.item;
+    const liveHasValue = !!(draft[key] && draft[key].trim() !== "");
+    const hasValue = key === focusedKey ? frozenHadValueRef.current : liveHasValue;
+    if (hasValue) withQty.push(p);
+    else rest.push(p);
+  });
+
+  return (
+    <div style={styles.wrap}>
+      <TopBar onBack={onBack} title={sucursal} subtitle={t.stockSubtitle} theme={theme} onToggleTheme={onToggleTheme} lang={lang} onToggleLang={onToggleLang} />
+      <div className="order-layout" style={styles.formLayout}>
+        <div style={styles.formMain}>
+          <div style={{ ...styles.tabs, marginBottom: 14 }}>
+            {STOCK_VENDOR_ORDER.map((v) => (
+              <button
+                key={v}
+                onClick={() => { setActiveVendor(v); setSearch(""); }}
+                style={{ ...styles.tab, ...(activeVendor === v ? styles.tabActive : {}) }}
+              >
+                {getStockVendorLabel(v, lang)}
+              </button>
+            ))}
+          </div>
+
+          <div style={styles.searchBox}>
+            <Search size={16} color="var(--muted-faint)" />
+            <input
+              style={styles.searchInput}
+              placeholder={t.searchPlaceholder(getStockVendorLabel(activeVendor, lang))}
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+            />
+          </div>
+
+          <div style={styles.itemList}>
+            {withQty.map((p) => (
+              <ItemRow key={activeVendor + "|" + p.item} p={p} activeVendor={activeVendor} draft={draft} setQty={setQty} lang={lang} onFocusItem={handleFocusItem} onBlurItem={handleBlurItem} />
+            ))}
+            {rest.length > 0 && withQty.length > 0 && <div style={styles.itemSectionLabel}>{t.restOfProducts}</div>}
+            {rest.map((p) => (
+              <ItemRow key={activeVendor + "|" + p.item} p={p} activeVendor={activeVendor} draft={draft} setQty={setQty} lang={lang} onFocusItem={handleFocusItem} onBlurItem={handleBlurItem} />
+            ))}
+            {filteredItems.length === 0 && <div style={styles.emptyRow}>{t.noMatch(search)}</div>}
+          </div>
+        </div>
+
+        <div className="order-ticket" style={styles.ticket}>
+          <div style={styles.ticketHeader}>
+            <ClipboardList size={16} color="var(--plum)" />
+            <span>{t.stockSummary}</span>
+          </div>
+          <div style={styles.ticketCount}>{draftCount} {draftCount === 1 ? t.stockCountLoaded : t.stockCountsLoaded}</div>
+          <div style={styles.ticketDivider} />
+          <div style={styles.ticketItems}>
+            {draftCount === 0 && <div style={styles.ticketEmpty}>{t.stockNoItemsYet}</div>}
+            {Object.entries(draft).filter(([, v]) => v && v.trim() !== "").map(([key, qty]) => {
+              const sep = key.indexOf("|");
+              const itemName = key.slice(sep + 1);
+              return (
+                <div key={key} style={styles.ticketLine}>
+                  <span style={styles.ticketLineName}>{itemName}</span>
+                  <span style={styles.ticketLineQty}>{qty}</span>
+                </div>
+              );
+            })}
+          </div>
+          <div style={styles.ticketDivider} />
+          <button style={styles.submitBtn} onClick={onSubmit} disabled={submitting || draftCount === 0}>
+            {submitting ? <Loader2 size={16} style={{ animation: "spin 1s linear infinite" }} /> : <Send size={16} />}
+            {submitting ? t.sending : t.sendCount}
+          </button>
+        </div>
+      </div>
     </div>
   );
 }
@@ -1730,6 +2249,37 @@ function Confirm({ sucursal, lastOrder, onNewOrder, onHistory, onHome, lang }) {
       <div style={{ display: "flex", gap: 12, marginTop: 20, flexWrap: "wrap", justifyContent: "center" }}>
         <button style={styles.secondaryBtn} onClick={onHistory}>{t.viewMyOrders}</button>
         <button style={styles.secondaryBtn} onClick={onNewOrder}>{t.loadAnotherOrder}</button>
+      </div>
+      <button style={styles.textLink} onClick={onHome}>{t.backHome}</button>
+    </div>
+  );
+}
+
+function StockConfirm({ sucursal, lastStockCount, onNewCount, onMenu, onHome, lang }) {
+  const t = STR[lang];
+  return (
+    <div style={styles.center}>
+      <CheckCircle2 size={48} color="var(--pistachio-dark)" strokeWidth={1.5} />
+      <h1 style={styles.h1}>{t.stockSent}</h1>
+      <p style={styles.sub}>{t.stockConfirmSub(sucursal)}</p>
+      {lastStockCount && (
+        <div style={{ width: "100%", maxWidth: 460, marginTop: 20, textAlign: "left" }}>
+          {STOCK_VENDOR_ORDER.filter((v) => lastStockCount.items.some((it) => it.vendor === v)).map((v) => (
+            <div key={v} style={{ marginBottom: 14 }}>
+              <div style={styles.vendorLabel}>{getStockVendorLabel(v, lang)}</div>
+              {lastStockCount.items.filter((it) => it.vendor === v).map((it, i) => (
+                <div key={i} style={styles.detailLine}>
+                  <strong>{it.item}</strong>
+                  <span style={styles.detailQty}>{it.quantity}</span>
+                </div>
+              ))}
+            </div>
+          ))}
+        </div>
+      )}
+      <div style={{ display: "flex", gap: 12, marginTop: 20, flexWrap: "wrap", justifyContent: "center" }}>
+        <button style={styles.secondaryBtn} onClick={onMenu}>{t.backToMenu}</button>
+        <button style={styles.secondaryBtn} onClick={onNewCount}>{t.newCount}</button>
       </div>
       <button style={styles.textLink} onClick={onHome}>{t.backHome}</button>
     </div>
@@ -2398,6 +2948,15 @@ const styles = {
     border: "1.5px solid var(--line)", borderRadius: 10, padding: "9px 12px", marginBottom: 14,
   },
   searchInput: { border: "none", outline: "none", background: "transparent", fontSize: 14, width: "100%", color: "var(--ink)" },
+  customEntryRow: { display: "flex", gap: 8, marginBottom: 14, flexWrap: "wrap" },
+  customEntryInput: {
+    flex: 1, minWidth: 160, border: "1.5px solid var(--line)", borderRadius: 10,
+    padding: "9px 12px", fontSize: 14, background: "var(--paper)", color: "var(--ink)",
+  },
+  customEntryAddBtn: {
+    background: "var(--plum)", color: "var(--on-accent)", border: "none", borderRadius: 10,
+    padding: "9px 18px", fontSize: 13, fontWeight: 600, cursor: "pointer", flexShrink: 0,
+  },
   itemList: { background: "var(--paper)", border: "1.5px solid var(--line)", borderRadius: 14, maxHeight: 520, overflowY: "auto", boxShadow: "0 2px 8px rgba(43,35,32,0.12)" },
   itemRow: {
     display: "flex", alignItems: "center", justifyContent: "space-between",

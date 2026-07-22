@@ -604,6 +604,7 @@ const STR = {
     stepCopyTable: 'Apretá "Copiar tabla con formato" abajo.',
     stepOpenMail: (email) => `Abrí un mail nuevo a ${email} y pegalo con `,
     stepSameFormat: "Va a quedar con el mismo formato de tabla que le mandamos siempre a los proveedores.",
+    stockStepSameFormat: "Va a quedar con el mismo formato de tabla que usamos para el conteo de depósito.",
     copyTableBtn: "Copiar tabla con formato",
     copiedPasteNow: "¡Copiado! Ahora pegalo en el mail",
     copyFailed: "No se pudo copiar, probá con el texto de abajo",
@@ -775,6 +776,7 @@ const STR = {
     stepCopyTable: 'Tap "Copy formatted table" below.',
     stepOpenMail: (email) => `Open a new email to ${email} and paste it with `,
     stepSameFormat: "It will keep the same table format we always send to vendors.",
+    stockStepSameFormat: "It will keep the same table format we use for the warehouse count.",
     copyTableBtn: "Copy formatted table",
     copiedPasteNow: "Copied! Now paste it in the email",
     copyFailed: "Couldn't copy, try the text below",
@@ -988,6 +990,50 @@ function buildOrderHtmlTable(order) {
 function buildMailto(order) {
   const subject = `Pedido de stock - ${order.sucursal} - ${fmtDate(order.date)}`;
   const body = buildMailBody(order);
+  return `mailto:${ORDER_EMAIL}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+}
+
+function buildStockMailBody(stockCount, lang = "es") {
+  let body = `Raconto de inventario\nSucursal: ${stockCount.sucursal}\nFecha: ${fmtDate(stockCount.date)}\n\n`;
+  STOCK_REAL_CATEGORIES.filter((v) => stockCount.items.some((it) => it.vendor === v)).forEach((v) => {
+    body += `${getStockVendorLabel(v, lang)}\n`;
+    stockCount.items.filter((it) => it.vendor === v).forEach((it) => {
+      body += `  - ${it.item}: ${it.quantity}\n`;
+    });
+    body += `\n`;
+  });
+  return body;
+}
+
+function buildStockHtmlTable(stockCount, lang = "es") {
+  const font = "font-family:Arial,Helvetica,sans-serif;font-size:13px;";
+  const headerCell = `border:1px solid #000000;padding:6px 14px;font-weight:bold;background:#ffffff;${font}`;
+  const headerCellCenter = `${headerCell}text-align:center;`;
+  const dataCell = `border:1px solid #000000;padding:6px 14px;background:#d9d9d9;${font}`;
+  const dataCellCenter = `${dataCell}text-align:center;`;
+
+  let html = `<div style="${font}color:#000000;">`;
+  html += `<p style="margin:0 0 2px;"><strong>Raconto de inventario</strong></p>`;
+  html += `<p style="margin:0 0 2px;">Sucursal: ${escapeHtml(stockCount.sucursal)}</p>`;
+  html += `<p style="margin:0 0 14px;">Fecha: ${escapeHtml(fmtDate(stockCount.date))}</p>`;
+
+  STOCK_REAL_CATEGORIES.filter((v) => stockCount.items.some((it) => it.vendor === v)).forEach((v) => {
+    html += `<p style="margin:0 0 6px;font-weight:bold;">${escapeHtml(getStockVendorLabel(v, lang))}</p>`;
+    html += `<table style="border-collapse:collapse;margin-bottom:18px;">`;
+    html += `<tr><td style="${headerCell}">Item</td><td style="${headerCellCenter}"></td></tr>`;
+    stockCount.items.filter((it) => it.vendor === v).forEach((it) => {
+      html += `<tr><td style="${dataCell}">${escapeHtml(it.item)}</td><td style="${dataCellCenter}">${escapeHtml(it.quantity)}</td></tr>`;
+    });
+    html += `</table>`;
+  });
+
+  html += `</div>`;
+  return html;
+}
+
+function buildStockMailto(stockCount, lang = "es") {
+  const subject = `Raconto de inventario - ${stockCount.sucursal} - ${fmtDate(stockCount.date)}`;
+  const body = buildStockMailBody(stockCount, lang);
   return `mailto:${ORDER_EMAIL}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
 }
 
@@ -2405,24 +2451,114 @@ function Confirm({ sucursal, lastOrder, onNewOrder, onHistory, onHome, lang }) {
 
 function StockConfirm({ sucursal, lastStockCount, onNewCount, onMenu, onHome, lang }) {
   const t = STR[lang];
+  const textRef = useRef(null);
+  const [selected, setSelected] = useState(false);
+  const [copiedTable, setCopiedTable] = useState(false);
+  const [copyError, setCopyError] = useState(false);
+
+  function selectAll() {
+    if (textRef.current) {
+      textRef.current.focus();
+      textRef.current.select();
+      setSelected(true);
+    }
+  }
+
+  async function copyFormattedTable() {
+    if (!lastStockCount) return;
+    const html = buildStockHtmlTable(lastStockCount, lang);
+    const text = buildStockMailBody(lastStockCount, lang);
+    try {
+      if (navigator.clipboard && window.ClipboardItem) {
+        await navigator.clipboard.write([
+          new window.ClipboardItem({
+            "text/html": new Blob([html], { type: "text/html" }),
+            "text/plain": new Blob([text], { type: "text/plain" }),
+          }),
+        ]);
+      } else {
+        await navigator.clipboard.writeText(text);
+      }
+      setCopyError(false);
+      setCopiedTable(true);
+      setTimeout(() => setCopiedTable(false), 3000);
+    } catch (err) {
+      setCopyError(true);
+      setTimeout(() => setCopyError(false), 3000);
+    }
+  }
+
   return (
     <div style={styles.center}>
       <CheckCircle2 size={48} color="var(--pistachio-dark)" strokeWidth={1.5} />
       <h1 style={styles.h1}>{t.stockSent}</h1>
       <p style={styles.sub}>{t.stockConfirmSub(sucursal)}</p>
+      <p style={{ ...styles.sub, fontSize: 13, marginTop: 4 }}>
+        {t.alsoByMail(ORDER_EMAIL)}<strong>{ORDER_EMAIL}</strong>:
+      </p>
       {lastStockCount && (
-        <div style={{ width: "100%", maxWidth: 460, marginTop: 20, textAlign: "left" }}>
-          {STOCK_VENDOR_ORDER.filter((v) => lastStockCount.items.some((it) => it.vendor === v)).map((v) => (
-            <div key={v} style={{ marginBottom: 14 }}>
-              <div style={styles.vendorLabel}>{getStockVendorLabel(v, lang)}</div>
-              {lastStockCount.items.filter((it) => it.vendor === v).map((it, i) => (
-                <div key={i} style={styles.detailLine}>
-                  <strong>{it.item}</strong>
-                  <span style={styles.detailQty}>{it.quantity}</span>
-                </div>
-              ))}
-            </div>
-          ))}
+        <div style={{ width: "100%", maxWidth: 460, marginTop: 14 }}>
+          <ol style={{ textAlign: "left", fontSize: 13, color: "var(--muted-strong)", paddingLeft: 20, margin: "0 0 12px" }}>
+            <li>{t.stepCopyTable}</li>
+            <li>{t.stepOpenMail(ORDER_EMAIL)}<strong>Ctrl+V</strong> ({lang === "en" ? "or Cmd+V on Mac" : "o Cmd+V en Mac"}).</li>
+            <li>{t.stockStepSameFormat}</li>
+          </ol>
+          <button
+            onClick={copyFormattedTable}
+            style={{ ...styles.submitBtn, width: "100%" }}
+          >
+            {copiedTable ? <CheckCircle2 size={16} /> : <ClipboardList size={16} />}
+            {copiedTable
+              ? t.copiedPasteNow
+              : copyError
+              ? t.copyFailed
+              : t.copyTableBtn}
+          </button>
+
+          <div style={styles.tablePreviewWrap}>
+            {STOCK_REAL_CATEGORIES.filter((v) => lastStockCount.items.some((it) => it.vendor === v)).map((v) => (
+              <div key={v} style={{ marginBottom: 14 }}>
+                <div style={styles.tablePreviewVendor}>{getStockVendorLabel(v, lang)}</div>
+                <table style={styles.tablePreviewTable}>
+                  <tbody>
+                    <tr>
+                      <td style={styles.tablePreviewHeaderCell}>Item</td>
+                      <td style={styles.tablePreviewHeaderCell}></td>
+                    </tr>
+                    {lastStockCount.items.filter((it) => it.vendor === v).map((it, i) => (
+                      <tr key={i}>
+                        <td style={styles.tablePreviewDataCell}>{it.item}</td>
+                        <td style={{ ...styles.tablePreviewDataCell, textAlign: "center" }}>{it.quantity}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            ))}
+          </div>
+
+          <details style={{ marginTop: 6 }}>
+            <summary style={styles.textLink}>{t.plainTextFallback}</summary>
+            <textarea
+              ref={textRef}
+              readOnly
+              value={buildStockMailBody(lastStockCount, lang)}
+              style={{ ...styles.copyBox, marginTop: 10 }}
+              rows={8}
+              onFocus={(e) => e.target.select()}
+            />
+            <button
+              onClick={selectAll}
+              style={{ ...styles.secondaryBtn, width: "100%", marginTop: 10, display: "flex", alignItems: "center", justifyContent: "center", gap: 8 }}
+            >
+              {selected ? <CheckCircle2 size={16} color="var(--pistachio-dark)" /> : null}
+              {selected ? t.textSelected : t.selectAllText}
+            </button>
+          </details>
+
+          <a href={buildStockMailto(lastStockCount, lang)} style={{ ...styles.historyLink, display: "block", textAlign: "center" }}>
+            {t.openMailApp}
+          </a>
         </div>
       )}
       <div style={{ display: "flex", gap: 12, marginTop: 20, flexWrap: "wrap", justifyContent: "center" }}>

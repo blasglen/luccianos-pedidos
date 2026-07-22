@@ -633,7 +633,10 @@ const STR = {
     hideBackup: "Ocultar respaldo",
     exportAllOrders: "Exportar todos los pedidos",
     byOrder: "Por pedido",
+    byCount: "Por conteo",
     byProduct: "Por producto",
+    loadingStocks: "Cargando stocks...",
+    noStocksMatchFilter: "No hay conteos de stock que coincidan con el filtro.",
     allBranches: "Todas las sucursales",
     allStatuses: "Todos los estados",
     statusPendiente: "Pendiente",
@@ -800,7 +803,10 @@ const STR = {
     hideBackup: "Hide backup",
     exportAllOrders: "Export all orders",
     byOrder: "By order",
+    byCount: "By count",
     byProduct: "By product",
+    loadingStocks: "Loading stocks...",
+    noStocksMatchFilter: "No stock counts match the filter.",
     allBranches: "All branches",
     allStatuses: "All statuses",
     statusPendiente: "Pending",
@@ -1006,6 +1012,11 @@ export default function App() {
   const [filterDateFrom, setFilterDateFrom] = useState("");
   const [filterDateTo, setFilterDateTo] = useState("");
   const [depositoView, setDepositoView] = useState("pedido");
+  const [depositoSection, setDepositoSection] = useState("compras");
+  const [depositoStockView, setDepositoStockView] = useState("conteo");
+  const [stockCounts, setStockCounts] = useState([]);
+  const [stockCountsLoading, setStockCountsLoading] = useState(true);
+  const [expandedStockCount, setExpandedStockCount] = useState(null);
   const [theme, setTheme] = useState(() => {
     if (typeof window === "undefined") return "night";
     const saved = localStorage.getItem("luccianos-theme");
@@ -1042,6 +1053,8 @@ export default function App() {
   const [authChecked, setAuthChecked] = useState(false);
 
   useEffect(() => { loadOrders(); }, []);
+
+  useEffect(() => { loadStockCounts(); }, []);
 
   useEffect(() => { loadStockExtraProducts(); }, []);
 
@@ -1087,6 +1100,18 @@ export default function App() {
       setOrders(data || []);
     }
     setLoading(false);
+  }
+
+  async function loadStockCounts() {
+    setStockCountsLoading(true);
+    const { data, error } = await supabase
+      .from("stock_counts")
+      .select("*")
+      .order("date", { ascending: false });
+    if (!error) {
+      setStockCounts(data || []);
+    }
+    setStockCountsLoading(false);
   }
 
   function requestPin(key, nextScreen) {
@@ -1247,6 +1272,7 @@ export default function App() {
       return;
     }
     setStockDraft({});
+    setStockCounts((prev) => [newCount, ...prev]);
     setLastStockCount(newCount);
     setScreen("stock-confirm");
   }
@@ -1295,6 +1321,19 @@ export default function App() {
         return orderTime >= from && orderTime <= to;
       });
   }, [orders, filterSucursal, filterStatus, filterDateFrom, filterDateTo]);
+
+  const depositoStockCounts = useMemo(() => {
+    return stockCounts
+      .filter((c) => filterSucursal === "Todas" || c.sucursal === filterSucursal)
+      .filter((c) => {
+        if (!filterDateFrom) return true;
+        const countTime = new Date(c.date).getTime();
+        const from = new Date(`${filterDateFrom}T00:00:00`).getTime();
+        const toDay = filterDateTo || filterDateFrom;
+        const to = new Date(`${toDay}T23:59:59`).getTime();
+        return countTime >= from && countTime <= to;
+      });
+  }, [stockCounts, filterSucursal, filterDateFrom, filterDateTo]);
 
   return (
     <div style={{ ...styles.page, ...THEMES[theme] }}>
@@ -1474,6 +1513,15 @@ export default function App() {
           setFilterDateTo={setFilterDateTo}
           depositoView={depositoView}
           setDepositoView={setDepositoView}
+          depositoSection={depositoSection}
+          setDepositoSection={setDepositoSection}
+          depositoStockView={depositoStockView}
+          setDepositoStockView={setDepositoStockView}
+          stockCounts={depositoStockCounts}
+          allStockCounts={stockCounts}
+          stockCountsLoading={stockCountsLoading}
+          expandedStockCount={expandedStockCount}
+          setExpandedStockCount={setExpandedStockCount}
           expandedOrder={expandedOrder}
           setExpandedOrder={setExpandedOrder}
           updateStatus={updateStatus}
@@ -2567,10 +2615,12 @@ function DateRangePicker({ from, to, setFrom, setTo, lang }) {
   );
 }
 
-function Deposito({ onBack, loading, orders, allOrders, filterSucursal, setFilterSucursal, filterStatus, setFilterStatus, filterDateFrom, setFilterDateFrom, filterDateTo, setFilterDateTo, depositoView, setDepositoView, expandedOrder, setExpandedOrder, updateStatus, onImportOrders, userEmail, onLogout, theme, onToggleTheme, lang, onToggleLang }) {
+function Deposito({ onBack, loading, orders, allOrders, filterSucursal, setFilterSucursal, filterStatus, setFilterStatus, filterDateFrom, setFilterDateFrom, filterDateTo, setFilterDateTo, depositoView, setDepositoView, depositoSection, setDepositoSection, depositoStockView, setDepositoStockView, stockCounts, allStockCounts, stockCountsLoading, expandedStockCount, setExpandedStockCount, expandedOrder, setExpandedOrder, updateStatus, onImportOrders, userEmail, onLogout, theme, onToggleTheme, lang, onToggleLang }) {
   const t = STR[lang];
   const pendingCount = allOrders.filter((o) => o.status === "pendiente").length;
   const [showExport, setShowExport] = useState(false);
+  const isCompras = depositoSection === "compras";
+  const isStocks = depositoSection === "stocks";
 
   const productSummary = useMemo(() => {
     const map = new Map();
@@ -2587,6 +2637,21 @@ function Deposito({ onBack, loading, orders, allOrders, filterSucursal, setFilte
     return Array.from(map.values()).sort((a, b) => b.total - a.total);
   }, [orders]);
 
+  const stockProductSummary = useMemo(() => {
+    const map = new Map();
+    stockCounts.forEach((c) => {
+      c.items.forEach((it) => {
+        const key = `${it.vendor}|${it.item}|${it.code || ""}`;
+        const qty = parseFloat(String(it.quantity).replace(",", ".")) || 0;
+        if (!map.has(key)) {
+          map.set(key, { vendor: it.vendor, item: it.item, code: it.code || "", total: 0 });
+        }
+        map.get(key).total += qty;
+      });
+    });
+    return Array.from(map.values()).sort((a, b) => b.total - a.total);
+  }, [stockCounts]);
+
   return (
     <div style={styles.wrap}>
       <TopBar onBack={onBack} title={t.depositoTitle} subtitle={t.pendingOrdersSubtitle(pendingCount)} theme={theme} onToggleTheme={onToggleTheme} lang={lang} onToggleLang={onToggleLang} />
@@ -2600,99 +2665,192 @@ function Deposito({ onBack, loading, orders, allOrders, filterSucursal, setFilte
 
       {showExport && <ExportPanel orders={allOrders} onImport={onImportOrders} lang={lang} />}
 
-      <div style={styles.tabs}>
+      <div style={styles.sectionToggle}>
         <button
-          style={{ ...styles.tab, ...(depositoView === "pedido" ? styles.tabActive : {}) }}
-          onClick={() => setDepositoView("pedido")}
+          style={{ ...styles.sectionToggleBtn, ...(isCompras ? styles.sectionToggleBtnActive : {}) }}
+          onClick={() => setDepositoSection("compras")}
         >
-          {t.byOrder}
+          {t.comprasTitle}
         </button>
         <button
-          style={{ ...styles.tab, ...(depositoView === "producto" ? styles.tabActive : {}) }}
-          onClick={() => setDepositoView("producto")}
+          style={{ ...styles.sectionToggleBtn, ...(isStocks ? styles.sectionToggleBtnActive : {}) }}
+          onClick={() => setDepositoSection("stocks")}
         >
-          {t.byProduct}
+          {t.stocksTitle}
         </button>
       </div>
 
-      <div style={styles.filters}>
-        <select style={styles.select} value={filterSucursal} onChange={(e) => setFilterSucursal(e.target.value)}>
-          <option value="Todas">{t.allBranches}</option>
-          {SUCURSALES.map((s) => <option key={s} value={s}>{s}</option>)}
-        </select>
-        <select style={styles.select} value={filterStatus} onChange={(e) => setFilterStatus(e.target.value)}>
-          <option value="todas">{t.allStatuses}</option>
-          <option value="pendiente">{t.statusPendiente}</option>
-          <option value="pedido">{t.statusPedido}</option>
-          <option value="cancelado">{t.statusCancelado}</option>
-        </select>
-        <DateRangePicker
-          from={filterDateFrom}
-          to={filterDateTo}
-          setFrom={setFilterDateFrom}
-          setTo={setFilterDateTo}
-          lang={lang}
-        />
-      </div>
+      {isCompras && (
+        <>
+          <div style={styles.tabs}>
+            <button
+              style={{ ...styles.tab, ...(depositoView === "pedido" ? styles.tabActive : {}) }}
+              onClick={() => setDepositoView("pedido")}
+            >
+              {t.byOrder}
+            </button>
+            <button
+              style={{ ...styles.tab, ...(depositoView === "producto" ? styles.tabActive : {}) }}
+              onClick={() => setDepositoView("producto")}
+            >
+              {t.byProduct}
+            </button>
+          </div>
 
-      {loading && <div style={styles.emptyRow}>{t.loadingOrders}</div>}
-      {!loading && orders.length === 0 && <div style={styles.emptyRow}>{t.noOrdersMatchFilter}</div>}
-
-      {!loading && orders.length > 0 && depositoView === "pedido" && (
-        <div style={styles.orderCards}>
-          {orders.map((o) => (
-            <OrderCard
-              key={o.id}
-              order={o}
-              expanded={expandedOrder === o.id}
-              onToggle={() => setExpandedOrder(expandedOrder === o.id ? null : o.id)}
-              showSucursal
-              allOrders={allOrders}
+          <div style={styles.filters}>
+            <select style={styles.select} value={filterSucursal} onChange={(e) => setFilterSucursal(e.target.value)}>
+              <option value="Todas">{t.allBranches}</option>
+              {SUCURSALES.map((s) => <option key={s} value={s}>{s}</option>)}
+            </select>
+            <select style={styles.select} value={filterStatus} onChange={(e) => setFilterStatus(e.target.value)}>
+              <option value="todas">{t.allStatuses}</option>
+              <option value="pendiente">{t.statusPendiente}</option>
+              <option value="pedido">{t.statusPedido}</option>
+              <option value="cancelado">{t.statusCancelado}</option>
+            </select>
+            <DateRangePicker
+              from={filterDateFrom}
+              to={filterDateTo}
+              setFrom={setFilterDateFrom}
+              setTo={setFilterDateTo}
               lang={lang}
-              actions={
-                <div style={styles.statusBtns}>
-                  {Object.entries(STATUS_META).map(([key, meta]) => (
-                    <button
-                      key={key}
-                      onClick={() => updateStatus(o.id, key)}
-                      style={{
-                        ...styles.statusBtn,
-                        ...(o.status === key ? { background: meta.color, color: meta.on, borderColor: meta.color } : {}),
-                      }}
-                    >
-                      {getStatusLabel(key, lang)}
-                    </button>
-                  ))}
-                </div>
-              }
             />
-          ))}
-        </div>
+          </div>
+
+          {loading && <div style={styles.emptyRow}>{t.loadingOrders}</div>}
+          {!loading && orders.length === 0 && <div style={styles.emptyRow}>{t.noOrdersMatchFilter}</div>}
+
+          {!loading && orders.length > 0 && depositoView === "pedido" && (
+            <div style={styles.orderCards}>
+              {orders.map((o) => (
+                <OrderCard
+                  key={o.id}
+                  order={o}
+                  expanded={expandedOrder === o.id}
+                  onToggle={() => setExpandedOrder(expandedOrder === o.id ? null : o.id)}
+                  showSucursal
+                  allOrders={allOrders}
+                  lang={lang}
+                  actions={
+                    <div style={styles.statusBtns}>
+                      {Object.entries(STATUS_META).map(([key, meta]) => (
+                        <button
+                          key={key}
+                          onClick={() => updateStatus(o.id, key)}
+                          style={{
+                            ...styles.statusBtn,
+                            ...(o.status === key ? { background: meta.color, color: meta.on, borderColor: meta.color } : {}),
+                          }}
+                        >
+                          {getStatusLabel(key, lang)}
+                        </button>
+                      ))}
+                    </div>
+                  }
+                />
+              ))}
+            </div>
+          )}
+
+          {!loading && orders.length > 0 && depositoView === "producto" && (
+            <div style={styles.productSummaryWrap}>
+              <table style={styles.productSummaryTable}>
+                <thead>
+                  <tr>
+                    <th style={styles.productSummaryHeaderCell}>{t.product}</th>
+                    <th style={{ ...styles.productSummaryHeaderCell, textAlign: "center" }}>{t.code}</th>
+                    <th style={{ ...styles.productSummaryHeaderCell, textAlign: "center" }}>{t.vendor}</th>
+                    <th style={{ ...styles.productSummaryHeaderCell, textAlign: "right" }}>{t.totalQty}</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {productSummary.map((p) => (
+                    <tr key={`${p.vendor}|${p.item}|${p.code}`}>
+                      <td style={{ ...styles.productSummaryCell, fontWeight: 700 }}>{p.item}</td>
+                      <td style={{ ...styles.productSummaryCell, textAlign: "center", color: "var(--muted-faint)" }}>{p.code}</td>
+                      <td style={{ ...styles.productSummaryCell, textAlign: "center" }}>{p.vendor}</td>
+                      <td style={{ ...styles.productSummaryCell, textAlign: "right", fontWeight: 700 }}>{p.total}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </>
       )}
 
-      {!loading && orders.length > 0 && depositoView === "producto" && (
-        <div style={styles.productSummaryWrap}>
-          <table style={styles.productSummaryTable}>
-            <thead>
-              <tr>
-                <th style={styles.productSummaryHeaderCell}>{t.product}</th>
-                <th style={{ ...styles.productSummaryHeaderCell, textAlign: "center" }}>{t.code}</th>
-                <th style={{ ...styles.productSummaryHeaderCell, textAlign: "center" }}>{t.vendor}</th>
-                <th style={{ ...styles.productSummaryHeaderCell, textAlign: "right" }}>{t.totalQty}</th>
-              </tr>
-            </thead>
-            <tbody>
-              {productSummary.map((p) => (
-                <tr key={`${p.vendor}|${p.item}|${p.code}`}>
-                  <td style={{ ...styles.productSummaryCell, fontWeight: 700 }}>{p.item}</td>
-                  <td style={{ ...styles.productSummaryCell, textAlign: "center", color: "var(--muted-faint)" }}>{p.code}</td>
-                  <td style={{ ...styles.productSummaryCell, textAlign: "center" }}>{p.vendor}</td>
-                  <td style={{ ...styles.productSummaryCell, textAlign: "right", fontWeight: 700 }}>{p.total}</td>
-                </tr>
+      {isStocks && (
+        <>
+          <div style={styles.tabs}>
+            <button
+              style={{ ...styles.tab, ...(depositoStockView === "conteo" ? styles.tabActive : {}) }}
+              onClick={() => setDepositoStockView("conteo")}
+            >
+              {t.byCount}
+            </button>
+            <button
+              style={{ ...styles.tab, ...(depositoStockView === "producto" ? styles.tabActive : {}) }}
+              onClick={() => setDepositoStockView("producto")}
+            >
+              {t.byProduct}
+            </button>
+          </div>
+
+          <div style={styles.filters}>
+            <select style={styles.select} value={filterSucursal} onChange={(e) => setFilterSucursal(e.target.value)}>
+              <option value="Todas">{t.allBranches}</option>
+              {SUCURSALES.map((s) => <option key={s} value={s}>{s}</option>)}
+            </select>
+            <DateRangePicker
+              from={filterDateFrom}
+              to={filterDateTo}
+              setFrom={setFilterDateFrom}
+              setTo={setFilterDateTo}
+              lang={lang}
+            />
+          </div>
+
+          {stockCountsLoading && <div style={styles.emptyRow}>{t.loadingStocks}</div>}
+          {!stockCountsLoading && stockCounts.length === 0 && <div style={styles.emptyRow}>{t.noStocksMatchFilter}</div>}
+
+          {!stockCountsLoading && stockCounts.length > 0 && depositoStockView === "conteo" && (
+            <div style={styles.orderCards}>
+              {stockCounts.map((c) => (
+                <StockCountCard
+                  key={c.id}
+                  stockCount={c}
+                  expanded={expandedStockCount === c.id}
+                  onToggle={() => setExpandedStockCount(expandedStockCount === c.id ? null : c.id)}
+                  allStockCounts={allStockCounts}
+                  lang={lang}
+                />
               ))}
-            </tbody>
-          </table>
-        </div>
+            </div>
+          )}
+
+          {!stockCountsLoading && stockCounts.length > 0 && depositoStockView === "producto" && (
+            <div style={styles.productSummaryWrap}>
+              <table style={styles.productSummaryTable}>
+                <thead>
+                  <tr>
+                    <th style={styles.productSummaryHeaderCell}>{t.product}</th>
+                    <th style={{ ...styles.productSummaryHeaderCell, textAlign: "center" }}>{t.vendor}</th>
+                    <th style={{ ...styles.productSummaryHeaderCell, textAlign: "right" }}>{t.totalQty}</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {stockProductSummary.map((p) => (
+                    <tr key={`${p.vendor}|${p.item}|${p.code}`}>
+                      <td style={{ ...styles.productSummaryCell, fontWeight: 700 }}>{p.item}</td>
+                      <td style={{ ...styles.productSummaryCell, textAlign: "center" }}>{getStockVendorLabel(p.vendor, lang)}</td>
+                      <td style={{ ...styles.productSummaryCell, textAlign: "right", fontWeight: 700 }}>{p.total}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </>
       )}
     </div>
   );
@@ -2893,6 +3051,36 @@ function OrderCard({ order, expanded, onToggle, showSucursal, actions, allOrders
   );
 }
 
+function StockCountCard({ stockCount, expanded, onToggle, lang = "es" }) {
+  const t = STR[lang];
+  return (
+    <div style={styles.orderCard}>
+      <button style={styles.orderCardHead} onClick={onToggle}>
+        <div>
+          <div style={styles.orderCardTitle}>{stockCount.sucursal}</div>
+          <div style={styles.orderCardDate}>{fmtDate(stockCount.date, lang)} · {stockCount.items.length} {t.items}</div>
+        </div>
+        {expanded ? <ChevronUp size={18} color="var(--muted-faint)" /> : <ChevronDown size={18} color="var(--muted-faint)" />}
+      </button>
+      {expanded && (
+        <div style={styles.orderCardBody}>
+          {STOCK_REAL_CATEGORIES.filter((v) => stockCount.items.some((it) => it.vendor === v)).map((v) => (
+            <div key={v} style={{ marginBottom: 10 }}>
+              <div style={styles.vendorLabel}>{getStockVendorLabel(v, lang)}</div>
+              {stockCount.items.filter((it) => it.vendor === v).map((it, i) => (
+                <div key={i} style={styles.detailLine}>
+                  <span><strong>{it.item}</strong></span>
+                  <span style={styles.detailQty}>{it.quantity}</span>
+                </div>
+              ))}
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
 function TopBar({ onBack, title, subtitle, theme, onToggleTheme, lang, onToggleLang }) {
   return (
     <div style={styles.topBar}>
@@ -3021,6 +3209,16 @@ const styles = {
   },
   formLayout: {},
   formMain: {},
+  sectionToggle: {
+    display: "flex", gap: 8, marginBottom: 18, background: "var(--paper)",
+    border: "1.5px solid var(--line)", borderRadius: 14, padding: 5,
+  },
+  sectionToggleBtn: {
+    flex: 1, padding: "10px 14px", borderRadius: 10, border: "none", background: "transparent",
+    color: "var(--muted-strong)", fontWeight: 700, fontSize: 14, cursor: "pointer",
+    fontFamily: "'Baloo 2', sans-serif",
+  },
+  sectionToggleBtnActive: { background: "var(--plum)", color: "var(--on-accent)" },
   tabs: { display: "flex", gap: 8, marginBottom: 14, flexWrap: "wrap" },
   tab: {
     padding: "8px 16px", borderRadius: 999, border: "1.5px solid var(--line)",

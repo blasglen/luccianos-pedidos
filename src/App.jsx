@@ -594,6 +594,7 @@ const STR = {
     replicatedOrder: "Cargamos los productos de ese pedido.",
     errNoQtyToSubmit: "Cargá al menos una cantidad antes de enviar.",
     errCouldNotSave: "No se pudo guardar el pedido. Probá de nuevo.",
+    errCouldNotSaveStock: "No se pudo guardar el conteo. Probá de nuevo.",
     errCouldNotUpdateStatus: "No se pudo actualizar el estado.",
     errCouldNotRestore: "No se pudo restaurar el backup.",
 
@@ -764,6 +765,7 @@ const STR = {
     replicatedOrder: "We loaded that order's products.",
     errNoQtyToSubmit: "Load at least one quantity before sending.",
     errCouldNotSave: "Couldn't save the order. Try again.",
+    errCouldNotSaveStock: "Couldn't save the count. Try again.",
     errCouldNotUpdateStatus: "Couldn't update the status.",
     errCouldNotRestore: "Couldn't restore the backup.",
 
@@ -1110,6 +1112,8 @@ export default function App() {
       .order("date", { ascending: false });
     if (!error) {
       setStockCounts(data || []);
+    } else {
+      console.error("stock_counts load error:", error);
     }
     setStockCountsLoading(false);
   }
@@ -1237,7 +1241,8 @@ export default function App() {
     };
     const { error } = await supabase.from("stock_extra_products").insert([newProduct]);
     if (error) {
-      setToast({ type: "error", text: STR[lang].errCouldNotSave });
+      console.error("stock_extra_products insert error:", error);
+      setToast({ type: "error", text: STR[lang].errCouldNotSaveStock });
       return false;
     }
     setStockExtraProducts((prev) => [...prev, newProduct]);
@@ -1268,7 +1273,8 @@ export default function App() {
     const { error } = await supabase.from("stock_counts").insert([newCount]);
     setStockSubmitting(false);
     if (error) {
-      setToast({ type: "error", text: STR[lang].errCouldNotSave });
+      console.error("stock_counts insert error:", error);
+      setToast({ type: "error", text: STR[lang].errCouldNotSaveStock });
       return;
     }
     setStockDraft({});

@@ -1098,6 +1098,64 @@ export default function App() {
   function toggleLang() {
     setLang((l) => (l === "es" ? "en" : "es"));
   }
+
+  function goBack() {
+    switch (screen) {
+      case "sucursal-select":
+        setScreen("home");
+        break;
+      case "pin":
+        setScreen(pendingRole && pendingRole.key === "Depósito" ? "home" : "sucursal-select");
+        break;
+      case "sucursal-menu":
+        setScreen("sucursal-select");
+        break;
+      case "order-form":
+        setScreen(OWN_SUCURSALES.includes(sucursal) ? "sucursal-menu" : "sucursal-select");
+        break;
+      case "stock-form":
+        setScreen("sucursal-menu");
+        break;
+      case "sucursal-history":
+        setScreen("order-form");
+        break;
+      case "deposito-auth":
+        setScreen("home");
+        break;
+      case "deposito":
+        setScreen("home");
+        break;
+      default:
+        break;
+    }
+  }
+
+  const touchStartRef = useRef(null);
+  const SWIPE_MIN_DISTANCE = 110;
+  const SWIPE_MAX_VERTICAL_RATIO = 0.5;
+  const SWIPE_MAX_DURATION = 700;
+
+  function handleTouchStart(e) {
+    const touch = e.touches[0];
+    touchStartRef.current = { x: touch.clientX, y: touch.clientY, t: Date.now() };
+  }
+
+  function handleTouchEnd(e) {
+    const start = touchStartRef.current;
+    touchStartRef.current = null;
+    if (!start) return;
+    const touch = e.changedTouches[0];
+    const dx = touch.clientX - start.x;
+    const dy = touch.clientY - start.y;
+    const dt = Date.now() - start.t;
+    if (
+      dx > SWIPE_MIN_DISTANCE &&
+      Math.abs(dy) < dx * SWIPE_MAX_VERTICAL_RATIO &&
+      dt < SWIPE_MAX_DURATION
+    ) {
+      goBack();
+    }
+  }
   const [expandedOrder, setExpandedOrder] = useState(null);
   const [lastOrder, setLastOrder] = useState(null);
   const [pendingRole, setPendingRole] = useState(null);
@@ -1394,7 +1452,7 @@ export default function App() {
   }, [stockCounts, filterSucursal, filterDateFrom, filterDateTo]);
 
   return (
-    <div style={{ ...styles.page, ...THEMES[theme] }}>
+    <div style={{ ...styles.page, ...THEMES[theme] }} onTouchStart={handleTouchStart} onTouchEnd={handleTouchEnd}>
       <style>{`
         @import url('https://fonts.googleapis.com/css2?family=Kaushan+Script&family=Baloo+2:wght@500;600;700;800&family=Bodoni+Moda:opsz,wght@6..96,700;6..96,800;6..96,900&display=swap');
         * { box-sizing: border-box; }
@@ -1428,7 +1486,7 @@ export default function App() {
       {screen === "home" && <Home onSucursal={() => setScreen("sucursal-select")} onDeposito={() => setScreen(depositoSession ? "deposito" : "deposito-auth")} theme={theme} onToggleTheme={toggleTheme} lang={lang} onToggleLang={toggleLang} />}
 
       {screen === "sucursal-select" && (
-        <SucursalSelect onBack={() => setScreen("home")} onPick={(s) => requestPin(s, OWN_SUCURSALES.includes(s) ? "sucursal-menu" : "order-form")} theme={theme} onToggleTheme={toggleTheme} lang={lang} onToggleLang={toggleLang} />
+        <SucursalSelect onBack={goBack} onPick={(s) => requestPin(s, OWN_SUCURSALES.includes(s) ? "sucursal-menu" : "order-form")} theme={theme} onToggleTheme={toggleTheme} lang={lang} onToggleLang={toggleLang} />
       )}
 
       {screen === "pin" && pendingRole && (
@@ -1438,7 +1496,7 @@ export default function App() {
           setValue={setPinValue}
           error={pinError}
           onSubmit={checkPin}
-          onBack={() => setScreen(pendingRole.key === "Depósito" ? "home" : "sucursal-select")}
+          onBack={goBack}
           lang={lang}
         />
       )}
@@ -1446,7 +1504,7 @@ export default function App() {
       {screen === "sucursal-menu" && (
         <SucursalMenu
           sucursal={sucursal}
-          onBack={() => setScreen("sucursal-select")}
+          onBack={goBack}
           onCompras={() => setScreen("order-form")}
           onStocks={() => setScreen("stock-form")}
           theme={theme}
@@ -1459,7 +1517,7 @@ export default function App() {
       {screen === "order-form" && (
         <OrderForm
           sucursal={sucursal}
-          onBack={() => setScreen(OWN_SUCURSALES.includes(sucursal) ? "sucursal-menu" : "sucursal-select")}
+          onBack={goBack}
           onViewHistory={() => setScreen("sucursal-history")}
           activeVendor={activeVendor}
           setActiveVendor={setActiveVendor}
@@ -1497,7 +1555,7 @@ export default function App() {
       {screen === "stock-form" && (
         <StockForm
           sucursal={sucursal}
-          onBack={() => setScreen("sucursal-menu")}
+          onBack={goBack}
           activeVendor={stockActiveVendor}
           setActiveVendor={setStockActiveVendor}
           search={stockSearch}
@@ -1531,7 +1589,7 @@ export default function App() {
           sucursal={sucursal}
           orders={mySucursalOrders}
           loading={loading}
-          onBack={() => setScreen("order-form")}
+          onBack={goBack}
           expandedOrder={expandedOrder}
           setExpandedOrder={setExpandedOrder}
           theme={theme}
@@ -1545,7 +1603,7 @@ export default function App() {
 
       {screen === "deposito-auth" && (
         <DepositoAuth
-          onBack={() => setScreen("home")}
+          onBack={goBack}
           onSuccess={() => setScreen("deposito")}
           lang={lang}
         />
@@ -1557,7 +1615,7 @@ export default function App() {
 
       {screen === "deposito" && (
         <Deposito
-          onBack={() => setScreen("home")}
+          onBack={goBack}
           loading={loading}
           orders={depositoOrders}
           allOrders={orders}

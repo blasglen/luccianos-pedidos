@@ -324,9 +324,7 @@ const STOCK_VENDORS = {
     { item: "RICOTTA PISTACCHIO TART", code: "" },
     { item: "TORTA DE LA NONNA", code: "" },
     { item: "MINI KEY LIME CHEESECAKE", code: "" },
-    { item: "INDIV PORTION OTHER SPECIFY", code: "" },
     { item: "INDIV PORTION TIRAMISU", code: "" },
-    { item: "OTHER BOTTLE - SPECIFY", code: "" },
     { item: "PUMPKIN CHEESCKE", code: "" },
     { item: "MINI CROISSANT", code: "" },
     { item: "RED VELVET CAKE", code: "" },
@@ -416,10 +414,6 @@ const STOCK_VENDORS = {
     { item: "CHOCOLATE LUCCIANO'S & HAZELNUT", code: "" },
     { item: "MILK CHOCOLATE 0% SUGAR ADDED", code: "" },
     { item: "PASSION FRUIT CHEESECAKE", code: "" },
-    { item: "OTHER - SPECIFY", code: "" },
-    { item: "OTHER - SPECIFY", code: "" },
-    { item: "OTHER - SPECIFY", code: "" },
-    { item: "OTHER - SPECIFY", code: "" },
   ],
   "GELATO": [
     { item: "BANANA SPLIT", code: "" },
@@ -456,16 +450,13 @@ const STOCK_VENDORS = {
     { item: "NOCCIOLA SUPREMA", code: "" },
     { item: "PISTACCHIO CHEESECAKE", code: "" },
     { item: "TIRAMISU PISTACCHIO", code: "" },
-    { item: "OTHER SPECIFY", code: "" },
-    { item: "OTHER SPECIFY", code: "" },
-    { item: "OTHER SPECIFY", code: "" },
-    { item: "OTHER SPECIFY", code: "" },
-    { item: "OTHER SPECIFY", code: "" },
-    { item: "OTHER SPECIFY", code: "" },
   ],
+  "Todos": [],
+  "Agregar Producto": [],
 };
 
-const STOCK_VENDOR_ORDER = ["PAPER", "COFFEE CORNER", "GRAB & GO", "OTHERS", "INGREDIENTS", "ALFAJORES", "ICE POPS", "GELATO"];
+const STOCK_VENDOR_ORDER = ["PAPER", "COFFEE CORNER", "GRAB & GO", "OTHERS", "INGREDIENTS", "ALFAJORES", "ICE POPS", "GELATO", "Todos", "Agregar Producto"];
+const STOCK_REAL_CATEGORIES = ["PAPER", "COFFEE CORNER", "GRAB & GO", "OTHERS", "INGREDIENTS", "ALFAJORES", "ICE POPS", "GELATO"];
 
 const STOCK_VENDOR_LABELS = {
   es: {
@@ -477,6 +468,8 @@ const STOCK_VENDOR_LABELS = {
     "ALFAJORES": "Alfajores",
     "ICE POPS": "Ice Pops",
     "GELATO": "Gelato",
+    "Todos": "Todos",
+    "Agregar Producto": "Agregar producto",
   },
   en: {
     "PAPER": "Paper",
@@ -487,6 +480,8 @@ const STOCK_VENDOR_LABELS = {
     "ALFAJORES": "Alfajores",
     "ICE POPS": "Ice Pops",
     "GELATO": "Gelato",
+    "Todos": "All",
+    "Agregar Producto": "Add product",
   },
 };
 function getStockVendorLabel(key, lang) {
@@ -574,6 +569,11 @@ const STR = {
     customItemPlaceholder: "Nombre del producto",
     addItem: "Agregar",
     noCustomItemsYet: "Todavía no agregaste ningún producto libre.",
+    newProductCategory: "Categoría",
+    newProductName: "Nombre del producto nuevo",
+    confirmAddTitle: "¿Confirmás agregar este producto?",
+    confirmAddBody: (name, cat) => `Vas a agregar "${name}" en la categoría "${cat}". Va a quedar disponible para esta sucursal y para las otras que usan Stocks.`,
+    confirmAddOk: "Sí, agregar producto",
     qtyPlaceholder: "cant.",
     orderSummary: "Resumen del pedido",
     itemLoaded: "ítem cargado",
@@ -736,6 +736,11 @@ const STR = {
     customItemPlaceholder: "Product name",
     addItem: "Add",
     noCustomItemsYet: "You haven't added any custom products yet.",
+    newProductCategory: "Category",
+    newProductName: "New product name",
+    confirmAddTitle: "Confirm adding this product?",
+    confirmAddBody: (name, cat) => `You're about to add "${name}" to the "${cat}" category. It will become available for this branch and the other ones using Stock count.`,
+    confirmAddOk: "Yes, add product",
     qtyPlaceholder: "qty.",
     orderSummary: "Order summary",
     itemLoaded: "item loaded",
@@ -992,6 +997,7 @@ export default function App() {
   const [stockDraft, setStockDraft] = useState({});
   const [stockSubmitting, setStockSubmitting] = useState(false);
   const [lastStockCount, setLastStockCount] = useState(null);
+  const [stockExtraProducts, setStockExtraProducts] = useState([]);
   const [notes, setNotes] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [toast, setToast] = useState(null);
@@ -1036,6 +1042,13 @@ export default function App() {
   const [authChecked, setAuthChecked] = useState(false);
 
   useEffect(() => { loadOrders(); }, []);
+
+  useEffect(() => { loadStockExtraProducts(); }, []);
+
+  async function loadStockExtraProducts() {
+    const { data, error } = await supabase.from("stock_extra_products").select("*");
+    if (!error && data) setStockExtraProducts(data);
+  }
 
   useEffect(() => { unlockScroll(); }, [screen]);
 
@@ -1188,6 +1201,22 @@ export default function App() {
 
   function setStockQty(vendor, item, value) {
     setStockDraft((d) => ({ ...d, [vendor + "|" + item]: value }));
+  }
+
+  async function addStockProduct(category, itemName) {
+    const newProduct = {
+      id: (crypto.randomUUID ? crypto.randomUUID() : Date.now().toString()),
+      category,
+      item: itemName,
+      code: "",
+    };
+    const { error } = await supabase.from("stock_extra_products").insert([newProduct]);
+    if (error) {
+      setToast({ type: "error", text: STR[lang].errCouldNotSave });
+      return false;
+    }
+    setStockExtraProducts((prev) => [...prev, newProduct]);
+    return true;
   }
 
   async function submitStockCount() {
@@ -1380,6 +1409,8 @@ export default function App() {
           setQty={setStockQty}
           onSubmit={submitStockCount}
           submitting={stockSubmitting}
+          extraProducts={stockExtraProducts}
+          onAddProduct={addStockProduct}
           theme={theme}
           onToggleTheme={toggleTheme}
           lang={lang}
@@ -1798,13 +1829,14 @@ function SucursalMenu({ sucursal, onBack, onCompras, onStocks, theme, onToggleTh
   );
 }
 
-function ItemRow({ p, activeVendor, draft, setQty, lang, onFocusItem, onBlurItem }) {
-  const key = activeVendor + "|" + p.item;
+function ItemRow({ p, activeVendor, draft, setQty, lang, onFocusItem, onBlurItem, vendorOverride, showVendorTag }) {
+  const vendor = vendorOverride || activeVendor;
+  const key = vendor + "|" + p.item;
   return (
     <div style={styles.itemRow}>
       <div style={styles.itemInfo}>
         <div style={styles.itemName}>{p.item}</div>
-        <div style={styles.itemCode}>{p.code}</div>
+        <div style={styles.itemCode}>{showVendorTag ? [p.code, vendor].filter(Boolean).join(" · ") : p.code}</div>
       </div>
       <input
         className="qtyInput"
@@ -1812,7 +1844,7 @@ function ItemRow({ p, activeVendor, draft, setQty, lang, onFocusItem, onBlurItem
         placeholder={STR[lang].qtyPlaceholder}
         inputMode="decimal"
         value={draft[key] || ""}
-        onChange={(e) => setQty(activeVendor, p.item, sanitizeQty(e.target.value))}
+        onChange={(e) => setQty(vendor, p.item, sanitizeQty(e.target.value))}
         onFocus={() => onFocusItem(key)}
         onBlur={() => onBlurItem()}
         onKeyDown={(e) => { if (e.key === "Enter") e.target.blur(); }}
@@ -1826,15 +1858,6 @@ function OrderForm({ sucursal, onBack, onViewHistory, activeVendor, setActiveVen
   const [showConfirm, setShowConfirm] = useState(false);
   const [focusedKey, setFocusedKey] = useState(null);
   const frozenHadValueRef = useRef(false);
-  const [customName, setCustomName] = useState("");
-  const [customQty, setCustomQty] = useState("");
-
-  function handleAddCustom() {
-    if (!customName.trim()) return;
-    setQty("Todos", customName.trim(), customQty.trim() || "1");
-    setCustomName("");
-    setCustomQty("");
-  }
 
   function handleFocusItem(key) {
     frozenHadValueRef.current = !!(draft[key] && draft[key].trim() !== "");
@@ -1864,31 +1887,43 @@ function OrderForm({ sucursal, onBack, onViewHistory, activeVendor, setActiveVen
     return freq;
   }, [pastOrders, activeVendor]);
 
+  const allItemsFlat = useMemo(() => {
+    const flat = [];
+    VENDOR_ORDER.filter((v) => v !== "Todos").forEach((v) => {
+      VENDORS[v].forEach((p) => flat.push({ ...p, vendor: v }));
+    });
+    return flat;
+  }, []);
+
+  const isTodos = activeVendor === "Todos";
+  const sourceItems = isTodos ? allItemsFlat : filteredItems.map((p) => ({ ...p, vendor: activeVendor }));
+  const searchedItems = isTodos
+    ? sourceItems.filter((p) =>
+        p.item.toLowerCase().includes(search.toLowerCase()) || p.code.toLowerCase().includes(search.toLowerCase())
+      )
+    : sourceItems;
+
   const withQty = [];
   const recurrent = [];
   const rest = [];
-  filteredItems.forEach((p) => {
-    const key = activeVendor + "|" + p.item;
+  searchedItems.forEach((p) => {
+    const key = p.vendor + "|" + p.item;
     const liveHasValue = !!(draft[key] && draft[key].trim() !== "");
     const hasValue = key === focusedKey ? frozenHadValueRef.current : liveHasValue;
     if (hasValue) {
       withQty.push(p);
-    } else if ((itemFrequency[p.item] || 0) >= 2) {
+    } else if (!isTodos && (itemFrequency[p.item] || 0) >= 2) {
       recurrent.push(p);
     } else {
       rest.push(p);
     }
   });
   withQty.sort((a, b) => {
-    const ra = recentOrder.indexOf(activeVendor + "|" + a.item);
-    const rb = recentOrder.indexOf(activeVendor + "|" + b.item);
+    const ra = recentOrder.indexOf(a.vendor + "|" + a.item);
+    const rb = recentOrder.indexOf(b.vendor + "|" + b.item);
     return (ra === -1 ? Infinity : ra) - (rb === -1 ? Infinity : rb);
   });
   recurrent.sort((a, b) => (itemFrequency[b.item] || 0) - (itemFrequency[a.item] || 0));
-
-  const customItems = Object.keys(draft)
-    .filter((k) => k.startsWith("Todos|") && draft[k] && draft[k].trim() !== "")
-    .map((k) => ({ item: k.slice(6), code: "" }));
 
   return (
     <div style={styles.wrap}>
@@ -1913,63 +1948,32 @@ function OrderForm({ sucursal, onBack, onViewHistory, activeVendor, setActiveVen
             </div>
           </div>
 
-          {activeVendor === "Todos" ? (
-            <>
-              <div style={styles.customEntryRow}>
-                <input
-                  style={styles.customEntryInput}
-                  placeholder={t.customItemPlaceholder}
-                  value={customName}
-                  onChange={(e) => setCustomName(e.target.value)}
-                  onKeyDown={(e) => { if (e.key === "Enter") handleAddCustom(); }}
-                />
-                <input
-                  style={{ ...styles.qtyInput, flexShrink: 0 }}
-                  placeholder={t.qtyPlaceholder}
-                  inputMode="decimal"
-                  value={customQty}
-                  onChange={(e) => setCustomQty(sanitizeQty(e.target.value))}
-                  onKeyDown={(e) => { if (e.key === "Enter") handleAddCustom(); }}
-                />
-                <button style={styles.customEntryAddBtn} onClick={handleAddCustom}>{t.addItem}</button>
-              </div>
-              <div style={styles.itemList}>
-                {customItems.length === 0 && <div style={styles.emptyRow}>{t.noCustomItemsYet}</div>}
-                {customItems.map((p) => (
-                  <ItemRow key={"Todos|" + p.item} p={p} activeVendor="Todos" draft={draft} setQty={setQty} lang={lang} onFocusItem={handleFocusItem} onBlurItem={handleBlurItem} />
-                ))}
-              </div>
-            </>
-          ) : (
-            <>
-              <div style={styles.searchBox}>
-                <Search size={16} color="var(--muted-faint)" />
-                <input
-                  style={styles.searchInput}
-                  placeholder={t.searchPlaceholder(getVendorLabel(activeVendor, lang))}
-                  value={search}
-                  onChange={(e) => setSearch(e.target.value)}
-                />
-              </div>
+          <div style={styles.searchBox}>
+            <Search size={16} color="var(--muted-faint)" />
+            <input
+              style={styles.searchInput}
+              placeholder={t.searchPlaceholder(getVendorLabel(activeVendor, lang))}
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+            />
+          </div>
 
-              <div style={styles.itemList}>
-                {withQty.map((p) => (
-                  <ItemRow key={activeVendor + "|" + p.item} p={p} activeVendor={activeVendor} draft={draft} setQty={setQty} lang={lang} onFocusItem={handleFocusItem} onBlurItem={handleBlurItem} />
-                ))}
-                {recurrent.length > 0 && <div style={styles.itemSectionLabel}>{t.recurring}</div>}
-                {recurrent.map((p) => (
-                  <ItemRow key={activeVendor + "|" + p.item} p={p} activeVendor={activeVendor} draft={draft} setQty={setQty} lang={lang} onFocusItem={handleFocusItem} onBlurItem={handleBlurItem} />
-                ))}
-                {rest.length > 0 && (withQty.length > 0 || recurrent.length > 0) && (
-                  <div style={styles.itemSectionLabel}>{t.restOfProducts}</div>
-                )}
-                {rest.map((p) => (
-                  <ItemRow key={activeVendor + "|" + p.item} p={p} activeVendor={activeVendor} draft={draft} setQty={setQty} lang={lang} onFocusItem={handleFocusItem} onBlurItem={handleBlurItem} />
-                ))}
-                {filteredItems.length === 0 && <div style={styles.emptyRow}>{t.noMatch(search)}</div>}
-              </div>
-            </>
-          )}
+          <div style={styles.itemList}>
+            {withQty.map((p) => (
+              <ItemRow key={p.vendor + "|" + p.item} p={p} vendorOverride={p.vendor} draft={draft} setQty={setQty} lang={lang} onFocusItem={handleFocusItem} onBlurItem={handleBlurItem} showVendorTag={isTodos} />
+            ))}
+            {recurrent.length > 0 && <div style={styles.itemSectionLabel}>{t.recurring}</div>}
+            {recurrent.map((p) => (
+              <ItemRow key={p.vendor + "|" + p.item} p={p} vendorOverride={p.vendor} draft={draft} setQty={setQty} lang={lang} onFocusItem={handleFocusItem} onBlurItem={handleBlurItem} showVendorTag={isTodos} />
+            ))}
+            {rest.length > 0 && (withQty.length > 0 || recurrent.length > 0) && (
+              <div style={styles.itemSectionLabel}>{t.restOfProducts}</div>
+            )}
+            {rest.map((p) => (
+              <ItemRow key={p.vendor + "|" + p.item} p={p} vendorOverride={p.vendor} draft={draft} setQty={setQty} lang={lang} onFocusItem={handleFocusItem} onBlurItem={handleBlurItem} showVendorTag={isTodos} />
+            ))}
+            {searchedItems.length === 0 && <div style={styles.emptyRow}>{t.noMatch(search)}</div>}
+          </div>
         </div>
 
         <div className="order-ticket" style={styles.ticket}>
@@ -2033,10 +2037,14 @@ function OrderForm({ sucursal, onBack, onViewHistory, activeVendor, setActiveVen
   );
 }
 
-function StockForm({ sucursal, onBack, activeVendor, setActiveVendor, search, setSearch, draft, setQty, onSubmit, submitting, theme, onToggleTheme, lang, onToggleLang }) {
+function StockForm({ sucursal, onBack, activeVendor, setActiveVendor, search, setSearch, draft, setQty, onSubmit, submitting, extraProducts, onAddProduct, theme, onToggleTheme, lang, onToggleLang }) {
   const t = STR[lang];
   const [focusedKey, setFocusedKey] = useState(null);
   const frozenHadValueRef = useRef(false);
+  const [newCategory, setNewCategory] = useState(STOCK_REAL_CATEGORIES[0]);
+  const [newItemName, setNewItemName] = useState("");
+  const [showAddConfirm, setShowAddConfirm] = useState(false);
+  const [addingProduct, setAddingProduct] = useState(false);
 
   function handleFocusItem(key) {
     frozenHadValueRef.current = !!(draft[key] && draft[key].trim() !== "");
@@ -2046,21 +2054,55 @@ function StockForm({ sucursal, onBack, activeVendor, setActiveVendor, search, se
     setFocusedKey(null);
   }
 
-  const filteredItems = STOCK_VENDORS[activeVendor].filter((p) =>
-    p.item.toLowerCase().includes(search.toLowerCase())
-  );
+  function getCategoryItems(cat) {
+    const extras = extraProducts.filter((e) => e.category === cat).map((e) => ({ item: e.item, code: e.code || "" }));
+    return [...STOCK_VENDORS[cat], ...extras];
+  }
+
+  const isTodos = activeVendor === "Todos";
+  const isAddTab = activeVendor === "Agregar Producto";
+
+  const allItemsFlat = useMemo(() => {
+    const flat = [];
+    STOCK_REAL_CATEGORIES.forEach((cat) => {
+      getCategoryItems(cat).forEach((p) => flat.push({ ...p, vendor: cat }));
+    });
+    return flat;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [extraProducts]);
 
   const draftCount = Object.values(draft).filter((v) => v && v.trim() !== "").length;
 
+  let sourceItems = [];
+  if (isTodos) {
+    sourceItems = allItemsFlat.filter((p) =>
+      p.item.toLowerCase().includes(search.toLowerCase())
+    );
+  } else if (!isAddTab) {
+    sourceItems = getCategoryItems(activeVendor)
+      .filter((p) => p.item.toLowerCase().includes(search.toLowerCase()))
+      .map((p) => ({ ...p, vendor: activeVendor }));
+  }
+
   const withQty = [];
   const rest = [];
-  filteredItems.forEach((p) => {
-    const key = activeVendor + "|" + p.item;
+  sourceItems.forEach((p) => {
+    const key = p.vendor + "|" + p.item;
     const liveHasValue = !!(draft[key] && draft[key].trim() !== "");
     const hasValue = key === focusedKey ? frozenHadValueRef.current : liveHasValue;
     if (hasValue) withQty.push(p);
     else rest.push(p);
   });
+
+  async function handleConfirmAdd() {
+    setAddingProduct(true);
+    const ok = await onAddProduct(newCategory, newItemName.trim());
+    setAddingProduct(false);
+    setShowAddConfirm(false);
+    if (ok) {
+      setNewItemName("");
+    }
+  }
 
   return (
     <div style={styles.wrap}>
@@ -2079,26 +2121,59 @@ function StockForm({ sucursal, onBack, activeVendor, setActiveVendor, search, se
             ))}
           </div>
 
-          <div style={styles.searchBox}>
-            <Search size={16} color="var(--muted-faint)" />
-            <input
-              style={styles.searchInput}
-              placeholder={t.searchPlaceholder(getStockVendorLabel(activeVendor, lang))}
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-            />
-          </div>
+          {isAddTab ? (
+            <div style={styles.itemList}>
+              <div style={{ padding: 18 }}>
+                <label style={styles.notesLabel}>{t.newProductCategory}</label>
+                <select
+                  style={{ ...styles.select, width: "100%", marginBottom: 14 }}
+                  value={newCategory}
+                  onChange={(e) => setNewCategory(e.target.value)}
+                >
+                  {STOCK_REAL_CATEGORIES.map((cat) => (
+                    <option key={cat} value={cat}>{getStockVendorLabel(cat, lang)}</option>
+                  ))}
+                </select>
+                <label style={styles.notesLabel}>{t.newProductName}</label>
+                <input
+                  style={styles.authInput}
+                  placeholder={t.customItemPlaceholder}
+                  value={newItemName}
+                  onChange={(e) => setNewItemName(e.target.value)}
+                />
+                <button
+                  style={{ ...styles.customEntryAddBtn, width: "100%", justifyContent: "center", display: "flex", marginTop: 6 }}
+                  onClick={() => setShowAddConfirm(true)}
+                  disabled={!newItemName.trim()}
+                >
+                  {t.addItem}
+                </button>
+              </div>
+            </div>
+          ) : (
+            <>
+              <div style={styles.searchBox}>
+                <Search size={16} color="var(--muted-faint)" />
+                <input
+                  style={styles.searchInput}
+                  placeholder={t.searchPlaceholder(getStockVendorLabel(activeVendor, lang))}
+                  value={search}
+                  onChange={(e) => setSearch(e.target.value)}
+                />
+              </div>
 
-          <div style={styles.itemList}>
-            {withQty.map((p) => (
-              <ItemRow key={activeVendor + "|" + p.item} p={p} activeVendor={activeVendor} draft={draft} setQty={setQty} lang={lang} onFocusItem={handleFocusItem} onBlurItem={handleBlurItem} />
-            ))}
-            {rest.length > 0 && withQty.length > 0 && <div style={styles.itemSectionLabel}>{t.restOfProducts}</div>}
-            {rest.map((p) => (
-              <ItemRow key={activeVendor + "|" + p.item} p={p} activeVendor={activeVendor} draft={draft} setQty={setQty} lang={lang} onFocusItem={handleFocusItem} onBlurItem={handleBlurItem} />
-            ))}
-            {filteredItems.length === 0 && <div style={styles.emptyRow}>{t.noMatch(search)}</div>}
-          </div>
+              <div style={styles.itemList}>
+                {withQty.map((p) => (
+                  <ItemRow key={p.vendor + "|" + p.item} p={p} vendorOverride={p.vendor} draft={draft} setQty={setQty} lang={lang} onFocusItem={handleFocusItem} onBlurItem={handleBlurItem} showVendorTag={isTodos} />
+                ))}
+                {rest.length > 0 && withQty.length > 0 && <div style={styles.itemSectionLabel}>{t.restOfProducts}</div>}
+                {rest.map((p) => (
+                  <ItemRow key={p.vendor + "|" + p.item} p={p} vendorOverride={p.vendor} draft={draft} setQty={setQty} lang={lang} onFocusItem={handleFocusItem} onBlurItem={handleBlurItem} showVendorTag={isTodos} />
+                ))}
+                {sourceItems.length === 0 && <div style={styles.emptyRow}>{t.noMatch(search)}</div>}
+              </div>
+            </>
+          )}
         </div>
 
         <div className="order-ticket" style={styles.ticket}>
@@ -2128,6 +2203,25 @@ function StockForm({ sucursal, onBack, activeVendor, setActiveVendor, search, se
           </button>
         </div>
       </div>
+
+      {showAddConfirm && (
+        <div style={styles.modalOverlay} onClick={() => setShowAddConfirm(false)}>
+          <div style={styles.modalBox} onClick={(e) => e.stopPropagation()}>
+            <h2 style={styles.modalTitle}>{t.confirmAddTitle}</h2>
+            <p style={styles.modalBody}>{t.confirmAddBody(newItemName, getStockVendorLabel(newCategory, lang))}</p>
+            <div style={styles.modalActions}>
+              <button style={styles.secondaryBtn} onClick={() => setShowAddConfirm(false)}>{t.confirmSendCancel}</button>
+              <button
+                style={{ ...styles.submitBtn, width: "auto", padding: "10px 18px" }}
+                onClick={handleConfirmAdd}
+                disabled={addingProduct}
+              >
+                {addingProduct ? t.loadingWait : t.confirmAddOk}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

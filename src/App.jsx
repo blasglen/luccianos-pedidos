@@ -938,7 +938,7 @@ const STR = {
 
 const THEMES = {
   day: {
-    "--cream": "#E6D3C2", "--paper": "#FFFFFF", "--paper-2": "#F5EEE7",
+    "--cream": "#E6D3C2", "--paper": "#F8F1EA", "--paper-2": "#EFE4DA",
     "--plum": "#4A1F2E", "--plum-light": "#6E3347", "--plum-glow": "rgba(74,31,46,0.28)",
     "--gold": "#9C7A3C",
     "--pistachio": "#8CA876", "--pistachio-dark": "#5F7A4C", "--terracotta": "#C9714E",
@@ -946,12 +946,12 @@ const THEMES = {
     "--ink": "#1C1414", "--line": "rgba(28,20,20,0.10)",
     "--muted-strong": "#3A2E2C", "--muted": "#6E625E", "--muted-faint": "#9A8E89",
     "--on-accent": "#FFFFFF",
-    "--glass": "rgba(230,211,194,0.78)", "--glass-strong": "rgba(255,255,255,0.82)",
+    "--glass": "rgba(230,211,194,0.82)", "--glass-strong": "rgba(248,241,234,0.88)",
     "--shadow": "0 1px 2px rgba(60,30,20,0.05), 0 10px 28px rgba(60,30,20,0.08)",
     "--shadow-sm": "0 1px 2px rgba(60,30,20,0.05), 0 4px 12px rgba(60,30,20,0.05)",
   },
   night: {
-    "--cream": "#121212", "--paper": "#1D1D1D", "--paper-2": "#262626",
+    "--cream": "#121212", "--paper": "#1A1A1A", "--paper-2": "#232323",
     "--plum": "#C7A75F", "--plum-light": "#D6BC7F", "--plum-glow": "rgba(199,167,95,0.22)",
     "--gold": "#C7A75F",
     "--pistachio": "#A9C2B0", "--pistachio-dark": "#8CA895", "--terracotta": "#B98A5A",
@@ -1304,6 +1304,17 @@ export default function App() {
   function toggleTheme() {
     setTheme((t) => (t === "night" ? "day" : "night"));
   }
+
+  // El fondo de toda la página (incluida la franja del reloj/batería en iPhone)
+  // toma el color del tema, para que arriba no aparezca un degradé blanco o gris.
+  useEffect(() => {
+    const bg = THEMES[theme]["--cream"];
+    document.documentElement.style.backgroundColor = bg;
+    document.body.style.backgroundColor = bg;
+    let meta = document.querySelector('meta[name="theme-color"]');
+    if (!meta) { meta = document.createElement("meta"); meta.name = "theme-color"; document.head.appendChild(meta); }
+    meta.setAttribute("content", bg);
+  }, [theme]);
 
   const [lang, setLang] = useState(() => {
     if (typeof window === "undefined") return "es";
@@ -3824,7 +3835,7 @@ const styles = {
     width: "100%", maxWidth: 520, display: "flex", flexDirection: "column",
     alignItems: "center", textAlign: "center", flex: 1,
   },
-  homeLogoImg: { width: 240, height: "auto", marginBottom: 28, filter: "drop-shadow(0 6px 18px rgba(0,0,0,0.12))" },
+  homeLogoImg: { width: 240, height: "auto", marginBottom: 28 },
   homeEyebrow: { fontSize: 11, letterSpacing: "0.22em", textTransform: "uppercase", color: "var(--gold)", fontWeight: 700, marginBottom: 10 },
   homeH1: { fontFamily: "'Bodoni Moda Variable', 'Bodoni Moda', Georgia, serif", fontWeight: 800, fontSize: 34, lineHeight: 1.1, margin: "0 0 28px", color: "var(--ink)", letterSpacing: "-0.01em" },
   homeTagline: { fontFamily: "'Bodoni Moda Variable', 'Bodoni Moda', Georgia, serif", fontOpticalSizing: "auto", fontWeight: 900, textTransform: "uppercase", color: "var(--ink)", fontSize: 40, lineHeight: 1.02, letterSpacing: "0.01em", marginTop: "auto", paddingTop: 48, opacity: 0.92 },

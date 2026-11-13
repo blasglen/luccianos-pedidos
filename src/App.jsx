@@ -2566,13 +2566,22 @@ function StockForm({ sucursal, onBack, activeVendor, setActiveVendor, search, se
       .map((p) => ({ ...p, vendor: activeVendor }));
   }
 
+  // El orden de la lista (cargados arriba) se calcula una sola vez al entrar a
+  // cada solapa o búsqueda. Mientras se carga, nada cambia de lugar: así no se
+  // pierde el producto al pasar de un casillero a otro (en iPhone sobre todo).
+  const orderSnapRef = useRef({ key: null, filled: new Set() });
+  const snapKey = mode + "|" + activeVendor + "|" + search;
+  if (orderSnapRef.current.key !== snapKey) {
+    orderSnapRef.current = {
+      key: snapKey,
+      filled: new Set(Object.keys(draft).filter((k) => stockEntryHasValue(draft[k]))),
+    };
+  }
   const withQty = [];
   const rest = [];
   sourceItems.forEach((p) => {
     const key = p.vendor + "|" + p.item;
-    const liveHasValue = stockEntryHasValue(draft[key]);
-    const hasValue = key === focusedKey ? frozenHadValueRef.current : liveHasValue;
-    if (hasValue) withQty.push(p);
+    if (orderSnapRef.current.filled.has(key)) withQty.push(p);
     else rest.push(p);
   });
 

@@ -215,8 +215,8 @@ export async function buildStockWorkbook(stockCount, catalog, lang = "es") {
       views: [{ state: "frozen", ySplit: 3, showGridLines: false }],
       pageSetup: { orientation: "landscape", fitToPage: true, fitToWidth: 1, fitToHeight: 0 },
     });
-    wsW.columns = [{ width: 16 }, { width: 50 }, { width: 9 }, { width: 10 }, { width: 10 }, { width: 12 }, { width: 8 }, { width: 40 }];
-    wsW.mergeCells("A1:H1");
+    wsW.columns = [{ width: 16 }, { width: 50 }, { width: 12 }, { width: 9 }, { width: 44 }];
+    wsW.mergeCells("A1:E1");
     const tw = wsW.getCell("A1");
     tw.value = es ? `DESPERDICIO · ${stockCount.sucursal} · ${fmtDate(stockCount.date)}` : `WASTE · ${stockCount.sucursal} · ${fmtDate(stockCount.date)}`;
     tw.font = { name: "Arial", size: 14, bold: true, color: { argb: "FFFFFFFF" } };
@@ -224,29 +224,26 @@ export async function buildStockWorkbook(stockCount, catalog, lang = "es") {
     tw.alignment = { vertical: "middle", indent: 1 };
     wsW.getRow(1).height = 28;
     const hw = wsW.getRow(3);
-    hw.values = es ? ["Categoría", "Producto", "Cajas", "Paquetes", "Sueltas", "TOTAL", "Unidad", "Motivo"] : ["Category", "Product", "Boxes", "Packs", "Loose", "TOTAL", "Unit", "Reason"];
+    hw.values = es ? ["Categoría", "Producto", "Cantidad", "Unidad", "Motivo"] : ["Category", "Product", "Quantity", "Unit", "Reason"];
     hw.eachCell((cell, col) => {
       cell.font = { name: "Arial", size: 10, bold: true, color: { argb: "FFFFFFFF" } };
       cell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: C.black } };
-      cell.alignment = { horizontal: col === 2 || col === 8 ? "left" : "center", vertical: "middle" };
+      cell.alignment = { horizontal: col === 3 || col === 4 ? "center" : "left", vertical: "middle" };
       cell.border = border;
     });
     const labelOf = {};
     catalog.forEach((c) => { labelOf[c.category] = c.label; });
     waste.forEach((it, i) => {
       const row = wsW.getRow(4 + i);
-      const pansTxt = it.pans && it.pans.length ? `  (${it.pans.length} vasch.)` : "";
-      row.values = [labelOf[it.vendor] || it.vendor, it.item + pansTxt, it.boxes || null, it.subs || null,
-        it.pans && it.pans.length ? null : (it.units || null), Number(it.total ?? it.quantity), it.unit || "u", it.reason || ""];
+      row.values = [labelOf[it.vendor] || it.vendor, it.item, Number(it.total ?? it.quantity), it.unit === "kg" ? "kg" : "u", it.reason || ""];
       row.eachCell({ includeEmpty: true }, (cell, col) => {
-        if (col > 8) return;
+        if (col > 5) return;
         cell.border = border;
-        cell.font = { name: "Arial", size: 10, bold: col === 6 };
-        cell.alignment = { vertical: "middle", horizontal: col === 2 || col === 8 || col === 1 ? "left" : "center", wrapText: col === 8 };
-        if (col >= 3 && col <= 6) cell.numFmt = NUM;
+        cell.font = { name: "Arial", size: 10, bold: col === 3 };
+        cell.alignment = { vertical: "middle", horizontal: col === 3 || col === 4 ? "center" : "left", wrapText: col === 5 };
+        if (col === 3) cell.numFmt = NUM;
         if (i % 2 === 1) cell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: C.beigeLight } };
       });
-      if (it.pans && it.pans.length) row.getCell(6).note = `${it.pans.join(" + ")} kg` + (it.tare ? `\nTara: ${it.tare} kg c/u` : "");
     });
   }
 

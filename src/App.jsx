@@ -603,6 +603,7 @@ const STR = {
     askWasteNo: "No, enviar conteo",
     wasteReasonPh: "Motivo (opcional): vencido, se cayó, mal estado…",
     wasteTitle: "Desperdicio",
+    wasteUnits: "Unidades",
     tareTitle: "Peso de la vaschetta vacía",
     tareSub: "Se descuenta de cada pesada. Dejalo en 0 si ya pesás el helado neto.",
     tareShort: "tara",
@@ -821,6 +822,7 @@ const STR = {
     askWasteNo: "No, send count",
     wasteReasonPh: "Reason (optional): expired, dropped, spoiled…",
     wasteTitle: "Waste",
+    wasteUnits: "Units",
     tareTitle: "Empty pan weight",
     tareSub: "Subtracted from each weighing. Leave 0 if you already weigh net gelato.",
     tareShort: "tare",
@@ -2433,21 +2435,42 @@ function StockItemRow({ p, draft, setQty, lang, onFocusItem, onBlurItem, showVen
   const t = STR[lang];
   const key = p.vendor + "|" + p.item;
   const d = draft[key] || {};
-  if (isPanProduct(p)) {
+  const rowRef = useRef(null);
+  const isWaste = mode === "waste";
+  // En stock, el gelato se pesa por vaschetta. En desperdicio va directo en kg.
+  if (isPanProduct(p) && !isWaste) {
     return <PanRow p={p} d={d} setQty={setQty} lang={lang} onFocusItem={onFocusItem} onBlurItem={onBlurItem} showVendorTag={showVendorTag} prev={prev} tare={tare} mode={mode}
       open={!!(openPans && openPans[key])} setOpen={(v) => setOpenPans && setOpenPans((o) => ({ ...o, [key]: v }))} />;
   }
   const isKg = p.unit === "kg";
   const fields = [];
-  if (p.box) fields.push({ f: "b", label: t.stockBoxes, hint: `×${p.box}` });
-  if (p.sub) fields.push({ f: "s", label: t.stockPacksShort, hint: `×${p.sub}` });
-  const looseLabel = isKg ? t.stockLooseKg : (p.box || p.sub ? t.stockLoose : t.stockQty);
-  fields.push({ f: "u", label: looseLabel, hint: "" });
-  const total = stockEntryTotal(p, d);
+  if (isWaste) {
+    // Desperdicio: siempre en unidades individuales (o kg), sin cajas ni paquetes.
+    fields.push({ f: "u", label: isKg ? t.stockLooseKg : t.wasteUnits, hint: "" });
+  } else {
+    if (p.box) fields.push({ f: "b", label: t.stockBoxes, hint: `×${p.box}` });
+    if (p.sub) fields.push({ f: "s", label: t.stockPacksShort, hint: `×${p.sub}` });
+    fields.push({ f: "u", label: isKg ? t.stockLooseKg : (p.box || p.sub ? t.stockLoose : t.stockQty), hint: "" });
+  }
+  const total = isWaste ? stockNum(d.u) : stockEntryTotal(p, d);
   const has = stockEntryHasValue(d);
   const meta = [p.code, showVendorTag ? getStockVendorLabel(p.vendor, lang) : null].filter(Boolean).join(" · ");
+  const unitLabel = isKg ? " kg" : (isWaste ? " u" : (p.unit ? " " + p.unit : ""));
+
+  // Mientras el foco se mueva entre los casilleros de este mismo producto,
+  // el producto no cambia de lugar en la lista (antes saltaba arriba y se perdía).
+  function handleFocusCapture(e) {
+    if (!(e.relatedTarget && rowRef.current && rowRef.current.contains(e.relatedTarget))) onFocusItem(key);
+  }
+  function handleBlurCapture() {
+    setTimeout(() => {
+      if (!(rowRef.current && rowRef.current.contains(document.activeElement))) onBlurItem();
+    }, 0);
+  }
+
   return (
-    <div style={{ ...styles.itemRow, flexDirection: "column", alignItems: "stretch", gap: 8 }}>
+    <div ref={rowRef} onFocusCapture={handleFocusCapture} onBlurCapture={handleBlurCapture}
+      style={{ ...styles.itemRow, flexDirection: "column", alignItems: "stretch", gap: 8 }}>
       <div style={styles.itemInfo}>
         <div style={styles.itemName}>{p.item}</div>
         {(meta || (prev !== undefined && prev !== null && prev !== "")) && (
@@ -2460,7 +2483,7 @@ function StockItemRow({ p, draft, setQty, lang, onFocusItem, onBlurItem, showVen
         )}
       </div>
       <div style={styles.stockFields}>
-        {fields.map(({ f, label, hint }) => (
+        {fields.map(({ f, label, hint }, idx) => (
           <label key={f} style={styles.stockField}>
             <span style={styles.stockFieldLabel}>{label}{hint && <span style={styles.stockFieldHint}> {hint}</span>}</span>
             <input
@@ -2468,20 +2491,24 @@ function StockItemRow({ p, draft, setQty, lang, onFocusItem, onBlurItem, showVen
               style={{ ...styles.qtyInput, width: "100%", boxSizing: "border-box" }}
               placeholder="0"
               inputMode="decimal"
+              enterKeyHint={idx < fields.length - 1 ? "next" : "done"}
               value={d[f] || ""}
               onChange={(e) => setQty(p.vendor, p.item, f, sanitizeStockQty(e.target.value))}
-              onFocus={() => onFocusItem(key)}
-              onBlur={() => onBlurItem()}
-              onKeyDown={(e) => { if (e.key === "Enter") e.target.blur(); }}
+              onKeyDown={(e) => {
+                if (e.key !== "Enter") return;
+                const inputs = rowRef.current ? rowRef.current.querySelectorAll("input.qtyInput") : [];
+                const next = inputs[idx + 1];
+                if (next) next.focus(); else e.target.blur();
+              }}
             />
           </label>
         ))}
         <div style={{ ...styles.stockTotal, opacity: has ? 1 : 0.45 }}>
           <span style={styles.stockFieldLabel}>{t.stockTotal}</span>
-          <strong>{fmtStockNum(total)}{p.unit ? " " + p.unit : ""}</strong>
+          <strong>{fmtStockNum(total)}{unitLabel}</strong>
         </div>
       </div>
-      {mode === "waste" && <WasteReason p={p} d={d} setQty={setQty} lang={lang} />}
+      {isWaste && <WasteReason p={p} d={d} setQty={setQty} lang={lang} />}
     </div>
   );
 }
@@ -2626,7 +2653,7 @@ function StockForm({ sucursal, onBack, activeVendor, setActiveVendor, search, se
                 />
               </div>
 
-              {activeVendor === "GELATO" && (
+              {activeVendor === "GELATO" && !isWaste && (
                 <div style={styles.tareCard}>
                   <div style={{ flex: 1, minWidth: 0 }}>
                     <div style={styles.tareTitle}>{t.tareTitle}</div>

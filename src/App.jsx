@@ -3,7 +3,7 @@ import {
   Search, Package, ClipboardList, Store, CheckCircle2, Clock, Loader2,
   ArrowLeft, Send, ChevronDown, ChevronUp, Lock, CalendarDays, Sun, Moon, Download, ChevronRight,
 } from "lucide-react";
-import { supabase } from "./supabaseClient";
+import { apiConfigured, listRows, insertRow, updateRow, upsertRows, login as apiLogin, readSession, saveSession, clearSession } from "./api";
 
 const PINS = {
   "American Dream": "1001",
@@ -259,7 +259,6 @@ const SUCURSAL_ABBR = {
   "Weston": "WES",
 };
 const ORDER_EMAIL = "admin@luccianos.us";
-const ALLOWED_DEPOSITO_EMAILS = ["contabilidad@luccianos.com.ar", "admin@luccianos.us"];
 
 const OWN_SUCURSALES = ["Florida Mall", "Vineland", "Weston"];
 // Franquicias ocultas por ahora en la pantalla de selección de sucursal.
@@ -504,7 +503,7 @@ const STR = {
     sucursalDesc: "Responsable de Sucursal",
     depositoTitle: "Depósito",
     depositoDesc: "Responsable de Compras",
-    dbError: (msg) => `No se pudo conectar con la base de datos. Revisá que las variables de entorno de Supabase estén configuradas. (${msg})`,
+    dbError: (msg) => `No se pudo conectar con la planilla de Google. (${msg})`,
 
     authEyebrow: "Depósito",
     loginTitle: "Ingresá a tu cuenta",
@@ -531,6 +530,8 @@ const STR = {
     errNotAllowed: "Ese mail no está autorizado para crear una cuenta de Depósito. Consultá con quien administra la herramienta.",
     errAlreadyRegistered: "Ese mail ya tiene una cuenta creada. Probá ingresar.",
     errWrongCredentials: "Mail o contraseña incorrectos.",
+    errNoDatabase: "Todavía no está conectada la planilla de Google. Pedile a quien administra la app que la configure.",
+    warnNotSavedMail: "No se pudo guardar en la planilla. Mandalo por mail desde la pantalla siguiente.",
     infoResetSent: "Listo. Si ese mail tiene una cuenta, te llegó un link para elegir una contraseña nueva. Revisá también spam.",
     infoAccountCreated: "Cuenta creada. Si te pide confirmar el mail, revisá tu casilla y después volvé acá a ingresar.",
 
@@ -632,6 +633,7 @@ const STR = {
 
     orderSent: "Pedido enviado",
     depositoCanSee: (s) => `Depósito ya puede ver el pedido de ${s}.`,
+    orderReadyMail: (s) => `El pedido de ${s} está listo. Mandalo por mail para que llegue al depósito.`,
     alsoByMail: (email) => "Para mandarlo también por mail a ",
     stepCopyTable: 'Apretá "Copiar tabla con formato" abajo.',
     stepOpenMail: (email) => `Abrí un mail nuevo a ${email} y pegalo con `,
@@ -705,7 +707,7 @@ const STR = {
     sucursalDesc: "Branch Manager",
     depositoTitle: "Warehouse",
     depositoDesc: "Purchasing Manager",
-    dbError: (msg) => `Could not connect to the database. Check that the Supabase environment variables are configured. (${msg})`,
+    dbError: (msg) => `Could not connect to the Google Sheet. (${msg})`,
 
     authEyebrow: "Warehouse",
     loginTitle: "Log in to your account",
@@ -732,6 +734,8 @@ const STR = {
     errNotAllowed: "That email isn't authorized to create a Warehouse account. Check with whoever manages this tool.",
     errAlreadyRegistered: "That email already has an account. Try logging in.",
     errWrongCredentials: "Wrong email or password.",
+    errNoDatabase: "The Google Sheet isn't connected yet. Ask the app admin to set it up.",
+    warnNotSavedMail: "Couldn't save to the sheet. Send it by email from the next screen.",
     infoResetSent: "Done. If that email has an account, a link to choose a new password was sent to it. Check spam too.",
     infoAccountCreated: "Account created. If it asks you to confirm your email, check your inbox and come back here to log in.",
 
@@ -833,6 +837,7 @@ const STR = {
 
     orderSent: "Order sent",
     depositoCanSee: (s) => `Warehouse can now see ${s}'s order.`,
+    orderReadyMail: (s) => `${s}'s order is ready. Email it so it reaches the warehouse.`,
     alsoByMail: (email) => "To also send it by email to ",
     stepCopyTable: 'Tap "Copy formatted table" below.',
     stepOpenMail: (email) => `Open a new email to ${email} and paste it with `,
@@ -1319,7 +1324,7 @@ export default function App() {
   const [pendingRole, setPendingRole] = useState(null);
   const [pinValue, setPinValue] = useState("");
   const [pinError, setPinError] = useState(false);
-  const [depositoSession, setDepositoSession] = useState(null);
+  const [depositoSession, setDepositoSession] = useState(() => readSession());
   const [authChecked, setAuthChecked] = useState(false);
 
   useEffect(() => { loadOrders(); }, []);
@@ -1338,9 +1343,10 @@ export default function App() {
   async function loadStockExtraProducts() {
     const local = readLocalExtraProducts();
     setStockExtraProducts(local);
+    if (!apiConfigured()) return;
     try {
-      const { data, error } = await supabase.from("stock_extra_products").select("*");
-      if (!error && data) {
+      const data = await listRows("stock_extra_products");
+      if (data) {
         const seen = new Set(data.map((p) => p.category + "|" + p.item));
         setStockExtraProducts([...data, ...local.filter((p) => !seen.has(p.category + "|" + p.item))]);
       }
@@ -1349,19 +1355,7 @@ export default function App() {
 
   useEffect(() => { unlockScroll(); }, [screen]);
 
-  useEffect(() => {
-    supabase.auth.getSession().then(({ data }) => {
-      setDepositoSession(data.session);
-      setAuthChecked(true);
-    });
-    const { data: listener } = supabase.auth.onAuthStateChange((event, session) => {
-      setDepositoSession(session);
-      if (event === "PASSWORD_RECOVERY") {
-        setScreen("reset-password");
-      }
-    });
-    return () => listener.subscription.unsubscribe();
-  }, []);
+  useEffect(() => { setAuthChecked(true); }, []);
 
   useEffect(() => {
     if (toast) {
@@ -1373,29 +1367,27 @@ export default function App() {
   async function loadOrders() {
     setLoading(true);
     setLoadError(null);
-    const { data, error } = await supabase
-      .from("orders")
-      .select("*")
-      .order("date", { ascending: false });
-    if (error) {
-      setLoadError(error.message);
+    if (!apiConfigured()) { setOrders([]); setLoading(false); return; }
+    try {
+      const rows = await listRows("orders");
+      setOrders(rows.sort((a, b) => new Date(b.date) - new Date(a.date)));
+    } catch (e) {
+      console.warn("orders load error:", e);
+      setLoadError(String(e.message || e));
       setOrders([]);
-    } else {
-      setOrders(data || []);
     }
     setLoading(false);
   }
 
   async function loadStockCounts() {
     setStockCountsLoading(true);
-    const { data, error } = await supabase
-      .from("stock_counts")
-      .select("*")
-      .order("date", { ascending: false });
-    if (!error) {
-      setStockCounts(data || []);
-    } else {
-      console.error("stock_counts load error:", error);
+    if (apiConfigured()) {
+      try {
+        const rows = await listRows("stock_counts");
+        setStockCounts(rows.sort((a, b) => new Date(b.date) - new Date(a.date)));
+      } catch (e) {
+        console.warn("stock_counts load error:", e);
+      }
     }
     setStockCountsLoading(false);
   }
@@ -1495,13 +1487,17 @@ export default function App() {
       notes: notes.trim(),
       status: "pendiente",
     };
+    // El pedido siempre se puede mandar por mail desde la confirmación;
+    // guardarlo en la planilla es lo que permite que el Depósito lo vea en la app.
     setSubmitting(true);
-    const { error } = await supabase.from("orders").insert([newOrder]);
-    setSubmitting(false);
-    if (error) {
-      setToast({ type: "error", text: STR[lang].errCouldNotSave });
-      return;
+    if (apiConfigured()) {
+      try { await insertRow("orders", newOrder); }
+      catch (e) {
+        console.warn("orders insert error:", e);
+        setToast({ type: "error", text: STR[lang].warnNotSavedMail });
+      }
     }
+    setSubmitting(false);
     setOrders((prev) => [newOrder, ...prev]);
     setDraft({});
     setRecentOrder([]);
@@ -1525,10 +1521,10 @@ export default function App() {
     // Se guarda en el dispositivo; si la base de datos responde, también ahí.
     writeLocalExtraProducts([...readLocalExtraProducts(), newProduct]);
     setStockExtraProducts((prev) => [...prev, newProduct]);
-    try {
-      const { error } = await supabase.from("stock_extra_products").insert([newProduct]);
-      if (error) console.warn("stock_extra_products insert skipped:", error);
-    } catch (e) { console.warn("stock_extra_products insert skipped:", e); }
+    if (apiConfigured()) {
+      try { await insertRow("stock_extra_products", newProduct); }
+      catch (e) { console.warn("stock_extra_products insert skipped:", e); }
+    }
     return true;
   }
 
@@ -1563,10 +1559,13 @@ export default function App() {
     // El raconto se envía por mail desde la pantalla de confirmación.
     // Guardarlo en la base de datos es opcional: si falla, se sigue igual.
     setStockSubmitting(true);
-    try {
-      const { error } = await supabase.from("stock_counts").insert([newCount]);
-      if (error) console.warn("stock_counts insert skipped:", error);
-    } catch (e) { console.warn("stock_counts insert skipped:", e); }
+    if (apiConfigured()) {
+      try { await insertRow("stock_counts", newCount); }
+      catch (e) {
+        console.warn("stock_counts insert skipped:", e);
+        setToast({ type: "error", text: STR[lang].warnNotSavedMail });
+      }
+    }
     setStockSubmitting(false);
     const previous = readLastStock(sucursal);
     writeLastStock(sucursal, items);
@@ -1579,13 +1578,9 @@ export default function App() {
   async function updateStatus(orderId, status) {
     const patch = { status };
     if (status === "cancelado") patch.canceled_at = new Date().toISOString();
-    let { error } = await supabase.from("orders").update(patch).eq("id", orderId);
-    if (error && patch.canceled_at) {
-      // Probablemente la columna canceled_at todavía no existe en Supabase: reintentamos sin ella.
-      delete patch.canceled_at;
-      const retry = await supabase.from("orders").update(patch).eq("id", orderId);
-      error = retry.error;
-    }
+    let error = null;
+    try { await updateRow("orders", orderId, patch, depositoSession || {}); }
+    catch (e) { error = e; console.warn("orders update error:", e); }
     if (error) {
       setToast({ type: "error", text: STR[lang].errCouldNotUpdateStatus });
       return;
@@ -1594,7 +1589,9 @@ export default function App() {
   }
 
   async function importOrders(importedOrders) {
-    const { error } = await supabase.from("orders").upsert(importedOrders, { onConflict: "id" });
+    let error = null;
+    try { await upsertRows("orders", importedOrders, depositoSession || {}); }
+    catch (e) { error = e; console.warn("orders upsert error:", e); }
     if (error) {
       setToast({ type: "error", text: STR[lang].errCouldNotRestore });
       return;
@@ -1813,13 +1810,9 @@ export default function App() {
       {screen === "deposito-auth" && (
         <DepositoAuth
           onBack={goBack}
-          onSuccess={() => setScreen("deposito")}
+          onSuccess={(session) => { setDepositoSession(session); loadOrders(); loadStockCounts(); setScreen("deposito"); }}
           lang={lang}
         />
-      )}
-
-      {screen === "reset-password" && (
-        <ResetPassword onSuccess={() => setScreen("deposito")} lang={lang} />
       )}
 
       {screen === "deposito" && (
@@ -1851,8 +1844,8 @@ export default function App() {
           setExpandedOrder={setExpandedOrder}
           updateStatus={updateStatus}
           onImportOrders={importOrders}
-          userEmail={depositoSession?.user?.email}
-          onLogout={async () => { await supabase.auth.signOut(); setScreen("home"); }}
+          userEmail={depositoSession?.email}
+          onLogout={() => { clearSession(); setDepositoSession(null); setScreen("home"); }}
           theme={theme}
           onToggleTheme={toggleTheme}
           lang={lang}
@@ -1902,211 +1895,45 @@ function Home({ onSucursal, onDeposito, theme, onToggleTheme, lang, onToggleLang
 
 function DepositoAuth({ onBack, onSuccess, lang }) {
   const t = STR[lang];
-  const [mode, setMode] = useState("login"); // "login" | "signup" | "forgot"
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [confirmPassword, setConfirmPassword] = useState("");
   const [loading, setLoading] = useState(false);
-  useEffect(() => () => unlockScroll(), []);
   const [error, setError] = useState(null);
-  const [info, setInfo] = useState(null);
+  useEffect(() => () => unlockScroll(), []);
 
   async function handleSubmit() {
     setError(null);
-    setInfo(null);
-
-    if (mode === "forgot") {
-      if (!email.trim()) {
-        setError(t.errNeedEmail);
-        return;
-      }
-      setLoading(true);
-      const redirectTo = `${window.location.origin}${import.meta.env.BASE_URL}`;
-      const { error: err } = await supabase.auth.resetPasswordForEmail(email.trim(), { redirectTo });
-      setLoading(false);
-      if (err) {
-        setError(err.message);
-        return;
-      }
-      setInfo(t.infoResetSent);
-      return;
-    }
-
-    if (!email.trim() || !password.trim()) {
-      setError(t.errNeedBoth);
-      return;
-    }
-    if (mode === "signup" && password !== confirmPassword) {
-      setError(t.errPasswordsMismatch);
-      return;
-    }
-    if (mode === "signup" && !ALLOWED_DEPOSITO_EMAILS.includes(email.trim().toLowerCase())) {
-      setError(t.errNotAllowed);
-      return;
-    }
+    if (!email.trim() || !password.trim()) { setError(t.errNeedBoth); return; }
+    if (!apiConfigured()) { setError(t.errNoDatabase); return; }
     setLoading(true);
-    if (mode === "signup") {
-      const { data, error: err } = await supabase.auth.signUp({ email: email.trim(), password });
-      setLoading(false);
-      if (err) {
-        setError(err.message === "User already registered" ? t.errAlreadyRegistered : err.message);
-        return;
-      }
-      if (data.session) {
-        onSuccess();
-      } else {
-        setInfo(t.infoAccountCreated);
-        setMode("login");
-      }
-    } else {
-      const { error: err } = await supabase.auth.signInWithPassword({ email: email.trim(), password });
-      setLoading(false);
-      if (err) {
-        setError(t.errWrongCredentials);
-        return;
-      }
-      onSuccess();
-    }
+    const ok = await apiLogin(email.trim(), password);
+    setLoading(false);
+    if (!ok) { setError(t.errWrongCredentials); return; }
+    const session = { email: email.trim().toLowerCase(), password };
+    saveSession(session);
+    onSuccess(session);
   }
 
   return (
     <div style={styles.center}>
       <Lock size={36} color="var(--plum)" strokeWidth={1.5} />
       <div style={styles.eyebrow}>{t.authEyebrow}</div>
-      <h1 style={styles.h1}>
-        {mode === "login" ? t.loginTitle : mode === "signup" ? t.signupTitle : t.forgotTitle}
-      </h1>
-      <p style={styles.sub}>
-        {mode === "login" && t.loginSub}
-        {mode === "signup" && t.signupSub}
-        {mode === "forgot" && t.forgotSub}
-      </p>
-
+      <h1 style={styles.h1}>{t.loginTitle}</h1>
+      <p style={styles.sub}>{t.loginSub}</p>
       <div style={{ width: "100%", maxWidth: 320, marginTop: 20 }}>
-        <input
-          type="email"
-          placeholder={t.emailPlaceholder}
-          style={styles.authInput}
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-          onFocus={lockScroll}
-          onBlur={unlockScroll}
-          onKeyDown={(e) => { if (e.key === "Enter" && mode === "forgot") handleSubmit(); }}
-        />
-        {mode !== "forgot" && (
-          <input
-            type="password"
-            placeholder={t.passwordPlaceholder}
-            style={styles.authInput}
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            onFocus={lockScroll}
-            onBlur={unlockScroll}
-            onKeyDown={(e) => { if (e.key === "Enter" && mode === "login") handleSubmit(); }}
-          />
-        )}
-        {mode === "signup" && (
-          <input
-            type="password"
-            placeholder={t.confirmPasswordPlaceholder}
-            style={styles.authInput}
-            value={confirmPassword}
-            onChange={(e) => setConfirmPassword(e.target.value)}
-            onFocus={lockScroll}
-            onBlur={unlockScroll}
-            onKeyDown={(e) => { if (e.key === "Enter") handleSubmit(); }}
-          />
-        )}
+        <input type="email" placeholder={t.emailPlaceholder} style={styles.authInput} value={email}
+          onChange={(e) => setEmail(e.target.value)} onFocus={lockScroll} onBlur={unlockScroll} autoComplete="username" />
+        <input type="password" placeholder={t.passwordPlaceholder} style={styles.authInput} value={password}
+          onChange={(e) => setPassword(e.target.value)} onFocus={lockScroll} onBlur={unlockScroll} autoComplete="current-password"
+          onKeyDown={(e) => { if (e.key === "Enter") handleSubmit(); }} />
       </div>
-
-      {error && <div style={{ color: "var(--terracotta)", fontSize: 13, marginTop: 10, fontWeight: 600 }}>{error}</div>}
-      {info && <div style={{ color: "var(--pistachio-dark)", fontSize: 13, marginTop: 10, fontWeight: 600, maxWidth: 320 }}>{info}</div>}
-
+      {error && <div style={{ color: "var(--terracotta)", fontSize: 13, marginTop: 10, fontWeight: 600, maxWidth: 320 }}>{error}</div>}
       <div style={{ display: "flex", gap: 12, marginTop: 20 }}>
         <button style={styles.secondaryBtn} onClick={onBack}>{t.back}</button>
         <button style={styles.primaryBtnSm} onClick={handleSubmit} disabled={loading}>
-          {loading ? t.loadingWait : mode === "login" ? t.loginBtn : mode === "signup" ? t.signupBtn : t.forgotBtn}
+          {loading ? t.loadingWait : t.loginBtn}
         </button>
       </div>
-
-      {mode === "login" && (
-        <button style={styles.textLink} onClick={() => { setMode("forgot"); setError(null); setInfo(null); }}>
-          {t.forgotLink}
-        </button>
-      )}
-
-      <button
-        style={styles.textLink}
-        onClick={() => { setMode(mode === "signup" ? "login" : mode === "forgot" ? "login" : "signup"); setError(null); setInfo(null); }}
-      >
-        {mode === "signup" ? t.toLogin : mode === "forgot" ? t.backToLogin : t.toSignup}
-      </button>
-    </div>
-  );
-}
-
-function ResetPassword({ onSuccess, lang }) {
-  const t = STR[lang];
-  const [password, setPassword] = useState("");
-  const [confirmPassword, setConfirmPassword] = useState("");
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState(null);
-  useEffect(() => () => unlockScroll(), []);
-
-  async function handleSubmit() {
-    setError(null);
-    if (!password.trim()) {
-      setError(t.errChoosePassword);
-      return;
-    }
-    if (password !== confirmPassword) {
-      setError(t.errPasswordsMismatch);
-      return;
-    }
-    setLoading(true);
-    const { error: err } = await supabase.auth.updateUser({ password });
-    setLoading(false);
-    if (err) {
-      setError(err.message);
-      return;
-    }
-    onSuccess();
-  }
-
-  return (
-    <div style={styles.center}>
-      <Lock size={36} color="var(--plum)" strokeWidth={1.5} />
-      <div style={styles.eyebrow}>{t.authEyebrow}</div>
-      <h1 style={styles.h1}>{t.resetTitle}</h1>
-      <p style={styles.sub}>{t.resetSub}</p>
-
-      <div style={{ width: "100%", maxWidth: 320, marginTop: 20 }}>
-        <input
-          type="password"
-          placeholder={t.newPasswordPlaceholder}
-          style={styles.authInput}
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
-          onFocus={lockScroll}
-          onBlur={unlockScroll}
-        />
-        <input
-          type="password"
-          placeholder={t.confirmNewPasswordPlaceholder}
-          style={styles.authInput}
-          value={confirmPassword}
-          onChange={(e) => setConfirmPassword(e.target.value)}
-          onFocus={lockScroll}
-          onBlur={unlockScroll}
-          onKeyDown={(e) => { if (e.key === "Enter") handleSubmit(); }}
-        />
-      </div>
-
-      {error && <div style={{ color: "var(--terracotta)", fontSize: 13, marginTop: 10, fontWeight: 600 }}>{error}</div>}
-
-      <button style={{ ...styles.primaryBtnSm, marginTop: 20 }} onClick={handleSubmit} disabled={loading}>
-        {loading ? t.loadingWait : t.savePassword}
-      </button>
     </div>
   );
 }
@@ -2856,7 +2683,7 @@ function Confirm({ sucursal, lastOrder, onNewOrder, onHistory, onHome, lang }) {
     <div style={styles.center}>
       <CheckCircle2 size={48} color="var(--pistachio-dark)" strokeWidth={1.5} />
       <h1 style={styles.h1}>{t.orderSent}</h1>
-      <p style={styles.sub}>{t.depositoCanSee(sucursal)}</p>
+      <p style={styles.sub}>{apiConfigured() ? t.depositoCanSee(sucursal) : t.orderReadyMail(sucursal)}</p>
       <p style={{ ...styles.sub, fontSize: 13, marginTop: 4 }}>
         {t.alsoByMail(ORDER_EMAIL)}<strong>{ORDER_EMAIL}</strong>:
       </p>

@@ -268,191 +268,191 @@ const HIDDEN_SUCURSALES = ["American Dream", "Aventura", "Sawgrass"];
 
 const STOCK_VENDORS = {
   "PAPER": [
-    { item: "BAKERY BOX ( Paper box for cakes to go )", code: "" },
-    { item: "PASTRY BAG ( Small paper bag for pastries )", code: "" },
-    { item: "HANDLE PAPER BAG ( Paper bag to go )", code: "" },
-    { item: "CLEAR CUP 16oz LOGO ( Shake-Smoothie)", code: "" },
-    { item: "CONE SLEEVE ( For premium cone )", code: "" },
-    { item: "CONTAINER TO GO WITH LID MEDIUM", code: "" },
-    { item: "CONTAINER TO GO WITH LID XL", code: "" },
-    { item: "PACKAGING SLEEVE MEDIUM for container to go", code: "" },
-    { item: "PACKAGING SLEEVE XLARGE for container to go", code: "" },
-    { item: "DOME LID for 16oz cup", code: "" },
-    { item: "FLAT LID for 16oz cup", code: "" },
-    { item: "LOGO-GOLD 4oz SMALL PAPER CUP", code: "" },
-    { item: "LOGO-GOLD 6oz MEDIUM PAPER CUP", code: "" },
-    { item: "LOGO-GOLD 8oz LARGE PAPER CUP", code: "" },
-    { item: "LOGO-WHITE 4oz SMALL PAPER CUP", code: "" },
-    { item: "LOGO-WHITE 6oz MEDIUM PAPER CUP", code: "" },
-    { item: "LOGO-WHITE 8oz LARGE PAPER CUP", code: "" },
-    { item: "NAPKINS WITH LOGO", code: "" },
-    { item: "PAPER STRAW WRAPPED BLACK & WHITE", code: "" },
-    { item: "LARGE BLACK SPOON 18cm", code: "" },
-    { item: "SMALL BLACK SPOON 9.5cm", code: "" },
-    { item: "STICKER LOGO for paper bags.", code: "" },
+    { item: "BAKERY BOX ( Paper box for cakes to go )", code: "", sub: 250 },
+    { item: "PASTRY BAG ( Small paper bag for pastries )", code: "", box: 250, sub: 50 },
+    { item: "HANDLE PAPER BAG ( Paper bag to go )", code: "", box: 100, sub: 25 },
+    { item: "CLEAR CUP 16oz LOGO ( Shake-Smoothie)", code: "", box: 1000, sub: 50 },
+    { item: "CONE SLEEVE ( For premium cone )", code: "", box: 2500, sub: 100 },
+    { item: "CONTAINER TO GO WITH LID MEDIUM", code: "", box: 50, sub: 25 },
+    { item: "CONTAINER TO GO WITH LID XL", code: "", box: 50, sub: 25 },
+    { item: "PACKAGING SLEEVE MEDIUM for container to go", code: "", sub: 250 },
+    { item: "PACKAGING SLEEVE XLARGE for container to go", code: "", sub: 250 },
+    { item: "DOME LID for 16oz cup", code: "", box: 1000, sub: 50 },
+    { item: "FLAT LID for 16oz cup", code: "", box: 1000, sub: 50 },
+    { item: "LOGO-GOLD 4oz SMALL PAPER CUP", code: "", box: 1000, sub: 50 },
+    { item: "LOGO-GOLD 6oz MEDIUM PAPER CUP", code: "", box: 1000, sub: 50 },
+    { item: "LOGO-GOLD 8oz LARGE PAPER CUP", code: "", box: 1000, sub: 50 },
+    { item: "LOGO-WHITE 4oz SMALL PAPER CUP", code: "", box: 1000, sub: 50 },
+    { item: "LOGO-WHITE 6oz MEDIUM PAPER CUP", code: "", box: 1000, sub: 50 },
+    { item: "LOGO-WHITE 8oz LARGE PAPER CUP", code: "", box: 1000, sub: 50 },
+    { item: "NAPKINS WITH LOGO", code: "", box: 6000, sub: 500 },
+    { item: "PAPER STRAW WRAPPED BLACK & WHITE", code: "", box: 1200, sub: 50 },
+    { item: "LARGE BLACK SPOON 18cm", code: "", box: 3000, sub: 250 },
+    { item: "SMALL BLACK SPOON 9.5cm", code: "", box: 6600, sub: 660 },
+    { item: "STICKER LOGO for paper bags.", code: "", sub: 500 },
   ],
   "COFFEE CORNER": [
-    { item: "NESPRESSO 12oz LID for paper cup", code: "" },
-    { item: "NESPRESSO 12oz PAPER CUP", code: "" },
-    { item: "NESPRESSO 4oz LID for paper cup", code: "" },
-    { item: "NESPRESSO 4oz PAPER CUP", code: "" },
-    { item: "NESPRESSO 8oz LID for paper cup", code: "" },
-    { item: "NESPRESSO 8oz PAPER CUP", code: "" },
-    { item: "NESPRESSO COFFEE CAPSULE ESPRESSO CARAMEL", code: "" },
-    { item: "NESPRESSO COFFEE CAPSULE ESPRESSO DECAFFEINATO", code: "" },
-    { item: "NESPRESSO COFFEE CAPSULE ESPRESSO LEGGERO", code: "" },
-    { item: "NESPRESSO COFFEE CAPSULE ESPRESSO ORIGIN BRAZIL", code: "" },
-    { item: "NESPRESSO COFFEE CAPSULE LUNGO FORTE", code: "" },
-    { item: "NESPRESSO COFFEE CAPSULE LUNGO LEGGERO", code: "" },
-    { item: "NESPRESSO COFFEE CAPSULE RISTRETTO", code: "" },
-    { item: "PAPER CUP HOLDER for cups to go", code: "" },
+    { item: "NESPRESSO 12oz LID for paper cup", code: "", sub: 35 },
+    { item: "NESPRESSO 12oz PAPER CUP", code: "", sub: 35 },
+    { item: "NESPRESSO 4oz LID for paper cup", code: "", sub: 50 },
+    { item: "NESPRESSO 4oz PAPER CUP", code: "", sub: 50 },
+    { item: "NESPRESSO 8oz LID for paper cup", code: "", sub: 30 },
+    { item: "NESPRESSO 8oz PAPER CUP", code: "", sub: 30 },
+    { item: "NESPRESSO COFFEE CAPSULE ESPRESSO CARAMEL", code: "", box: 50 },
+    { item: "NESPRESSO COFFEE CAPSULE ESPRESSO DECAFFEINATO", code: "", box: 50 },
+    { item: "NESPRESSO COFFEE CAPSULE ESPRESSO LEGGERO", code: "", box: 50 },
+    { item: "NESPRESSO COFFEE CAPSULE ESPRESSO ORIGIN BRAZIL", code: "", box: 50 },
+    { item: "NESPRESSO COFFEE CAPSULE LUNGO FORTE", code: "", box: 50 },
+    { item: "NESPRESSO COFFEE CAPSULE LUNGO LEGGERO", code: "", box: 50 },
+    { item: "NESPRESSO COFFEE CAPSULE RISTRETTO", code: "", box: 50 },
+    { item: "PAPER CUP HOLDER for cups to go", code: "", box: 2500, sub: 75 },
     { item: "PAPER SLEEVE FOR NESPRESSO CUP LARGE", code: "" },
     { item: "PAPER SLEEVE FOR NESPRESSO CUP SMALL", code: "" },
-    { item: "STIR for coffee cup", code: "" },
-    { item: "SWEETNER STICK PACKET LOGO - for coffee", code: "" },
-    { item: "WHITE SUGAR STICK PACKET LOGO - for coffee", code: "" },
+    { item: "STIR for coffee cup", code: "", box: 100 },
+    { item: "SWEETNER STICK PACKET LOGO - for coffee", code: "", box: 2000 },
+    { item: "WHITE SUGAR STICK PACKET LOGO - for coffee", code: "", box: 2000 },
   ],
   "GRAB & GO": [
-    { item: "BOTTLE OF SPARKLING WATER", code: "" },
-    { item: "BOTTLE OF COKE ZERO", code: "" },
-    { item: "BOTTLE OF SPRITE", code: "" },
-    { item: "BOTTLE OF REGULAR COKE", code: "" },
-    { item: "BOTTLE OF WATER", code: "" },
-    { item: "BERRY CAKE", code: "" },
-    { item: "CHOCOLATE CAKE", code: "" },
-    { item: "APPLE TART", code: "" },
-    { item: "CHOCOLATE TEMPTATION", code: "" },
-    { item: "MACARONS", code: "" },
-    { item: "NOCCIOLA CAKE", code: "" },
-    { item: "RICOTTA PISTACCHIO TART", code: "" },
-    { item: "TORTA DE LA NONNA", code: "" },
-    { item: "MINI KEY LIME CHEESECAKE", code: "" },
-    { item: "INDIV PORTION TIRAMISU", code: "" },
-    { item: "PUMPKIN CHEESCKE", code: "" },
-    { item: "MINI CROISSANT", code: "" },
-    { item: "RED VELVET CAKE", code: "" },
-    { item: "DULCE DE LECHE CHEESECAKE", code: "" },
+    { item: "BOTTLE OF SPARKLING WATER", code: "", box: 24 },
+    { item: "BOTTLE OF COKE ZERO", code: "", box: 24 },
+    { item: "BOTTLE OF SPRITE", code: "", box: 24 },
+    { item: "BOTTLE OF REGULAR COKE", code: "", box: 24 },
+    { item: "BOTTLE OF WATER", code: "", box: 24 },
+    { item: "BERRY CAKE", code: "", box: 12 },
+    { item: "CHOCOLATE CAKE", code: "", box: 14 },
+    { item: "APPLE TART", code: "", box: 12 },
+    { item: "CHOCOLATE TEMPTATION", code: "", box: 12 },
+    { item: "MACARONS", code: "", box: 144, sub: 48 },
+    { item: "NOCCIOLA CAKE", code: "", box: 10 },
+    { item: "RICOTTA PISTACCHIO TART", code: "", box: 12 },
+    { item: "TORTA DE LA NONNA", code: "", box: 12 },
+    { item: "MINI KEY LIME CHEESECAKE", code: "", box: 16 },
+    { item: "INDIV PORTION TIRAMISU", code: "", box: 10 },
+    { item: "PUMPKIN CHEESCKE", code: "", box: 14 },
+    { item: "MINI CROISSANT", code: "", box: 150 },
+    { item: "RED VELVET CAKE", code: "", box: 16 },
+    { item: "DULCE DE LECHE CHEESECAKE", code: "", box: 16 },
   ],
   "OTHERS": [
-    { item: "CIALDINO - WAFFLE COOKIE", code: "" },
-    { item: "KIDS CONE", code: "" },
-    { item: "REGULAR WAFFLE CONE", code: "" },
-    { item: "WHIPPED CREAM", code: "" },
-    { item: "WHOLE MILK", code: "" },
-    { item: "ICE POPS LOGO STICKS", code: "" },
-    { item: "LARGE BOTTLE OF SPARKLING WATER", code: "" },
-    { item: "STUFF TOYS", code: "" },
+    { item: "CIALDINO - WAFFLE COOKIE", code: "", box: 1200 },
+    { item: "KIDS CONE", code: "", box: 400, sub: 200 },
+    { item: "REGULAR WAFFLE CONE", code: "", box: 288, sub: 24 },
+    { item: "WHIPPED CREAM", code: "", box: 0.36 },
+    { item: "WHOLE MILK", code: "", box: 3.78 },
+    { item: "ICE POPS LOGO STICKS", code: "", box: 10000 },
+    { item: "LARGE BOTTLE OF SPARKLING WATER", code: "", box: 1 },
+    { item: "STUFF TOYS", code: "", box: 25 },
   ],
   "INGREDIENTS": [
-    { item: "COPERTURA AL GUSTO DI CIOCC FONDENTE 2 / 5.5kg", code: "" },
-    { item: "FIORDIAMARENA x 2 / 3kg", code: "" },
-    { item: "FIORDIBOSCO x 2 / 3 kg", code: "" },
-    { item: "FIORDIMARACUJA x2 / 3kg", code: "" },
-    { item: "FROLLINI COOKIES BLACK x 4 / 1kg", code: "" },
-    { item: "GRANELLA DI NOCCIOLE x 6 / 2kg", code: "" },
-    { item: "INSTACRUMBLE 1 / 2.5 kg", code: "" },
-    { item: "Instacrumble Pistacchio Salato gluten free", code: "" },
-    { item: "ITALIAN WHOLE ROASTED HAZELNUT 6 / 2kg", code: "" },
-    { item: "MECROCK PLUS x 2 / 5kg", code: "" },
-    { item: "Morettina Pepita x 5.5kg", code: "" },
-    { item: "PISTACCHIO GRAINS 6 / 1 kg", code: "" },
-    { item: "QUELLA DI NOCCIOLE x 2 / 6kg", code: "" },
-    { item: "QUELLA PISTACCHIO x 2 / 6kg", code: "" },
-    { item: "QUELLA PISTACCHIO CRUNCHY 2 / 2.3 kg", code: "" },
-    { item: "QUELLO (Caramel) x 2 / 6 kg", code: "" },
-    { item: "VARIEGATO DUBAI CHOCOLATE x 1 / 5.5 kg", code: "" },
-    { item: "VARIEGATO LIMETTA X 6 / 1.5kg", code: "" },
-    { item: "CANOLA OIL PAN", code: "" },
-    { item: "COCOA POWDER 22-24 22.68kg", code: "" },
-    { item: "SEMI SWEET CHOCOLATE 56% 2/10kg", code: "" },
-    { item: "GIRARDELLI CARAMEL", code: "" },
-    { item: "GIRARDELLI CHOCOLATE", code: "" },
-    { item: "DULCE DE LECHE CLASSIC", code: "" },
-    { item: "SHREDDED COCONUT", code: "" },
+    { item: "COPERTURA AL GUSTO DI CIOCC FONDENTE 2 / 5.5kg", code: "", box: 11, sub: 5.5, unit: "kg" },
+    { item: "FIORDIAMARENA x 2 / 3kg", code: "", box: 6, sub: 3, unit: "kg" },
+    { item: "FIORDIBOSCO x 2 / 3 kg", code: "", box: 6, sub: 3, unit: "kg" },
+    { item: "FIORDIMARACUJA x2 / 3kg", code: "", box: 6, sub: 3, unit: "kg" },
+    { item: "FROLLINI COOKIES BLACK x 4 / 1kg", code: "", box: 4, sub: 1, unit: "kg" },
+    { item: "GRANELLA DI NOCCIOLE x 6 / 2kg", code: "", box: 12, sub: 2, unit: "kg" },
+    { item: "INSTACRUMBLE 1 / 2.5 kg", code: "", box: 2.5, unit: "kg" },
+    { item: "Instacrumble Pistacchio Salato gluten free", code: "", box: 2.5, unit: "kg" },
+    { item: "ITALIAN WHOLE ROASTED HAZELNUT 6 / 2kg", code: "", box: 12, sub: 2, unit: "kg" },
+    { item: "MECROCK PLUS x 2 / 5kg", code: "", box: 10, sub: 5, unit: "kg" },
+    { item: "Morettina Pepita x 5.5kg", code: "", sub: 5.5, unit: "kg" },
+    { item: "PISTACCHIO GRAINS 6 / 1 kg", code: "", box: 6, sub: 1, unit: "kg" },
+    { item: "QUELLA DI NOCCIOLE x 2 / 6kg", code: "", box: 12, sub: 6, unit: "kg" },
+    { item: "QUELLA PISTACCHIO x 2 / 6kg", code: "", box: 12, sub: 6, unit: "kg" },
+    { item: "QUELLA PISTACCHIO CRUNCHY 2 / 2.3 kg", code: "", box: 4.6, sub: 2.3, unit: "kg" },
+    { item: "QUELLO (Caramel) x 2 / 6 kg", code: "", box: 12, sub: 6, unit: "kg" },
+    { item: "VARIEGATO DUBAI CHOCOLATE x 1 / 5.5 kg", code: "", sub: 5.5, unit: "kg" },
+    { item: "VARIEGATO LIMETTA X 6 / 1.5kg", code: "", box: 9, sub: 1.5, unit: "kg" },
+    { item: "CANOLA OIL PAN", code: "", box: 0.22, unit: "kg" },
+    { item: "COCOA POWDER 22-24 22.68kg", code: "", box: 22.68, unit: "kg" },
+    { item: "SEMI SWEET CHOCOLATE 56% 2/10kg", code: "", box: 20, sub: 10, unit: "kg" },
+    { item: "GIRARDELLI CARAMEL", code: "", box: 0.45, unit: "kg" },
+    { item: "GIRARDELLI CHOCOLATE", code: "", box: 0.45, unit: "kg" },
+    { item: "DULCE DE LECHE CLASSIC", code: "", box: 4.8, sub: 0.4, unit: "kg" },
+    { item: "SHREDDED COCONUT", code: "", box: 11.33, unit: "kg" },
   ],
   "ALFAJORES": [
-    { item: "ALFAJOR SEMISWEET CHOCOLATE", code: "" },
-    { item: "ALFAJOR DARK 70% CHOCOLATE", code: "" },
-    { item: "ALFAJOR WHITE CHOCOLATE", code: "" },
-    { item: "ALFAJOR WHITE CHOCOLATE WITH WALNUT", code: "" },
-    { item: "ALFAJOR BAGS", code: "" },
-    { item: "BOX OF 6 ALFAJOR SEMIWEET CHOCOLATE", code: "" },
-    { item: "BOX OF 6 ALFAJOR DARK 70% CHOCOLATE", code: "" },
-    { item: "BOX OF 6 ALFAJOR WHITE CHOCOLATE", code: "" },
-    { item: "BOX OF 6 ALFAJOR WHITE CHOCOLATE WITH WALNUT", code: "" },
-    { item: "BOX OF 6 ALFAJOR MIXED", code: "" },
-    { item: "BOX OF 6 ALFAJOR SORTED", code: "" },
-    { item: "BOX OF 10 ALFAJOR MIXED", code: "" },
-    { item: "BOX OF 10 ALFAJOR SORTED", code: "" },
+    { item: "ALFAJOR SEMISWEET CHOCOLATE", code: "", box: 60 },
+    { item: "ALFAJOR DARK 70% CHOCOLATE", code: "", box: 60 },
+    { item: "ALFAJOR WHITE CHOCOLATE", code: "", box: 60 },
+    { item: "ALFAJOR WHITE CHOCOLATE WITH WALNUT", code: "", box: 60 },
+    { item: "ALFAJOR BAGS", code: "", box: 250 },
+    { item: "BOX OF 6 ALFAJOR SEMIWEET CHOCOLATE", code: "", box: 125 },
+    { item: "BOX OF 6 ALFAJOR DARK 70% CHOCOLATE", code: "", box: 125 },
+    { item: "BOX OF 6 ALFAJOR WHITE CHOCOLATE", code: "", box: 125 },
+    { item: "BOX OF 6 ALFAJOR WHITE CHOCOLATE WITH WALNUT", code: "", box: 125 },
+    { item: "BOX OF 6 ALFAJOR MIXED", code: "", box: 125 },
+    { item: "BOX OF 6 ALFAJOR SORTED", code: "", box: 125 },
+    { item: "BOX OF 10 ALFAJOR MIXED", code: "", box: 100 },
+    { item: "BOX OF 10 ALFAJOR SORTED", code: "", box: 100 },
   ],
   "ICE POPS": [
-    { item: "CHOCOLATE & DULCE DE LECHE", code: "" },
-    { item: "CHOCOLATE 72%", code: "" },
-    { item: "COOKIES & CREAM", code: "" },
-    { item: "CRISPY CHOCOLATE", code: "" },
-    { item: "CRISPY DULCE DE LECHE", code: "" },
-    { item: "DARK DOUBLE CHOCOLATE", code: "" },
-    { item: "DULCE DE LECHE & DULCE DE LECHE", code: "" },
-    { item: "ENZO - DULCE DE LECHE & GIANDUIA", code: "" },
-    { item: "HAZELNUT & CHOCOLATE", code: "" },
-    { item: "KING NERO", code: "" },
-    { item: "LEMON", code: "" },
-    { item: "MASCARPONE & BERRIES", code: "" },
-    { item: "MINION - KING & WHITE CHOCOLATE", code: "" },
-    { item: "OLI KING", code: "" },
-    { item: "PASSION FRUIT", code: "" },
-    { item: "PASSION FRUIT & COCONUT", code: "" },
-    { item: "PISTACCHIO", code: "" },
-    { item: "SMILE KING", code: "" },
-    { item: "SORBET PATAGONIA", code: "" },
-    { item: "STRAWBERRY", code: "" },
-    { item: "STRAWBERRY & WHIPPED CREAM", code: "" },
-    { item: "TANGERINE", code: "" },
-    { item: "TONIO - COOKIES & CREAM", code: "" },
-    { item: "WHIPPED CREAM & CRISPY CHOCOLATE", code: "" },
-    { item: "WHITE DOUBLE CHOCOLATE", code: "" },
-    { item: "MANGO", code: "" },
-    { item: "COOKIES & CREAM DIPPED", code: "" },
-    { item: "DULCE DE LECHE & COOKIES", code: "" },
-    { item: "CHOCOLATE LUCCIANO'S & HAZELNUT", code: "" },
-    { item: "MILK CHOCOLATE 0% SUGAR ADDED", code: "" },
-    { item: "PASSION FRUIT CHEESECAKE", code: "" },
+    { item: "CHOCOLATE & DULCE DE LECHE", code: "", sub: 30 },
+    { item: "CHOCOLATE 72%", code: "", box: 40, sub: 30 },
+    { item: "COOKIES & CREAM", code: "", sub: 30 },
+    { item: "CRISPY CHOCOLATE", code: "", box: 40, sub: 30 },
+    { item: "CRISPY DULCE DE LECHE", code: "", box: 40, sub: 30 },
+    { item: "DARK DOUBLE CHOCOLATE", code: "", box: 40, sub: 30 },
+    { item: "DULCE DE LECHE & DULCE DE LECHE", code: "", sub: 30 },
+    { item: "ENZO - DULCE DE LECHE & GIANDUIA", code: "", sub: 25 },
+    { item: "HAZELNUT & CHOCOLATE", code: "", sub: 30 },
+    { item: "KING NERO", code: "", sub: 25 },
+    { item: "LEMON", code: "", box: 40, sub: 30 },
+    { item: "MASCARPONE & BERRIES", code: "", sub: 30 },
+    { item: "MINION - KING & WHITE CHOCOLATE", code: "", box: 30, sub: 25 },
+    { item: "OLI KING", code: "", box: 30, sub: 25 },
+    { item: "PASSION FRUIT", code: "", box: 40, sub: 30 },
+    { item: "PASSION FRUIT & COCONUT", code: "", sub: 25 },
+    { item: "PISTACCHIO", code: "", box: 40, sub: 30 },
+    { item: "SMILE KING", code: "", sub: 25 },
+    { item: "SORBET PATAGONIA", code: "", sub: 25 },
+    { item: "STRAWBERRY", code: "", box: 40, sub: 30 },
+    { item: "STRAWBERRY & WHIPPED CREAM", code: "", box: 30, sub: 25 },
+    { item: "TANGERINE", code: "", box: 40, sub: 30 },
+    { item: "TONIO - COOKIES & CREAM", code: "", box: 30, sub: 25 },
+    { item: "WHIPPED CREAM & CRISPY CHOCOLATE", code: "", box: 40, sub: 30 },
+    { item: "WHITE DOUBLE CHOCOLATE", code: "", box: 40, sub: 30 },
+    { item: "MANGO", code: "", box: 40 },
+    { item: "COOKIES & CREAM DIPPED", code: "", box: 40, sub: 30 },
+    { item: "DULCE DE LECHE & COOKIES", code: "", box: 40, sub: 30 },
+    { item: "CHOCOLATE LUCCIANO'S & HAZELNUT", code: "", box: 40, sub: 30 },
+    { item: "MILK CHOCOLATE 0% SUGAR ADDED", code: "", box: 40, sub: 30 },
+    { item: "PASSION FRUIT CHEESECAKE", code: "", box: 40, sub: 30 },
   ],
   "GELATO": [
-    { item: "BANANA SPLIT", code: "" },
-    { item: "CARAMELIZED POP CORN", code: "" },
-    { item: "CHERRY VANILLA", code: "" },
-    { item: "CHOCOLATE DUBAI", code: "" },
-    { item: "COCO ROCK", code: "" },
-    { item: "COOKIES & CREAM", code: "" },
-    { item: "DARK CHOCOLATE SORBET 81%", code: "" },
-    { item: "DULCE DE LECHE", code: "" },
-    { item: "DULCE DE LECHE WITH BROWNIE", code: "" },
-    { item: "DULCE DE LECHE WITH STRACCIATELLA", code: "" },
-    { item: "HAZELNUT CHOCOLATE 0% ADDED SUGAR", code: "" },
-    { item: "HAZELNUT CREAM CHOCOLATE", code: "" },
-    { item: "KING BIANCO", code: "" },
-    { item: "KING NERO", code: "" },
-    { item: "LEMON PIE", code: "" },
-    { item: "LIME", code: "" },
-    { item: "LUCCIANO'S SIGNATURE CHOCOLATE", code: "" },
-    { item: "MANGO", code: "" },
-    { item: "MASCARPONE & BERRIES", code: "" },
-    { item: "MINT & CHOCOLATE", code: "" },
-    { item: "PASSION FRUIT", code: "" },
-    { item: "PASSION FRUIT CHEESECAKE", code: "" },
-    { item: "PISTACCHIO", code: "" },
-    { item: "RASPBERRY CHOCOLATE", code: "" },
-    { item: "STRAWBERRY", code: "" },
-    { item: "TIRAMISU", code: "" },
-    { item: "VANILLA", code: "" },
-    { item: "WHITE CHOCOLATE PISTACCHIO CRUNCH", code: "" },
-    { item: "WHITE GIANDUIA & SALTED CARAMEL", code: "" },
-    { item: "GIANDUIA CHOCOLATE SLAB", code: "" },
-    { item: "GIANDUIOTTO", code: "" },
-    { item: "NOCCIOLA SUPREMA", code: "" },
-    { item: "PISTACCHIO CHEESECAKE", code: "" },
-    { item: "TIRAMISU PISTACCHIO", code: "" },
+    { item: "BANANA SPLIT", code: "", unit: "kg" },
+    { item: "CARAMELIZED POP CORN", code: "", unit: "kg" },
+    { item: "CHERRY VANILLA", code: "", unit: "kg" },
+    { item: "CHOCOLATE DUBAI", code: "", unit: "kg" },
+    { item: "COCO ROCK", code: "", unit: "kg" },
+    { item: "COOKIES & CREAM", code: "", unit: "kg" },
+    { item: "DARK CHOCOLATE SORBET 81%", code: "", unit: "kg" },
+    { item: "DULCE DE LECHE", code: "", unit: "kg" },
+    { item: "DULCE DE LECHE WITH BROWNIE", code: "", unit: "kg" },
+    { item: "DULCE DE LECHE WITH STRACCIATELLA", code: "", unit: "kg" },
+    { item: "HAZELNUT CHOCOLATE 0% ADDED SUGAR", code: "", unit: "kg" },
+    { item: "HAZELNUT CREAM CHOCOLATE", code: "", unit: "kg" },
+    { item: "KING BIANCO", code: "", unit: "kg" },
+    { item: "KING NERO", code: "", unit: "kg" },
+    { item: "LEMON PIE", code: "", unit: "kg" },
+    { item: "LIME", code: "", unit: "kg" },
+    { item: "LUCCIANO'S SIGNATURE CHOCOLATE", code: "", unit: "kg" },
+    { item: "MANGO", code: "", unit: "kg" },
+    { item: "MASCARPONE & BERRIES", code: "", unit: "kg" },
+    { item: "MINT & CHOCOLATE", code: "", unit: "kg" },
+    { item: "PASSION FRUIT", code: "", unit: "kg" },
+    { item: "PASSION FRUIT CHEESECAKE", code: "", unit: "kg" },
+    { item: "PISTACCHIO", code: "", unit: "kg" },
+    { item: "RASPBERRY CHOCOLATE", code: "", unit: "kg" },
+    { item: "STRAWBERRY", code: "", unit: "kg" },
+    { item: "TIRAMISU", code: "", unit: "kg" },
+    { item: "VANILLA", code: "", unit: "kg" },
+    { item: "WHITE CHOCOLATE PISTACCHIO CRUNCH", code: "", unit: "kg" },
+    { item: "WHITE GIANDUIA & SALTED CARAMEL", code: "", unit: "kg" },
+    { item: "GIANDUIA CHOCOLATE SLAB", code: "", unit: "kg" },
+    { item: "GIANDUIOTTO", code: "", unit: "kg" },
+    { item: "NOCCIOLA SUPREMA", code: "", unit: "kg" },
+    { item: "PISTACCHIO CHEESECAKE", code: "", unit: "kg" },
+    { item: "TIRAMISU PISTACCHIO", code: "", unit: "kg" },
   ],
   "Todos": [],
   "Agregar Producto": [],
@@ -578,6 +578,15 @@ const STR = {
     confirmAddBody: (name, cat) => `Vas a agregar "${name}" en la categoría "${cat}". Va a quedar disponible para esta sucursal y para las otras que usan Stocks.`,
     confirmAddOk: "Sí, agregar producto",
     qtyPlaceholder: "cant.",
+    stockBoxes: "Cajas",
+    stockPacks: "Paquetes",
+    stockLoose: "Sueltas",
+    stockLooseKg: "Kg",
+    stockQty: "Cantidad",
+    stockTotal: "Total",
+    stockBoxShort: "Caja x",
+    stockPackShort: "Paq. x",
+    stockPrev: "Antes",
     orderSummary: "Resumen del pedido",
     itemLoaded: "ítem cargado",
     itemsLoaded: "ítems cargados",
@@ -753,6 +762,15 @@ const STR = {
     confirmAddBody: (name, cat) => `You're about to add "${name}" to the "${cat}" category. It will become available for this branch and the other ones using Stock count.`,
     confirmAddOk: "Yes, add product",
     qtyPlaceholder: "qty.",
+    stockBoxes: "Boxes",
+    stockPacks: "Packs",
+    stockLoose: "Loose",
+    stockLooseKg: "Kg",
+    stockQty: "Quantity",
+    stockTotal: "Total",
+    stockBoxShort: "Box x",
+    stockPackShort: "Pack x",
+    stockPrev: "Before",
     orderSummary: "Order summary",
     itemLoaded: "item loaded",
     itemsLoaded: "items loaded",
@@ -905,6 +923,56 @@ function getStatusLabel(status, lang) {
   return STR[lang][STATUS_LABEL_KEY[status] || "statusPendiente"];
 }
 
+// ── Conteo de stock: cajas / paquetes / sueltas ─────────────────────────
+// Igual que la planilla de inventario: TOTAL = cajas × (ud por caja)
+// + paquetes × (ud por paquete) + sueltas. Los factores (box / sub) vienen
+// de STOCK_VENDORS; los productos sin factor se cargan solo como sueltas.
+function sanitizeStockQty(value) {
+  let v = String(value).replace(/,/g, ".").replace(/[^\d.]/g, "");
+  const dotIndex = v.indexOf(".");
+  if (dotIndex !== -1) {
+    v = v.slice(0, dotIndex) + "." + v.slice(dotIndex + 1).replace(/\./g, "").slice(0, 3);
+  }
+  return v;
+}
+function stockNum(v) {
+  const n = parseFloat(String(v ?? "").replace(",", "."));
+  return isNaN(n) ? 0 : n;
+}
+function fmtStockNum(n) {
+  return String(Math.round(n * 1000) / 1000);
+}
+function stockEntryHasValue(d) {
+  return !!d && ["b", "s", "u"].some((f) => d[f] !== undefined && String(d[f]).trim() !== "");
+}
+function stockEntryTotal(p, d) {
+  if (!d) return 0;
+  return stockNum(d.b) * (p.box || 0) + stockNum(d.s) * (p.sub || 0) + stockNum(d.u);
+}
+function findStockProduct(vendor, item, extraProducts = []) {
+  const base = (STOCK_VENDORS[vendor] || []).find((p) => p.item === item);
+  if (base) return base;
+  const extra = extraProducts.find((e) => e.category === vendor && e.item === item);
+  return extra ? { item: extra.item, code: extra.code || "" } : { item, code: "" };
+}
+function stockItemBreakdown(it) {
+  const parts = [];
+  if (it.boxes) parts.push(`${fmtStockNum(it.boxes)} cj`);
+  if (it.subs) parts.push(`${fmtStockNum(it.subs)} paq`);
+  if (it.units) parts.push(`${fmtStockNum(it.units)}${it.unit ? " " + it.unit : " u"}`);
+  return parts.join(" + ");
+}
+function readLastStock(sucursal) {
+  try { return JSON.parse(localStorage.getItem("last_stock_" + sucursal) || "{}"); } catch { return {}; }
+}
+function writeLastStock(sucursal, items) {
+  try {
+    const map = {};
+    items.forEach((it) => { map[it.vendor + "|" + it.item] = it.quantity; });
+    localStorage.setItem("last_stock_" + sucursal, JSON.stringify({ date: new Date().toISOString(), items: map }));
+  } catch {}
+}
+
 function sanitizeQty(value) {
   let v = value.replace(/[^\d.]/g, "");
   const dotIndex = v.indexOf(".");
@@ -1007,7 +1075,9 @@ function buildStockMailBody(stockCount, lang = "es") {
   STOCK_REAL_CATEGORIES.filter((v) => stockCount.items.some((it) => it.vendor === v)).forEach((v) => {
     body += `${getStockVendorLabel(v, lang)}\n`;
     stockCount.items.filter((it) => it.vendor === v).forEach((it) => {
-      body += `  - ${it.item}: ${it.quantity}\n`;
+      const br = stockItemBreakdown(it);
+      const u = it.unit ? " " + it.unit : "";
+      body += `  - ${it.item}: ${it.quantity}${u}${br && (it.boxes || it.subs) ? ` (${br})` : ""}\n`;
     });
     body += `\n`;
   });
@@ -1029,9 +1099,17 @@ function buildStockHtmlTable(stockCount, lang = "es") {
   STOCK_REAL_CATEGORIES.filter((v) => stockCount.items.some((it) => it.vendor === v)).forEach((v) => {
     html += `<p style="margin:0 0 6px;font-weight:bold;">${escapeHtml(getStockVendorLabel(v, lang))}</p>`;
     html += `<table style="border-collapse:collapse;margin-bottom:18px;">`;
-    html += `<tr><td style="${headerCell}">Item</td><td style="${headerCellCenter}"></td></tr>`;
+    const L = lang === "en" ? ["Item", "Boxes", "Packs", "Loose", "Total"] : ["Item", "Cajas", "Paquetes", "Sueltas", "Total"];
+    html += `<tr><td style="${headerCell}">${L[0]}</td>${L.slice(1).map((h) => `<td style="${headerCellCenter}">${h}</td>`).join("")}</tr>`;
+    const cell = (n) => (n ? fmtStockNum(n) : "");
     stockCount.items.filter((it) => it.vendor === v).forEach((it) => {
-      html += `<tr><td style="${dataCell}">${escapeHtml(it.item)}</td><td style="${dataCellCenter}">${escapeHtml(it.quantity)}</td></tr>`;
+      const hasBreak = it.boxes !== undefined;
+      const tot = escapeHtml(it.quantity) + (it.unit ? " " + escapeHtml(it.unit) : "");
+      html += `<tr><td style="${dataCell}">${escapeHtml(it.item)}</td>`
+        + `<td style="${dataCellCenter}">${hasBreak ? cell(it.boxes) : ""}</td>`
+        + `<td style="${dataCellCenter}">${hasBreak ? cell(it.subs) : ""}</td>`
+        + `<td style="${dataCellCenter}">${hasBreak ? cell(it.units) : ""}</td>`
+        + `<td style="${dataCellCenter}font-weight:bold;">${tot}</td></tr>`;
     });
     html += `</table>`;
   });
@@ -1355,8 +1433,9 @@ export default function App() {
     setScreen("sucursal-confirm");
   }
 
-  function setStockQty(vendor, item, value) {
-    setStockDraft((d) => ({ ...d, [vendor + "|" + item]: value }));
+  function setStockQty(vendor, item, field, value) {
+    const key = vendor + "|" + item;
+    setStockDraft((d) => ({ ...d, [key]: { ...(d[key] || {}), [field]: value } }));
   }
 
   async function addStockProduct(category, itemName) {
@@ -1378,13 +1457,19 @@ export default function App() {
 
   async function submitStockCount() {
     const items = [];
-    Object.entries(stockDraft).forEach(([key, qty]) => {
-      if (qty && qty.trim() !== "") {
-        const sep = key.indexOf("|");
-        const vendor = key.slice(0, sep);
-        const itemName = key.slice(sep + 1);
-        items.push({ vendor, item: itemName, code: "", quantity: qty.trim() });
-      }
+    Object.entries(stockDraft).forEach(([key, d]) => {
+      if (!stockEntryHasValue(d)) return;
+      const sep = key.indexOf("|");
+      const vendor = key.slice(0, sep);
+      const itemName = key.slice(sep + 1);
+      const p = findStockProduct(vendor, itemName, stockExtraProducts);
+      const total = stockEntryTotal(p, d);
+      items.push({
+        vendor, item: itemName, code: p.code || "",
+        boxes: stockNum(d.b), subs: stockNum(d.s), units: stockNum(d.u),
+        perBox: p.box || null, perSub: p.sub || null, unit: p.unit || "",
+        total, quantity: fmtStockNum(total),
+      });
     });
     if (items.length === 0) {
       setToast({ type: "error", text: STR[lang].errNoQtyToSubmit });
@@ -1404,6 +1489,7 @@ export default function App() {
       if (error) console.warn("stock_counts insert skipped:", error);
     } catch (e) { console.warn("stock_counts insert skipped:", e); }
     setStockSubmitting(false);
+    writeLastStock(sucursal, items);
     setStockDraft({});
     setStockCounts((prev) => [newCount, ...prev]);
     setLastStockCount(newCount);
@@ -2218,6 +2304,58 @@ function OrderForm({ sucursal, onBack, onViewHistory, activeVendor, setActiveVen
   );
 }
 
+function StockItemRow({ p, draft, setQty, lang, onFocusItem, onBlurItem, showVendorTag, prev }) {
+  const t = STR[lang];
+  const key = p.vendor + "|" + p.item;
+  const d = draft[key] || {};
+  const isKg = p.unit === "kg";
+  const fields = [];
+  if (p.box) fields.push({ f: "b", label: t.stockBoxes, hint: `×${p.box}` });
+  if (p.sub) fields.push({ f: "s", label: t.stockPacks, hint: `×${p.sub}` });
+  const looseLabel = isKg ? t.stockLooseKg : (p.box || p.sub ? t.stockLoose : t.stockQty);
+  fields.push({ f: "u", label: looseLabel, hint: "" });
+  const total = stockEntryTotal(p, d);
+  const has = stockEntryHasValue(d);
+  const meta = [p.code, showVendorTag ? getStockVendorLabel(p.vendor, lang) : null].filter(Boolean).join(" · ");
+  return (
+    <div style={{ ...styles.itemRow, flexDirection: "column", alignItems: "stretch", gap: 8 }}>
+      <div style={styles.itemInfo}>
+        <div style={styles.itemName}>{p.item}</div>
+        {(meta || (prev !== undefined && prev !== null && prev !== "")) && (
+          <div style={styles.itemCode}>
+            {meta}
+            {prev !== undefined && prev !== null && prev !== "" && (
+              <span style={{ ...styles.stockPrevTag, marginLeft: meta ? 8 : 0 }}>{t.stockPrev}: {prev}{p.unit ? " " + p.unit : ""}</span>
+            )}
+          </div>
+        )}
+      </div>
+      <div style={styles.stockFields}>
+        {fields.map(({ f, label, hint }) => (
+          <label key={f} style={styles.stockField}>
+            <span style={styles.stockFieldLabel}>{label}{hint && <span style={styles.stockFieldHint}> {hint}</span>}</span>
+            <input
+              className="qtyInput"
+              style={{ ...styles.qtyInput, width: "100%", boxSizing: "border-box" }}
+              placeholder="0"
+              inputMode="decimal"
+              value={d[f] || ""}
+              onChange={(e) => setQty(p.vendor, p.item, f, sanitizeStockQty(e.target.value))}
+              onFocus={() => onFocusItem(key)}
+              onBlur={() => onBlurItem()}
+              onKeyDown={(e) => { if (e.key === "Enter") e.target.blur(); }}
+            />
+          </label>
+        ))}
+        <div style={{ ...styles.stockTotal, opacity: has ? 1 : 0.45 }}>
+          <span style={styles.stockFieldLabel}>{t.stockTotal}</span>
+          <strong>{fmtStockNum(total)}{p.unit ? " " + p.unit : ""}</strong>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function StockForm({ sucursal, onBack, activeVendor, setActiveVendor, search, setSearch, draft, setQty, onSubmit, submitting, extraProducts, onAddProduct, theme, onToggleTheme, lang, onToggleLang }) {
   const t = STR[lang];
   const [focusedKey, setFocusedKey] = useState(null);
@@ -2228,8 +2366,10 @@ function StockForm({ sucursal, onBack, activeVendor, setActiveVendor, search, se
   const [addingProduct, setAddingProduct] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
 
+  const lastStock = useMemo(() => readLastStock(sucursal), [sucursal]);
+
   function handleFocusItem(key) {
-    frozenHadValueRef.current = !!(draft[key] && draft[key].trim() !== "");
+    frozenHadValueRef.current = stockEntryHasValue(draft[key]);
     setFocusedKey(key);
   }
   function handleBlurItem() {
@@ -2253,7 +2393,7 @@ function StockForm({ sucursal, onBack, activeVendor, setActiveVendor, search, se
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [extraProducts]);
 
-  const draftCount = Object.values(draft).filter((v) => v && v.trim() !== "").length;
+  const draftCount = Object.values(draft).filter(stockEntryHasValue).length;
 
   let sourceItems = [];
   if (isTodos) {
@@ -2270,7 +2410,7 @@ function StockForm({ sucursal, onBack, activeVendor, setActiveVendor, search, se
   const rest = [];
   sourceItems.forEach((p) => {
     const key = p.vendor + "|" + p.item;
-    const liveHasValue = !!(draft[key] && draft[key].trim() !== "");
+    const liveHasValue = stockEntryHasValue(draft[key]);
     const hasValue = key === focusedKey ? frozenHadValueRef.current : liveHasValue;
     if (hasValue) withQty.push(p);
     else rest.push(p);
@@ -2346,11 +2486,11 @@ function StockForm({ sucursal, onBack, activeVendor, setActiveVendor, search, se
 
               <div style={styles.itemList}>
                 {withQty.map((p) => (
-                  <ItemRow key={p.vendor + "|" + p.item} p={p} vendorOverride={p.vendor} draft={draft} setQty={setQty} lang={lang} onFocusItem={handleFocusItem} onBlurItem={handleBlurItem} showVendorTag={isTodos} />
+                  <StockItemRow key={p.vendor + "|" + p.item} p={p} draft={draft} setQty={setQty} lang={lang} onFocusItem={handleFocusItem} onBlurItem={handleBlurItem} showVendorTag={isTodos} prev={lastStock.items && lastStock.items[p.vendor + "|" + p.item]} />
                 ))}
                 {rest.length > 0 && withQty.length > 0 && <div style={styles.itemSectionLabel}>{t.restOfProducts}</div>}
                 {rest.map((p) => (
-                  <ItemRow key={p.vendor + "|" + p.item} p={p} vendorOverride={p.vendor} draft={draft} setQty={setQty} lang={lang} onFocusItem={handleFocusItem} onBlurItem={handleBlurItem} showVendorTag={isTodos} />
+                  <StockItemRow key={p.vendor + "|" + p.item} p={p} draft={draft} setQty={setQty} lang={lang} onFocusItem={handleFocusItem} onBlurItem={handleBlurItem} showVendorTag={isTodos} prev={lastStock.items && lastStock.items[p.vendor + "|" + p.item]} />
                 ))}
                 {sourceItems.length === 0 && <div style={styles.emptyRow}>{t.noMatch(search)}</div>}
               </div>
@@ -2367,13 +2507,14 @@ function StockForm({ sucursal, onBack, activeVendor, setActiveVendor, search, se
           <div style={styles.ticketDivider} />
           <div style={styles.ticketItems}>
             {draftCount === 0 && <div style={styles.ticketEmpty}>{t.stockNoItemsYet}</div>}
-            {Object.entries(draft).filter(([, v]) => v && v.trim() !== "").map(([key, qty]) => {
+            {Object.entries(draft).filter(([, d]) => stockEntryHasValue(d)).map(([key, d]) => {
               const sep = key.indexOf("|");
               const itemName = key.slice(sep + 1);
+              const prod = findStockProduct(key.slice(0, sep), itemName, extraProducts);
               return (
                 <div key={key} style={styles.ticketLine}>
                   <span style={styles.ticketLineName}>{itemName}</span>
-                  <span style={styles.ticketLineQty}>{qty}</span>
+                  <span style={styles.ticketLineQty}>{fmtStockNum(stockEntryTotal(prod, d))}{prod.unit ? " " + prod.unit : ""}</span>
                 </div>
               );
             })}
@@ -2624,12 +2765,18 @@ function StockConfirm({ sucursal, lastStockCount, onNewCount, onMenu, onHome, la
                   <tbody>
                     <tr>
                       <td style={styles.tablePreviewHeaderCell}>Item</td>
-                      <td style={styles.tablePreviewHeaderCell}></td>
+                      <td style={{ ...styles.tablePreviewHeaderCell, textAlign: "center" }}>{t.stockBoxes}</td>
+                      <td style={{ ...styles.tablePreviewHeaderCell, textAlign: "center" }}>{t.stockPacks}</td>
+                      <td style={{ ...styles.tablePreviewHeaderCell, textAlign: "center" }}>{t.stockLoose}</td>
+                      <td style={{ ...styles.tablePreviewHeaderCell, textAlign: "center" }}>{t.stockTotal}</td>
                     </tr>
                     {lastStockCount.items.filter((it) => it.vendor === v).map((it, i) => (
                       <tr key={i}>
                         <td style={styles.tablePreviewDataCell}>{it.item}</td>
-                        <td style={{ ...styles.tablePreviewDataCell, textAlign: "center" }}>{it.quantity}</td>
+                        <td style={{ ...styles.tablePreviewDataCell, textAlign: "center" }}>{it.boxes ? fmtStockNum(it.boxes) : ""}</td>
+                        <td style={{ ...styles.tablePreviewDataCell, textAlign: "center" }}>{it.subs ? fmtStockNum(it.subs) : ""}</td>
+                        <td style={{ ...styles.tablePreviewDataCell, textAlign: "center" }}>{it.units ? fmtStockNum(it.units) : ""}</td>
+                        <td style={{ ...styles.tablePreviewDataCell, textAlign: "center", fontWeight: 700 }}>{it.quantity}{it.unit ? " " + it.unit : ""}</td>
                       </tr>
                     ))}
                   </tbody>
@@ -3312,8 +3459,8 @@ function StockCountCard({ stockCount, expanded, onToggle, lang = "es" }) {
               <div style={styles.vendorLabel}>{getStockVendorLabel(v, lang)}</div>
               {stockCount.items.filter((it) => it.vendor === v).map((it, i) => (
                 <div key={i} style={styles.detailLine}>
-                  <span><strong>{it.item}</strong></span>
-                  <span style={styles.detailQty}>{it.quantity}</span>
+                  <span><strong>{it.item}</strong>{(it.boxes || it.subs) ? <span style={{ color: "var(--muted-faint)", fontSize: 12 }}> · {stockItemBreakdown(it)}</span> : null}</span>
+                  <span style={styles.detailQty}>{it.quantity}{it.unit ? " " + it.unit : ""}</span>
                 </div>
               ))}
             </div>
@@ -3504,6 +3651,12 @@ const styles = {
     width: 84, padding: "7px 10px", borderRadius: 8, border: "1.5px solid var(--line)",
     fontSize: 13, textAlign: "center", flexShrink: 0, background: "var(--paper)", color: "var(--ink)",
   },
+  stockFields: { display: "flex", gap: 8, alignItems: "flex-end", flexWrap: "wrap" },
+  stockField: { display: "flex", flexDirection: "column", gap: 3, flex: "1 1 70px", minWidth: 64, maxWidth: 110 },
+  stockFieldLabel: { fontSize: 11, color: "var(--muted)", fontWeight: 600, letterSpacing: "0.02em" },
+  stockFieldHint: { color: "var(--muted-faint)", fontWeight: 400 },
+  stockTotal: { display: "flex", flexDirection: "column", gap: 3, marginLeft: "auto", textAlign: "right", fontSize: 15, color: "var(--ink)", minWidth: 64 },
+  stockPrevTag: { marginLeft: 8, padding: "1px 6px", borderRadius: 6, background: "rgba(76,140,74,0.15)", color: "#3d7a3b", fontWeight: 600 },
   emptyRow: { padding: "24px 16px", color: "var(--muted-faint)", fontSize: 14, textAlign: "center" },
   ticket: { background: "var(--paper)", border: "1.5px solid var(--line)", borderRadius: 16, padding: 20, boxShadow: "0 2px 8px rgba(43,35,32,0.12)" },
   ticketHeader: { display: "flex", alignItems: "center", gap: 8, fontWeight: 600, fontSize: 14, color: "var(--plum)" },

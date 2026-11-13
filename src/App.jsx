@@ -262,6 +262,9 @@ const ORDER_EMAIL = "admin@luccianos.us";
 const ALLOWED_DEPOSITO_EMAILS = ["contabilidad@luccianos.com.ar", "admin@luccianos.us"];
 
 const OWN_SUCURSALES = ["Florida Mall", "Vineland", "Weston"];
+// Franquicias ocultas por ahora en la pantalla de selección de sucursal.
+// Para volver a mostrarlas, sacalas de esta lista.
+const HIDDEN_SUCURSALES = ["American Dream", "Aventura", "Sawgrass"];
 
 const STOCK_VENDORS = {
   "PAPER": [
@@ -555,7 +558,7 @@ const STR = {
     stockSummary: "Resumen del conteo",
     sendCount: "Enviar conteo",
     stockSent: "Conteo enviado",
-    stockConfirmSub: (s) => `El conteo de stock de ${s} quedó guardado.`,
+    stockConfirmSub: (s) => `El conteo de stock de ${s} está listo. Mandalo por mail para que llegue al depósito.`,
     newCount: "Hacer otro conteo",
     backToMenu: "Volver al menú",
 
@@ -730,7 +733,7 @@ const STR = {
     stockSummary: "Count summary",
     sendCount: "Send count",
     stockSent: "Count sent",
-    stockConfirmSub: (s) => `${s}'s stock count was saved.`,
+    stockConfirmSub: (s) => `${s}'s stock count is ready. Email it so it reaches the warehouse.`,
     newCount: "Do another count",
     backToMenu: "Back to menu",
 
@@ -1170,9 +1173,23 @@ export default function App() {
 
   useEffect(() => { loadStockExtraProducts(); }, []);
 
+  function readLocalExtraProducts() {
+    try { return JSON.parse(localStorage.getItem("stock_extra_products") || "[]"); } catch { return []; }
+  }
+  function writeLocalExtraProducts(list) {
+    try { localStorage.setItem("stock_extra_products", JSON.stringify(list)); } catch {}
+  }
+
   async function loadStockExtraProducts() {
-    const { data, error } = await supabase.from("stock_extra_products").select("*");
-    if (!error && data) setStockExtraProducts(data);
+    const local = readLocalExtraProducts();
+    setStockExtraProducts(local);
+    try {
+      const { data, error } = await supabase.from("stock_extra_products").select("*");
+      if (!error && data) {
+        const seen = new Set(data.map((p) => p.category + "|" + p.item));
+        setStockExtraProducts([...data, ...local.filter((p) => !seen.has(p.category + "|" + p.item))]);
+      }
+    } catch (e) { console.warn("stock_extra_products load skipped:", e); }
   }
 
   useEffect(() => { unlockScroll(); }, [screen]);
@@ -1349,13 +1366,13 @@ export default function App() {
       item: itemName,
       code: "",
     };
-    const { error } = await supabase.from("stock_extra_products").insert([newProduct]);
-    if (error) {
-      console.error("stock_extra_products insert error:", error);
-      setToast({ type: "error", text: STR[lang].errCouldNotSaveStock });
-      return false;
-    }
+    // Se guarda en el dispositivo; si la base de datos responde, también ahí.
+    writeLocalExtraProducts([...readLocalExtraProducts(), newProduct]);
     setStockExtraProducts((prev) => [...prev, newProduct]);
+    try {
+      const { error } = await supabase.from("stock_extra_products").insert([newProduct]);
+      if (error) console.warn("stock_extra_products insert skipped:", error);
+    } catch (e) { console.warn("stock_extra_products insert skipped:", e); }
     return true;
   }
 
@@ -1379,14 +1396,14 @@ export default function App() {
       date: new Date().toISOString(),
       items,
     };
+    // El raconto se envía por mail desde la pantalla de confirmación.
+    // Guardarlo en la base de datos es opcional: si falla, se sigue igual.
     setStockSubmitting(true);
-    const { error } = await supabase.from("stock_counts").insert([newCount]);
+    try {
+      const { error } = await supabase.from("stock_counts").insert([newCount]);
+      if (error) console.warn("stock_counts insert skipped:", error);
+    } catch (e) { console.warn("stock_counts insert skipped:", e); }
     setStockSubmitting(false);
-    if (error) {
-      console.error("stock_counts insert error:", error);
-      setToast({ type: "error", text: STR[lang].errCouldNotSaveStock });
-      return;
-    }
     setStockDraft({});
     setStockCounts((prev) => [newCount, ...prev]);
     setLastStockCount(newCount);
@@ -1954,7 +1971,7 @@ function SucursalSelect({ onBack, onPick, theme, onToggleTheme, lang, onToggleLa
           <img src={`${import.meta.env.BASE_URL}logo-gold.png`} alt="Lucciano's" style={styles.darkLogoImgSmall} />
         </div>
         <div style={styles.branchList}>
-          {SUCURSALES.map((s) => (
+          {SUCURSALES.filter((s) => !HIDDEN_SUCURSALES.includes(s)).map((s) => (
             <button
               key={s}
               style={{

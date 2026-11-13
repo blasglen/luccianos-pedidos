@@ -1,7 +1,7 @@
 import { useState, useEffect, useMemo, useRef } from "react";
 import {
   Search, Package, ClipboardList, Store, CheckCircle2, Clock, Loader2,
-  ArrowLeft, Send, ChevronDown, ChevronUp, Lock, CalendarDays, Sun, Moon, Download,
+  ArrowLeft, Send, ChevronDown, ChevronUp, Lock, CalendarDays, Sun, Moon, Download, ChevronRight,
 } from "lucide-react";
 import { supabase } from "./supabaseClient";
 
@@ -587,6 +587,9 @@ const STR = {
     stockBoxShort: "Caja x",
     stockPackShort: "Paq. x",
     stockPrev: "Antes",
+    stockPacksShort: "Paq.",
+    nCounted: (n) => `${n} ${n === 1 ? "producto contado" : "productos contados"}`,
+    nInOrder: (n) => `${n} ${n === 1 ? "producto en el pedido" : "productos en el pedido"}`,
     excelBtn: "Descargar / compartir Excel",
     excelWorking: "Armando el Excel…",
     excelDone: "Excel listo",
@@ -777,6 +780,9 @@ const STR = {
     stockBoxShort: "Box x",
     stockPackShort: "Pack x",
     stockPrev: "Before",
+    stockPacksShort: "Pack",
+    nCounted: (n) => `${n} ${n === 1 ? "product counted" : "products counted"}`,
+    nInOrder: (n) => `${n} ${n === 1 ? "product in the order" : "products in the order"}`,
     excelBtn: "Download / share Excel",
     excelWorking: "Building the Excel…",
     excelDone: "Excel ready",
@@ -881,20 +887,33 @@ const STR = {
 
 const THEMES = {
   day: {
-    "--cream": "#E6D3C2", "--paper": "#FFFFFF", "--plum": "#4A1F2E", "--plum-light": "#6E3347",
+    "--cream": "#E6D3C2", "--paper": "#FFFFFF", "--paper-2": "#F5EEE7",
+    "--plum": "#4A1F2E", "--plum-light": "#6E3347", "--plum-glow": "rgba(74,31,46,0.28)",
+    "--gold": "#9C7A3C",
     "--pistachio": "#8CA876", "--pistachio-dark": "#5F7A4C", "--terracotta": "#C9714E",
-    "--ink": "#000000", "--line": "#000000",
-    "--muted-strong": "#000000", "--muted": "#000000", "--muted-faint": "#000000",
+    "--ok": "#3F6E34", "--ok-bg": "rgba(95,122,76,0.14)",
+    "--ink": "#1C1414", "--line": "rgba(28,20,20,0.10)",
+    "--muted-strong": "#3A2E2C", "--muted": "#6E625E", "--muted-faint": "#9A8E89",
     "--on-accent": "#FFFFFF",
+    "--glass": "rgba(230,211,194,0.78)", "--glass-strong": "rgba(255,255,255,0.82)",
+    "--shadow": "0 1px 2px rgba(60,30,20,0.05), 0 10px 28px rgba(60,30,20,0.08)",
+    "--shadow-sm": "0 1px 2px rgba(60,30,20,0.05), 0 4px 12px rgba(60,30,20,0.05)",
   },
   night: {
-    "--cream": "#161616", "--paper": "#202020", "--plum": "#C7A75F", "--plum-light": "#D6BC7F",
+    "--cream": "#121212", "--paper": "#1D1D1D", "--paper-2": "#262626",
+    "--plum": "#C7A75F", "--plum-light": "#D6BC7F", "--plum-glow": "rgba(199,167,95,0.22)",
+    "--gold": "#C7A75F",
     "--pistachio": "#A9C2B0", "--pistachio-dark": "#8CA895", "--terracotta": "#B98A5A",
-    "--ink": "#EAEAE7", "--line": "#333333",
-    "--muted-strong": "#D6CDBB", "--muted": "#AFA491", "--muted-faint": "#8C8272",
+    "--ok": "#A9C79A", "--ok-bg": "rgba(169,199,154,0.14)",
+    "--ink": "#EDEAE4", "--line": "rgba(255,255,255,0.08)",
+    "--muted-strong": "#D6CDBB", "--muted": "#A89E8D", "--muted-faint": "#7D7466",
     "--on-accent": "#1A1409",
+    "--glass": "rgba(18,18,18,0.78)", "--glass-strong": "rgba(34,34,34,0.85)",
+    "--shadow": "0 1px 2px rgba(0,0,0,0.4), 0 10px 28px rgba(0,0,0,0.35)",
+    "--shadow-sm": "0 1px 2px rgba(0,0,0,0.35)",
   },
 };
+
 
 const STATUS_META = {
   pendiente: { label: "Pendiente", color: "var(--terracotta)", bg: "#FBEAE0", on: "var(--on-accent)" },
@@ -1570,17 +1589,40 @@ export default function App() {
   return (
     <div style={{ ...styles.page, ...THEMES[theme] }} onTouchStart={handleTouchStart} onTouchEnd={handleTouchEnd}>
       <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=Kaushan+Script&family=Baloo+2:wght@500;600;700;800&family=Bodoni+Moda:opsz,wght@6..96,700;6..96,800;6..96,900&display=swap');
-        * { box-sizing: border-box; }
-        body { margin: 0; }
+        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+        body { margin: 0; background: var(--cream); }
         input, textarea, select, button { font-family: inherit; }
-        input:focus, textarea:focus, button:focus-visible { outline: 2px solid var(--plum); outline-offset: 1px; }
+        input, textarea { transition: border-color .15s, box-shadow .15s, background .15s; }
+        input:focus, textarea:focus { outline: none; border-color: var(--plum) !important; box-shadow: 0 0 0 4px var(--plum-glow); background: var(--paper); }
+        button:focus-visible { outline: 2px solid var(--plum); outline-offset: 2px; }
+        button { transition: transform .12s ease, box-shadow .2s ease, background-color .2s ease, opacity .2s; }
+        button:active:not(:disabled) { transform: scale(0.97); }
+        button:disabled { opacity: .45; cursor: default; box-shadow: none !important; }
+        @keyframes spin { to { transform: rotate(360deg); } }
+        @keyframes fadeUp { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+        @keyframes sheetUp { from { opacity: 0; transform: translateY(24px); } to { opacity: 1; transform: none; } }
+
+        .chips::-webkit-scrollbar { display: none; }
+        .role-card > svg:first-child { grid-row: span 2; width: 52px; height: 52px; padding: 13px; border-radius: 16px; background: var(--paper-2); color: var(--plum); }
+        .role-card::after { content: "›"; grid-column: 3; grid-row: 1 / span 2; font-size: 26px; line-height: 1; color: var(--muted-faint); }
+        .role-card:hover { box-shadow: 0 2px 4px rgba(0,0,0,.06), 0 16px 36px rgba(60,30,20,.12); }
+        .branch-card { transition: transform .2s ease, box-shadow .2s ease; }
+        .branch-card:hover { transform: translateY(-2px); }
+        .mobile-cta { display: none !important; }
+        @media (min-width: 761px) { .chips { flex-wrap: wrap !important; margin: 0 0 12px !important; padding: 0 !important; overflow: visible !important; } }
+        @media (max-width: 760px) {
+          .mobile-cta { display: flex !important; }
+          .modal-overlay { align-items: flex-end !important; padding: 10px !important; }
+          .modal-box { border-radius: 26px !important; padding-bottom: calc(24px + env(safe-area-inset-bottom, 0px)) !important; }
+        }
         ::placeholder { color: var(--muted-faint); }
         html, body { overscroll-behavior: none; }
         .no-scroll-screen { touch-action: none; overscroll-behavior: none; }
 
         .order-layout { display: grid; grid-template-columns: 1fr 320px; gap: 24px; align-items: start; }
-        .order-ticket { position: sticky; top: 24px; }
+        .order-ticket { position: sticky; top: 90px; }
+        .order-layout > * { min-width: 0; }
         @media (max-width: 760px) {
           .order-layout { grid-template-columns: 1fr; gap: 20px; }
           .order-ticket { position: static; }
@@ -1788,13 +1830,13 @@ function Home({ onSucursal, onDeposito, theme, onToggleTheme, lang, onToggleLang
         <div style={styles.homeEyebrow}>{t.homeEyebrow}</div>
         <h1 style={styles.homeH1}>{t.homeTitle}</h1>
         <div style={styles.roleGrid}>
-          <button style={styles.roleCard} onClick={onSucursal}>
-            <Store size={28} color="var(--plum)" strokeWidth={1.6} />
+          <button className="role-card" style={styles.roleCard} onClick={onSucursal}>
+            <Store size={26} strokeWidth={1.7} />
             <div style={styles.roleTitle}>{t.sucursalTitle}</div>
             <div style={styles.roleDesc}>{t.sucursalDesc}</div>
           </button>
-          <button style={styles.roleCard} onClick={onDeposito}>
-            <ClipboardList size={28} color="var(--plum)" strokeWidth={1.6} />
+          <button className="role-card" style={styles.roleCard} onClick={onDeposito}>
+            <ClipboardList size={26} strokeWidth={1.7} />
             <div style={styles.roleTitle}>{t.depositoTitle}</div>
             <div style={styles.roleDesc}>{t.depositoDesc}</div>
           </button>
@@ -2074,13 +2116,15 @@ function SucursalSelect({ onBack, onPick, theme, onToggleTheme, lang, onToggleLa
           {SUCURSALES.filter((s) => !HIDDEN_SUCURSALES.includes(s)).map((s) => (
             <button
               key={s}
+              className="branch-card"
               style={{
                 ...styles.branchCard,
-                backgroundImage: `linear-gradient(180deg, rgba(0,0,0,0.68) 0%, rgba(0,0,0,0.15) 45%, rgba(0,0,0,0.05) 100%), url(${import.meta.env.BASE_URL}branches/${SUCURSAL_PHOTOS[s]})`,
+                backgroundImage: `linear-gradient(0deg, rgba(0,0,0,0.72) 0%, rgba(0,0,0,0.2) 50%, rgba(0,0,0,0) 100%), url(${import.meta.env.BASE_URL}branches/${SUCURSAL_PHOTOS[s]})`,
               }}
               onClick={() => onPick(s)}
             >
               <span style={styles.branchCardName}>{s}</span>
+              <span style={styles.branchCardGo}><ChevronRight size={18} /></span>
             </button>
           ))}
         </div>
@@ -2095,13 +2139,13 @@ function SucursalMenu({ sucursal, onBack, onCompras, onStocks, theme, onToggleTh
     <div style={styles.wrap}>
       <TopBar onBack={onBack} title={sucursal} subtitle={t.menuTitle} theme={theme} onToggleTheme={onToggleTheme} lang={lang} onToggleLang={onToggleLang} />
       <div style={{ ...styles.roleGrid, marginTop: 8, maxWidth: 520 }}>
-        <button style={styles.roleCard} onClick={onCompras}>
-          <Package size={28} color="var(--plum)" strokeWidth={1.6} />
+        <button className="role-card" style={styles.roleCard} onClick={onCompras}>
+          <Package size={26} strokeWidth={1.7} />
           <div style={styles.roleTitle}>{t.comprasTitle}</div>
           <div style={styles.roleDesc}>{t.comprasDesc}</div>
         </button>
-        <button style={styles.roleCard} onClick={onStocks}>
-          <ClipboardList size={28} color="var(--plum)" strokeWidth={1.6} />
+        <button className="role-card" style={styles.roleCard} onClick={onStocks}>
+          <ClipboardList size={26} strokeWidth={1.7} />
           <div style={styles.roleTitle}>{t.stocksTitle}</div>
           <div style={styles.roleDesc}>{t.stocksDesc}</div>
         </button>
@@ -2212,7 +2256,7 @@ function OrderForm({ sucursal, onBack, onViewHistory, activeVendor, setActiveVen
       <div className="order-layout" style={styles.formLayout}>
         <div style={styles.formMain}>
           <div style={styles.tabsRow}>
-            <div style={{ ...styles.tabs, marginBottom: 0 }}>
+            <div className="chips" style={styles.tabs}>
               {VENDOR_ORDER.map((v) => (
                 <button
                   key={v}
@@ -2296,9 +2340,17 @@ function OrderForm({ sucursal, onBack, onViewHistory, activeVendor, setActiveVen
         </div>
       </div>
 
+      <div className="mobile-cta" style={styles.mobileCta}>
+        <div style={styles.mobileCtaCount}>{draftCount === 0 ? t.noItemsYet : t.nInOrder(draftCount)}</div>
+        <button style={{ ...styles.submitBtn, ...styles.mobileCtaBtn }} onClick={() => setShowConfirm(true)} disabled={submitting || draftCount === 0}>
+          {submitting ? <Loader2 size={16} style={{ animation: "spin 1s linear infinite" }} /> : <Send size={16} />}
+          {submitting ? t.sending : t.submitOrder}
+        </button>
+      </div>
+
       {showConfirm && (
-        <div style={styles.modalOverlay} onClick={() => setShowConfirm(false)}>
-          <div style={styles.modalBox} onClick={(e) => e.stopPropagation()}>
+        <div className="modal-overlay" style={styles.modalOverlay} onClick={() => setShowConfirm(false)}>
+          <div className="modal-box" style={styles.modalBox} onClick={(e) => e.stopPropagation()}>
             <h2 style={styles.modalTitle}>{t.confirmSendTitle}</h2>
             <p style={styles.modalBody}>{t.confirmSendBody(draftCount)}</p>
             <div style={styles.modalActions}>
@@ -2325,7 +2377,7 @@ function StockItemRow({ p, draft, setQty, lang, onFocusItem, onBlurItem, showVen
   const isKg = p.unit === "kg";
   const fields = [];
   if (p.box) fields.push({ f: "b", label: t.stockBoxes, hint: `×${p.box}` });
-  if (p.sub) fields.push({ f: "s", label: t.stockPacks, hint: `×${p.sub}` });
+  if (p.sub) fields.push({ f: "s", label: t.stockPacksShort, hint: `×${p.sub}` });
   const looseLabel = isKg ? t.stockLooseKg : (p.box || p.sub ? t.stockLoose : t.stockQty);
   fields.push({ f: "u", label: looseLabel, hint: "" });
   const total = stockEntryTotal(p, d);
@@ -2445,7 +2497,7 @@ function StockForm({ sucursal, onBack, activeVendor, setActiveVendor, search, se
       <TopBar onBack={onBack} title={sucursal} subtitle={t.stockSubtitle} theme={theme} onToggleTheme={onToggleTheme} lang={lang} onToggleLang={onToggleLang} />
       <div className="order-layout" style={styles.formLayout}>
         <div style={styles.formMain}>
-          <div style={{ ...styles.tabs, marginBottom: 14 }}>
+          <div className="chips" style={styles.tabs}>
             {STOCK_VENDOR_ORDER.map((v) => (
               <button
                 key={v}
@@ -2541,9 +2593,19 @@ function StockForm({ sucursal, onBack, activeVendor, setActiveVendor, search, se
         </div>
       </div>
 
+      {!isAddTab && (
+        <div className="mobile-cta" style={styles.mobileCta}>
+          <div style={styles.mobileCtaCount}>{draftCount === 0 ? t.stockNoItemsYet : t.nCounted(draftCount)}</div>
+          <button style={{ ...styles.submitBtn, ...styles.mobileCtaBtn }} onClick={() => setShowConfirm(true)} disabled={submitting || draftCount === 0}>
+            {submitting ? <Loader2 size={16} style={{ animation: "spin 1s linear infinite" }} /> : <Send size={16} />}
+            {submitting ? t.sending : t.sendCount}
+          </button>
+        </div>
+      )}
+
       {showConfirm && (
-        <div style={styles.modalOverlay} onClick={() => setShowConfirm(false)}>
-          <div style={styles.modalBox} onClick={(e) => e.stopPropagation()}>
+        <div className="modal-overlay" style={styles.modalOverlay} onClick={() => setShowConfirm(false)}>
+          <div className="modal-box" style={styles.modalBox} onClick={(e) => e.stopPropagation()}>
             <h2 style={styles.modalTitle}>{t.confirmSendStockTitle}</h2>
             <p style={styles.modalBody}>{t.confirmSendStockBody(draftCount)}</p>
             <div style={styles.modalActions}>
@@ -2561,8 +2623,8 @@ function StockForm({ sucursal, onBack, activeVendor, setActiveVendor, search, se
       )}
 
       {showAddConfirm && (
-        <div style={styles.modalOverlay} onClick={() => setShowAddConfirm(false)}>
-          <div style={styles.modalBox} onClick={(e) => e.stopPropagation()}>
+        <div className="modal-overlay" style={styles.modalOverlay} onClick={() => setShowAddConfirm(false)}>
+          <div className="modal-box" style={styles.modalBox} onClick={(e) => e.stopPropagation()}>
             <h2 style={styles.modalTitle}>{t.confirmAddTitle}</h2>
             <p style={styles.modalBody}>{t.confirmAddBody(newItemName, getStockVendorLabel(newCategory, lang))}</p>
             <div style={styles.modalActions}>
@@ -3559,101 +3621,47 @@ function TopBar({ onBack, title, subtitle, theme, onToggleTheme, lang, onToggleL
 }
 
 const styles = {
-  page: {
-    minHeight: "100vh", background: "var(--cream)", color: "var(--ink)",
-    fontFamily: "'Baloo 2', system-ui, sans-serif",
-  },
-  center: {
-    display: "flex", flexDirection: "column", alignItems: "center",
-    textAlign: "center", padding: "80px 24px 40px", maxWidth: 520, margin: "0 auto",
-  },
-  homeDark: {
-    height: "100vh", overflow: "hidden", background: "var(--cream)", display: "flex", flexDirection: "column",
-    alignItems: "center", width: "100%", padding: "100px 24px 50px", position: "relative",
-  },
-  homeToggleGroup: {
-    position: "absolute", top: "calc(28px + env(safe-area-inset-top, 0px))", right: 20,
-    display: "flex", gap: 8, zIndex: 5,
-  },
-  homeThemeToggleBtn: {
-    width: 36, height: 36, borderRadius: 10, border: "1px solid var(--line)",
-    background: "var(--paper)", display: "flex", alignItems: "center", justifyContent: "center",
-    cursor: "pointer", color: "var(--ink)", fontSize: 12, fontWeight: 700,
-  },
+  page: { minHeight: "100vh", background: "var(--cream)", color: "var(--ink)", fontFamily: "'Inter Variable', 'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif", WebkitFontSmoothing: "antialiased" },
+  center: { display: "flex", flexDirection: "column", alignItems: "center", textAlign: "center", padding: "calc(72px + env(safe-area-inset-top, 0px)) 22px 40px", maxWidth: 520, margin: "0 auto", animation: "fadeIn .3s ease both" },
+  homeDark: { minHeight: "100dvh", overflow: "hidden", background: "var(--cream)", display: "flex", flexDirection: "column", alignItems: "center", width: "100%", padding: "calc(84px + env(safe-area-inset-top, 0px)) 22px calc(36px + env(safe-area-inset-bottom, 0px))", position: "relative", animation: "fadeIn .35s ease both" },
+  homeToggleGroup: { position: "absolute", top: "calc(18px + env(safe-area-inset-top, 0px))", right: 18, display: "flex", gap: 8, zIndex: 5 },
+  homeThemeToggleBtn: { width: 40, height: 40, borderRadius: 12, border: "1px solid var(--line)", background: "var(--glass)", backdropFilter: "blur(12px)", WebkitBackdropFilter: "blur(12px)", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", color: "var(--ink)", fontSize: 12, fontWeight: 700, letterSpacing: "0.04em" },
   homeInner: {
     width: "100%", maxWidth: 520, display: "flex", flexDirection: "column",
     alignItems: "center", textAlign: "center", flex: 1,
   },
-  homeLogoImg: { width: 280, height: "auto", marginBottom: 24 },
-  homeEyebrow: {
-    fontSize: 12, letterSpacing: "0.12em", textTransform: "uppercase",
-    color: "var(--plum)", fontWeight: 600, marginBottom: 12,
-  },
-  homeH1: { fontFamily: "'Baloo 2', sans-serif", fontWeight: 600, fontSize: 34, margin: "0 0 32px", color: "var(--ink)" },
-  homeTagline: {
-    fontFamily: "'Bodoni Moda', serif", fontOpticalSizing: "auto", fontWeight: 900,
-    textTransform: "uppercase", color: "var(--ink)", fontSize: 44, lineHeight: 1.05,
-    letterSpacing: "0.01em", marginTop: "auto", paddingTop: 60,
-  },
+  homeLogoImg: { width: 240, height: "auto", marginBottom: 28, filter: "drop-shadow(0 6px 18px rgba(0,0,0,0.12))" },
+  homeEyebrow: { fontSize: 11, letterSpacing: "0.22em", textTransform: "uppercase", color: "var(--gold)", fontWeight: 700, marginBottom: 10 },
+  homeH1: { fontFamily: "'Bodoni Moda Variable', 'Bodoni Moda', Georgia, serif", fontWeight: 800, fontSize: 34, lineHeight: 1.1, margin: "0 0 28px", color: "var(--ink)", letterSpacing: "-0.01em" },
+  homeTagline: { fontFamily: "'Bodoni Moda Variable', 'Bodoni Moda', Georgia, serif", fontOpticalSizing: "auto", fontWeight: 900, textTransform: "uppercase", color: "var(--ink)", fontSize: 40, lineHeight: 1.02, letterSpacing: "0.01em", marginTop: "auto", paddingTop: 48, opacity: 0.92 },
   logoImg: { width: 150, height: "auto", marginBottom: 4 },
-  eyebrow: {
-    fontSize: 12, letterSpacing: "0.12em", textTransform: "uppercase",
-    color: "var(--pistachio-dark)", fontWeight: 600, marginBottom: 12,
-  },
-  h1: { fontFamily: "'Baloo 2', sans-serif", fontWeight: 600, fontSize: 34, margin: "0 0 8px", color: "var(--plum)" },
-  sub: { color: "var(--muted-strong)", fontSize: 15, margin: 0 },
-  roleGrid: { display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16, marginTop: 36, width: "100%" },
-  roleCard: {
-    background: "var(--paper)", border: "1px solid var(--line)", borderRadius: 16,
-    padding: "28px 18px", display: "flex", flexDirection: "column", alignItems: "center",
-    gap: 8, cursor: "pointer", boxShadow: "0 1px 2px rgba(0,0,0,0.3)",
-  },
-  roleTitle: { fontFamily: "'Baloo 2', sans-serif", fontWeight: 600, fontSize: 18, color: "var(--plum)" },
-  roleDesc: { fontSize: 13, color: "var(--muted)", textAlign: "center" },
-  wrap: { maxWidth: 980, margin: "0 auto", padding: "calc(20px + env(safe-area-inset-top, 0px)) 24px 60px" },
+  eyebrow: { fontSize: 11, letterSpacing: "0.22em", textTransform: "uppercase", color: "var(--gold)", fontWeight: 700, margin: "18px 0 8px" },
+  h1: { fontFamily: "'Bodoni Moda Variable', 'Bodoni Moda', Georgia, serif", fontWeight: 800, fontSize: 32, lineHeight: 1.1, margin: "0 0 10px", color: "var(--ink)", letterSpacing: "-0.01em" },
+  sub: { color: "var(--muted)", fontSize: 15, lineHeight: 1.5, margin: 0 },
+  roleGrid: { display: "flex", flexDirection: "column", gap: 12, marginTop: 8, width: "100%" },
+  roleCard: { background: "var(--paper)", border: "1px solid var(--line)", borderRadius: 20, padding: "18px 18px", display: "grid", gridTemplateColumns: "52px 1fr 18px", columnGap: 14, rowGap: 2, alignItems: "center", textAlign: "left", cursor: "pointer", boxShadow: "var(--shadow)", width: "100%" },
+  roleTitle: { fontWeight: 700, fontSize: 17, color: "var(--ink)", letterSpacing: "-0.01em", alignSelf: "end" },
+  roleDesc: { fontSize: 13, color: "var(--muted)", alignSelf: "start", gridColumn: 2 },
+  wrap: { maxWidth: 980, margin: "0 auto", padding: "0 20px calc(110px + env(safe-area-inset-bottom, 0px))", animation: "fadeIn .25s ease both" },
   wrapFull: { maxWidth: 980, margin: "0 auto", padding: "28px 24px 0", minHeight: "calc(100vh - 60px)", display: "flex", flexDirection: "column" },
   sucGridWrap: { flex: 1, display: "flex", alignItems: "center", justifyContent: "center" },
-  darkWrapScroll: {
-    minHeight: "100vh", background: "var(--cream)", display: "flex", flexDirection: "column",
-    alignItems: "center", padding: "56px 24px 40px", width: "100%",
-  },
+  darkWrapScroll: { minHeight: "100vh", background: "var(--cream)", display: "flex", flexDirection: "column", alignItems: "center", padding: "0 20px 40px", width: "100%", animation: "fadeIn .25s ease both" },
   darkInner: { width: "100%", maxWidth: 980 },
-  darkTopBar: { display: "flex", alignItems: "center", gap: 14 },
-  darkBackBtn: {
-    width: 36, height: 36, borderRadius: 10, border: "1px solid var(--line)",
-    background: "var(--paper)", display: "flex", alignItems: "center", justifyContent: "center",
-    cursor: "pointer", flexShrink: 0,
-  },
-  darkTopTitle: { fontFamily: "'Baloo 2', sans-serif", fontWeight: 600, fontSize: 22, color: "var(--ink)" },
+  darkTopBar: { display: "flex", alignItems: "center", gap: 12, position: "sticky", top: 0, zIndex: 20, margin: "0 -20px", padding: "calc(12px + env(safe-area-inset-top, 0px)) 20px 12px", background: "var(--glass)", backdropFilter: "saturate(1.4) blur(16px)", WebkitBackdropFilter: "saturate(1.4) blur(16px)" },
+  darkBackBtn: { width: 40, height: 40, borderRadius: 12, border: "1px solid var(--line)", background: "var(--paper)", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", flexShrink: 0, color: "var(--ink)" },
+  darkTopTitle: { fontFamily: "'Bodoni Moda Variable', 'Bodoni Moda', Georgia, serif", fontWeight: 800, fontSize: 22, color: "var(--ink)", letterSpacing: "-0.01em" },
   darkLogoWrap: { display: "flex", justifyContent: "center", margin: "56px 0 16px" },
   darkLogoImg: { width: 210, height: "auto" },
-  darkLogoWrapSmall: { display: "flex", justifyContent: "center", margin: "24px 0 20px" },
-  darkLogoImgSmall: { width: 130, height: "auto" },
+  darkLogoWrapSmall: { display: "flex", justifyContent: "center", margin: "18px 0 22px" },
+  darkLogoImgSmall: { width: 120, height: "auto" },
   branchList: { display: "flex", flexDirection: "column", gap: 14, paddingBottom: 24 },
-  branchCard: {
-    position: "relative", width: "100%", height: 150, borderRadius: 16, border: "none",
-    backgroundSize: "cover", backgroundPosition: "center", cursor: "pointer",
-    display: "flex", alignItems: "flex-start", justifyContent: "flex-start",
-    padding: "16px 18px", overflow: "hidden",
-  },
-  branchCardName: {
-    fontFamily: "'Baloo 2', sans-serif", fontWeight: 700,
-    textTransform: "uppercase", color: "#FFFFFF", fontSize: 22, letterSpacing: "0.01em",
-    textShadow: "0 2px 8px rgba(0,0,0,0.55)", textAlign: "left",
-  },
-  topBar: { display: "flex", alignItems: "center", gap: 14, marginBottom: 24 },
-  backBtn: {
-    width: 36, height: 36, borderRadius: 10, border: "1px solid var(--line)",
-    background: "var(--paper)", display: "flex", alignItems: "center", justifyContent: "center",
-    cursor: "pointer", flexShrink: 0,
-  },
-  themeToggleBtn: {
-    width: 36, height: 36, borderRadius: 10, border: "1px solid var(--line)",
-    background: "var(--paper)", display: "flex", alignItems: "center", justifyContent: "center",
-    cursor: "pointer", flexShrink: 0, color: "var(--ink)", fontSize: 12, fontWeight: 700,
-  },
-  topTitle: { fontFamily: "'Baloo 2', sans-serif", fontWeight: 600, fontSize: 22, color: "var(--plum)" },
-  topSubtitle: { fontSize: 13, color: "var(--muted)", marginTop: 2 },
+  branchCard: { position: "relative", width: "100%", height: 168, borderRadius: 22, border: "none", backgroundSize: "cover", backgroundPosition: "center", cursor: "pointer", display: "flex", alignItems: "flex-end", justifyContent: "space-between", padding: "18px 20px", overflow: "hidden", boxShadow: "0 10px 30px rgba(0,0,0,0.18)" },
+  branchCardName: { fontWeight: 800, textTransform: "uppercase", color: "#FFFFFF", fontSize: 22, letterSpacing: "0.06em", textShadow: "0 2px 12px rgba(0,0,0,0.45)", textAlign: "left" },
+  topBar: { display: "flex", alignItems: "center", gap: 12, position: "sticky", top: 0, zIndex: 20, margin: "0 -20px 14px", padding: "calc(12px + env(safe-area-inset-top, 0px)) 20px 12px", background: "var(--glass)", backdropFilter: "saturate(1.4) blur(16px)", WebkitBackdropFilter: "saturate(1.4) blur(16px)", borderBottom: "1px solid var(--line)" },
+  backBtn: { width: 40, height: 40, borderRadius: 12, border: "1px solid var(--line)", background: "var(--paper)", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", flexShrink: 0, color: "var(--ink)" },
+  themeToggleBtn: { width: 40, height: 40, borderRadius: 12, border: "1px solid var(--line)", background: "var(--paper)", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", flexShrink: 0, color: "var(--ink)", fontSize: 12, fontWeight: 700, letterSpacing: "0.04em" },
+  topTitle: { fontFamily: "'Bodoni Moda Variable', 'Bodoni Moda', Georgia, serif", fontWeight: 800, fontSize: 22, lineHeight: 1.1, color: "var(--ink)", letterSpacing: "-0.01em" },
+  topSubtitle: { fontSize: 12, color: "var(--muted)", marginTop: 3, fontWeight: 500 },
   sucGrid: { display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 12, width: "100%" },
   sucCard: {
     background: "var(--paper)", border: "1px solid var(--line)", borderRadius: 12,
@@ -3662,24 +3670,14 @@ const styles = {
   },
   formLayout: {},
   formMain: {},
-  sectionToggle: {
-    display: "flex", gap: 8, marginBottom: 18, background: "var(--paper)",
-    border: "1.5px solid var(--line)", borderRadius: 14, padding: 5,
-  },
-  sectionToggleBtn: {
-    flex: 1, padding: "10px 14px", borderRadius: 10, border: "none", background: "transparent",
-    color: "var(--muted-strong)", fontWeight: 700, fontSize: 14, cursor: "pointer",
-    fontFamily: "'Baloo 2', sans-serif",
-  },
+  sectionToggle: { display: "flex", gap: 6, marginBottom: 18, background: "var(--paper)", border: "1px solid var(--line)", borderRadius: 16, padding: 5, boxShadow: "var(--shadow-sm)" },
+  sectionToggleBtn: { flex: 1, padding: "11px 14px", borderRadius: 12, border: "none", background: "transparent", color: "var(--muted-strong)", fontWeight: 650, fontSize: 14, cursor: "pointer" },
   sectionToggleBtnActive: { background: "var(--plum)", color: "var(--on-accent)" },
-  tabs: { display: "flex", gap: 8, marginBottom: 14, flexWrap: "wrap" },
-  tab: {
-    padding: "8px 16px", borderRadius: 999, border: "1.5px solid var(--line)",
-    background: "var(--paper)", fontSize: 13, fontWeight: 600, cursor: "pointer", color: "var(--muted)",
-  },
-  tabActive: { background: "var(--plum)", color: "var(--on-accent)", borderColor: "var(--plum)" },
-  tabsRow: { display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 10, marginBottom: 14 },
-  tabsRowActions: { display: "flex", gap: 16, flexWrap: "wrap", alignItems: "center" },
+  tabs: { display: "flex", gap: 8, marginBottom: 12, flexWrap: "nowrap", overflowX: "auto", margin: "0 -20px 12px", padding: "2px 20px 4px", scrollbarWidth: "none" },
+  tab: { padding: "9px 16px", borderRadius: 999, border: "1px solid var(--line)", background: "var(--paper)", fontSize: 13, fontWeight: 600, cursor: "pointer", color: "var(--muted-strong)", whiteSpace: "nowrap", flexShrink: 0 },
+  tabActive: { background: "var(--plum)", color: "var(--on-accent)", borderColor: "var(--plum)", boxShadow: "0 4px 14px var(--plum-glow)" },
+  tabsRow: { display: "flex", flexDirection: "column", alignItems: "stretch", gap: 4, marginBottom: 10 },
+  tabsRowActions: { display: "flex", gap: 18, flexWrap: "wrap", alignItems: "center", padding: "0 2px" },
   tabsRowActionBtn: {
     background: "none", border: "none", padding: 0, fontSize: 13, fontWeight: 600,
     color: "var(--pistachio-dark)", cursor: "pointer", textDecoration: "underline",
@@ -3688,82 +3686,54 @@ const styles = {
     background: "none", border: "none", padding: 0, fontSize: 13, fontWeight: 600,
     color: "var(--terracotta)", cursor: "pointer", textDecoration: "underline",
   },
-  searchBox: {
-    display: "flex", alignItems: "center", gap: 8, background: "var(--paper)",
-    border: "1.5px solid var(--line)", borderRadius: 10, padding: "9px 12px", marginBottom: 14,
-  },
-  searchInput: { border: "none", outline: "none", background: "transparent", fontSize: 14, width: "100%", color: "var(--ink)" },
+  searchBox: { display: "flex", alignItems: "center", gap: 10, background: "var(--paper)", border: "1px solid var(--line)", borderRadius: 14, padding: "12px 14px", marginBottom: 14, boxShadow: "var(--shadow-sm)" },
+  searchInput: { border: "none", outline: "none", background: "transparent", fontSize: 15, width: "100%", color: "var(--ink)" },
   customEntryRow: { display: "flex", gap: 8, marginBottom: 14, flexWrap: "wrap" },
   customEntryInput: {
     flex: 1, minWidth: 160, border: "1.5px solid var(--line)", borderRadius: 10,
     padding: "9px 12px", fontSize: 14, background: "var(--paper)", color: "var(--ink)",
   },
-  customEntryAddBtn: {
-    background: "var(--plum)", color: "var(--on-accent)", border: "none", borderRadius: 10,
-    padding: "9px 18px", fontSize: 13, fontWeight: 600, cursor: "pointer", flexShrink: 0,
-  },
-  itemList: { background: "var(--paper)", border: "1.5px solid var(--line)", borderRadius: 14, maxHeight: 520, overflowY: "auto", boxShadow: "0 2px 8px rgba(43,35,32,0.12)" },
-  itemRow: {
-    display: "flex", alignItems: "center", justifyContent: "space-between",
-    padding: "12px 16px", borderBottom: "1px solid var(--line)", gap: 12,
-  },
+  customEntryAddBtn: { background: "var(--plum)", color: "var(--on-accent)", border: "none", borderRadius: 14, padding: "13px 18px", fontSize: 14, fontWeight: 650, cursor: "pointer", flexShrink: 0 },
+  itemList: { background: "var(--paper)", border: "1px solid var(--line)", borderRadius: 20, overflow: "hidden", boxShadow: "var(--shadow)" },
+  itemRow: { display: "flex", alignItems: "center", justifyContent: "space-between", padding: "14px 16px", borderBottom: "1px solid var(--line)", gap: 12 },
   itemInfo: { minWidth: 0 },
-  itemName: { fontSize: 14, fontWeight: 700, color: "var(--ink)" },
-  itemCode: { fontSize: 11, color: "var(--muted-faint)", marginTop: 2, letterSpacing: "0.02em" },
-  qtyInput: {
-    width: 84, padding: "7px 10px", borderRadius: 8, border: "1.5px solid var(--line)",
-    fontSize: 13, textAlign: "center", flexShrink: 0, background: "var(--paper)", color: "var(--ink)",
-  },
-  stockFields: { display: "flex", gap: 8, alignItems: "flex-end", flexWrap: "wrap" },
-  stockField: { display: "flex", flexDirection: "column", gap: 3, flex: "1 1 70px", minWidth: 64, maxWidth: 110 },
-  stockFieldLabel: { fontSize: 11, color: "var(--muted)", fontWeight: 600, letterSpacing: "0.02em" },
-  stockFieldHint: { color: "var(--muted-faint)", fontWeight: 400 },
-  stockTotal: { display: "flex", flexDirection: "column", gap: 3, marginLeft: "auto", textAlign: "right", fontSize: 15, color: "var(--ink)", minWidth: 64 },
-  stockPrevTag: { marginLeft: 8, padding: "1px 6px", borderRadius: 6, background: "rgba(76,140,74,0.15)", color: "#3d7a3b", fontWeight: 600 },
+  itemName: { fontSize: 14, fontWeight: 650, color: "var(--ink)", lineHeight: 1.3 },
+  itemCode: { fontSize: 11, color: "var(--muted-faint)", marginTop: 3, letterSpacing: "0.02em" },
+  qtyInput: { width: 84, padding: "10px 10px", borderRadius: 12, border: "1px solid transparent", fontSize: 15, fontWeight: 600, textAlign: "center", flexShrink: 0, background: "var(--paper-2)", color: "var(--ink)" },
+  stockFields: { display: "flex", gap: 8, alignItems: "flex-end" },
+  stockField: { display: "flex", flexDirection: "column", gap: 5, flex: "1 1 0", minWidth: 0, maxWidth: 120 },
+  stockFieldLabel: { fontSize: 11, color: "var(--muted)", fontWeight: 600, letterSpacing: "0.02em", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" },
+  stockFieldHint: { color: "var(--muted-faint)", fontWeight: 500 },
+  stockTotal: { display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 5, marginLeft: "auto", fontSize: 16, color: "var(--ink)", minWidth: 72, flexShrink: 0, paddingBottom: 9 },
+  stockPrevTag: { marginLeft: 8, padding: "2px 7px", borderRadius: 999, background: "var(--ok-bg)", color: "var(--ok)", fontWeight: 600, whiteSpace: "nowrap" },
   emptyRow: { padding: "24px 16px", color: "var(--muted-faint)", fontSize: 14, textAlign: "center" },
-  ticket: { background: "var(--paper)", border: "1.5px solid var(--line)", borderRadius: 16, padding: 20, boxShadow: "0 2px 8px rgba(43,35,32,0.12)" },
-  ticketHeader: { display: "flex", alignItems: "center", gap: 8, fontWeight: 600, fontSize: 14, color: "var(--plum)" },
+  ticket: { background: "var(--paper)", border: "1px solid var(--line)", borderRadius: 20, padding: 20, boxShadow: "var(--shadow)" },
+  ticketHeader: { display: "flex", alignItems: "center", gap: 8, fontWeight: 700, fontSize: 14, color: "var(--ink)" },
   ticketCount: { fontSize: 12, color: "var(--muted)", marginTop: 4 },
-  ticketDivider: { borderTop: "1px dashed var(--line)", margin: "14px 0" },
+  ticketDivider: { borderTop: "1px solid var(--line)", margin: "14px 0" },
   ticketItems: { maxHeight: 220, overflowY: "auto", display: "flex", flexDirection: "column", gap: 8 },
   ticketEmpty: { fontSize: 13, color: "var(--muted-faint)" },
   ticketLine: { display: "flex", justifyContent: "space-between", gap: 8, fontSize: 13 },
   ticketLineName: { color: "var(--ink)", fontWeight: 700 },
   ticketLineQty: { fontWeight: 600, color: "var(--pistachio-dark)", flexShrink: 0 },
   notesLabel: { fontSize: 12, fontWeight: 600, color: "var(--muted)", display: "block", marginBottom: 6 },
-  notesInput: { width: "100%", border: "1px solid var(--line)", borderRadius: 10, padding: 10, fontSize: 13, resize: "vertical", marginBottom: 14, background: "var(--paper)", color: "var(--ink)" },
-  authInput: {
-    width: "100%", border: "1px solid var(--line)", borderRadius: 10, padding: "11px 14px",
-    fontSize: 14, marginBottom: 10, background: "var(--paper)", color: "var(--ink)",
-  },
-  submitBtn: {
-    width: "100%", background: "var(--plum)", color: "var(--on-accent)", border: "none", borderRadius: 10,
-    padding: "12px 0", fontSize: 14, fontWeight: 600, display: "flex", alignItems: "center",
-    justifyContent: "center", gap: 8, cursor: "pointer",
-  },
-  modalOverlay: {
-    position: "fixed", inset: 0, background: "rgba(0,0,0,0.5)", display: "flex",
-    alignItems: "center", justifyContent: "center", zIndex: 100, padding: 24,
-  },
-  modalBox: {
-    background: "var(--paper)", borderRadius: 16, padding: 24, maxWidth: 380, width: "100%",
-    boxShadow: "0 12px 32px rgba(0,0,0,0.25)",
-  },
-  modalTitle: { fontFamily: "'Baloo 2', sans-serif", fontWeight: 600, fontSize: 20, color: "var(--plum)", margin: "0 0 10px" },
+  notesInput: { width: "100%", border: "1px solid transparent", borderRadius: 14, padding: 12, fontSize: 14, resize: "vertical", marginBottom: 14, background: "var(--paper-2)", color: "var(--ink)" },
+  authInput: { width: "100%", border: "1px solid transparent", borderRadius: 14, padding: "14px 16px", fontSize: 15, marginBottom: 10, background: "var(--paper-2)", color: "var(--ink)" },
+  submitBtn: { width: "100%", background: "var(--plum)", color: "var(--on-accent)", border: "none", borderRadius: 14, padding: "14px 0", fontSize: 15, fontWeight: 650, display: "flex", alignItems: "center", justifyContent: "center", gap: 8, cursor: "pointer", boxShadow: "0 6px 18px var(--plum-glow)" },
+  modalOverlay: { position: "fixed", inset: 0, background: "rgba(10,6,6,0.45)", backdropFilter: "blur(4px)", WebkitBackdropFilter: "blur(4px)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 100, padding: 20, animation: "fadeIn .2s ease both" },
+  modalBox: { background: "var(--paper)", borderRadius: 24, padding: 24, maxWidth: 400, width: "100%", boxShadow: "0 24px 60px rgba(0,0,0,0.3)", animation: "sheetUp .28s cubic-bezier(.2,.8,.2,1) both" },
+  modalTitle: { fontFamily: "'Bodoni Moda Variable', 'Bodoni Moda', Georgia, serif", fontWeight: 800, fontSize: 22, color: "var(--ink)", margin: "0 0 10px" },
   modalBody: { fontSize: 14, color: "var(--muted-strong)", margin: "0 0 20px", lineHeight: 1.5 },
   modalActions: { display: "flex", gap: 10, justifyContent: "flex-end" },
   historyLink: {
     width: "100%", background: "none", border: "none", color: "var(--pistachio-dark)",
     fontSize: 13, fontWeight: 600, marginTop: 10, cursor: "pointer", textDecoration: "underline",
   },
-  secondaryBtn: {
-    padding: "10px 20px", borderRadius: 10, border: "1px solid var(--line)",
-    background: "var(--paper)", fontSize: 14, fontWeight: 600, cursor: "pointer", color: "var(--ink)",
-  },
-  primaryBtnSm: { padding: "10px 20px", borderRadius: 10, border: "none", background: "var(--plum)", color: "var(--on-accent)", fontSize: 14, fontWeight: 600, cursor: "pointer" },
-  textLink: { marginTop: 20, background: "none", border: "none", color: "var(--muted)", fontSize: 13, cursor: "pointer", textDecoration: "underline" },
+  secondaryBtn: { padding: "12px 20px", borderRadius: 14, border: "1px solid var(--line)", background: "var(--paper)", fontSize: 14, fontWeight: 600, cursor: "pointer", color: "var(--ink)" },
+  primaryBtnSm: { padding: "12px 22px", borderRadius: 14, border: "none", background: "var(--plum)", color: "var(--on-accent)", fontSize: 14, fontWeight: 650, cursor: "pointer", boxShadow: "0 6px 18px var(--plum-glow)" },
+  textLink: { marginTop: 20, background: "none", border: "none", color: "var(--muted)", fontSize: 13, fontWeight: 500, cursor: "pointer", textDecoration: "underline", textUnderlineOffset: 3 },
   orderCards: { display: "flex", flexDirection: "column", gap: 12 },
-  orderCard: { background: "var(--paper)", border: "1.5px solid var(--line)", borderRadius: 14, overflow: "hidden", boxShadow: "0 2px 8px rgba(43,35,32,0.12)" },
+  orderCard: { background: "var(--paper)", border: "1px solid var(--line)", borderRadius: 18, overflow: "hidden", boxShadow: "var(--shadow)" },
   orderCardCanceled: { background: "var(--cream)", opacity: 0.72 },
   orderCardHead: {
     width: "100%", display: "flex", alignItems: "center", justifyContent: "space-between",
@@ -3792,26 +3762,16 @@ const styles = {
   statusPill: { fontSize: 11, fontWeight: 600, padding: "3px 9px", borderRadius: 999, display: "inline-flex", alignItems: "center", gap: 4 },
   orderCardBody: { padding: "0 18px 18px", borderTop: "1px solid var(--line)" },
   vendorLabel: { fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.06em", color: "var(--pistachio-dark)", margin: "14px 0 6px" },
-  itemSectionLabel: {
-    fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.06em",
-    color: "var(--muted)", padding: "10px 16px", background: "var(--cream)",
-  },
+  itemSectionLabel: { fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.12em", color: "var(--gold)", padding: "10px 16px", background: "var(--paper-2)", borderBottom: "1px solid var(--line)" },
   detailLine: { display: "flex", justifyContent: "space-between", fontSize: 13, padding: "4px 0", gap: 12 },
   detailCode: { color: "var(--muted-faint)", fontSize: 11 },
   detailQty: { fontWeight: 600, flexShrink: 0 },
   notesBox: { marginTop: 12, padding: 12, background: "var(--cream)", borderRadius: 10, fontSize: 13, color: "var(--muted-strong)" },
   statusBtns: { display: "flex", gap: 8, marginTop: 16, flexWrap: "wrap" },
-  statusBtn: {
-    padding: "7px 14px", borderRadius: 999, border: "1px solid var(--line)",
-    background: "var(--paper)", fontSize: 12, fontWeight: 600, cursor: "pointer", color: "var(--ink)",
-  },
+  statusBtn: { padding: "8px 14px", borderRadius: 999, border: "1px solid var(--line)", background: "var(--paper)", fontSize: 12, fontWeight: 600, cursor: "pointer", color: "var(--ink)" },
   filters: { display: "flex", gap: 10, marginBottom: 18, flexWrap: "wrap", alignItems: "center" },
   dateRangeWrapper: { position: "relative" },
-  dateTrigger: {
-    display: "flex", alignItems: "center", gap: 8,
-    background: "var(--paper)", border: "1px solid var(--line)", borderRadius: 999,
-    padding: "9px 12px", cursor: "pointer",
-  },
+  dateTrigger: { display: "flex", alignItems: "center", gap: 8, background: "var(--paper)", border: "1px solid var(--line)", borderRadius: 999, padding: "10px 14px", cursor: "pointer" },
   dateTriggerText: { fontSize: 13, color: "var(--ink)", whiteSpace: "nowrap" },
   dateClearBtnFloating: {
     position: "absolute", top: -6, right: -6,
@@ -3850,12 +3810,8 @@ const styles = {
     background: "none", border: "none", color: "var(--pistachio-dark)",
     fontSize: 12, fontWeight: 600, cursor: "pointer", textDecoration: "underline",
   },
-  select: { padding: "9px 12px", borderRadius: 10, border: "1px solid var(--line)", background: "var(--paper)", fontSize: 13, color: "var(--ink)" },
-  toast: {
-    position: "fixed", top: 20, left: "50%", transform: "translateX(-50%)",
-    padding: "10px 18px", borderRadius: 10, fontSize: 13, fontWeight: 600, zIndex: 50,
-    boxShadow: "0 4px 16px rgba(0,0,0,0.12)",
-  },
+  select: { padding: "11px 14px", borderRadius: 12, border: "1px solid var(--line)", background: "var(--paper)", fontSize: 14, color: "var(--ink)" },
+  toast: { position: "fixed", top: "calc(14px + env(safe-area-inset-top, 0px))", left: "50%", transform: "translateX(-50%)", padding: "12px 18px", borderRadius: 14, fontSize: 13, fontWeight: 600, zIndex: 200, boxShadow: "0 10px 30px rgba(0,0,0,0.18)", animation: "fadeIn .2s ease both" },
   toastSuccess: { background: "#EAF1E3", color: "var(--pistachio-dark)" },
   toastError: { background: "#FBEAE0", color: "var(--terracotta)" },
   copyBox: {
@@ -3871,12 +3827,16 @@ const styles = {
   tablePreviewDataCell: {
     border: "1px solid #000", padding: "6px 10px", background: "#d9d9d9", color: "#000",
   },
-  productSummaryWrap: { background: "var(--paper)", border: "1.5px solid var(--line)", borderRadius: 14, overflow: "hidden", boxShadow: "0 2px 8px rgba(43,35,32,0.12)" },
+  productSummaryWrap: { background: "var(--paper)", border: "1px solid var(--line)", borderRadius: 18, overflow: "hidden", boxShadow: "var(--shadow)" },
   productSummaryTable: { width: "100%", borderCollapse: "collapse", fontSize: 13 },
   productSummaryHeaderCell: {
     textAlign: "left", padding: "12px 16px", fontSize: 11, fontWeight: 700, textTransform: "uppercase",
     letterSpacing: "0.04em", color: "var(--muted)", borderBottom: "1px solid var(--line)", background: "var(--cream)",
   },
   productSummaryCell: { padding: "10px 16px", borderBottom: "1px solid var(--line)", color: "var(--ink)" },
-  exportPanel: { background: "var(--paper)", border: "1.5px solid var(--line)", borderRadius: 14, padding: 18, marginBottom: 18, boxShadow: "0 2px 8px rgba(43,35,32,0.12)" },
+  exportPanel: { background: "var(--paper)", border: "1px solid var(--line)", borderRadius: 18, padding: 18, marginBottom: 18, boxShadow: "var(--shadow)" },
+  branchCardGo: { width: 36, height: 36, borderRadius: 999, background: "rgba(255,255,255,0.18)", backdropFilter: "blur(10px)", WebkitBackdropFilter: "blur(10px)", border: "1px solid rgba(255,255,255,0.35)", display: "flex", alignItems: "center", justifyContent: "center", color: "#fff", flexShrink: 0 },
+  mobileCta: { position: "fixed", left: 12, right: 12, bottom: "calc(12px + env(safe-area-inset-bottom, 0px))", zIndex: 30, display: "flex", alignItems: "center", gap: 12, padding: "10px 10px 10px 18px", borderRadius: 20, background: "var(--glass-strong)", backdropFilter: "saturate(1.4) blur(18px)", WebkitBackdropFilter: "saturate(1.4) blur(18px)", border: "1px solid var(--line)", boxShadow: "0 12px 34px rgba(0,0,0,0.18)", animation: "sheetUp .3s ease both" },
+  mobileCtaCount: { flex: 1, minWidth: 0, fontSize: 13, color: "var(--muted-strong)", fontWeight: 600, lineHeight: 1.25 },
+  mobileCtaBtn: { width: "auto", padding: "12px 18px", flexShrink: 0 },
 };

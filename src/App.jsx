@@ -588,6 +588,14 @@ const STR = {
     stockPackShort: "Paq. x",
     stockPrev: "Antes",
     stockPacksShort: "Paq.",
+    tareTitle: "Peso de la vaschetta vacía",
+    tareSub: "Se descuenta de cada pesada. Dejalo en 0 si ya pesás el helado neto.",
+    tareShort: "tara",
+    tapToWeigh: "Tocá para pesar las vaschettas",
+    nPans: (n) => `${n} vaschetta${n === 1 ? "" : "s"}`,
+    panN: (n) => `Vaschetta ${n}`,
+    panHint: "Pesá la primera vaschetta y se habilita la siguiente.",
+    removePan: "Quitar vaschetta",
     nCounted: (n) => `${n} ${n === 1 ? "producto contado" : "productos contados"}`,
     nInOrder: (n) => `${n} ${n === 1 ? "producto en el pedido" : "productos en el pedido"}`,
     excelBtn: "Descargar / compartir Excel",
@@ -781,6 +789,14 @@ const STR = {
     stockPackShort: "Pack x",
     stockPrev: "Before",
     stockPacksShort: "Pack",
+    tareTitle: "Empty pan weight",
+    tareSub: "Subtracted from each weighing. Leave 0 if you already weigh net gelato.",
+    tareShort: "tare",
+    tapToWeigh: "Tap to weigh the pans",
+    nPans: (n) => `${n} pan${n === 1 ? "" : "s"}`,
+    panN: (n) => `Pan ${n}`,
+    panHint: "Weigh the first pan and the next one opens.",
+    removePan: "Remove pan",
     nCounted: (n) => `${n} ${n === 1 ? "product counted" : "products counted"}`,
     nInOrder: (n) => `${n} ${n === 1 ? "product in the order" : "products in the order"}`,
     excelBtn: "Download / share Excel",
@@ -973,12 +989,33 @@ function stockNum(v) {
 function fmtStockNum(n) {
   return String(Math.round(n * 1000) / 1000);
 }
-function stockEntryHasValue(d) {
-  return !!d && ["b", "s", "u"].some((f) => d[f] !== undefined && String(d[f]).trim() !== "");
+// Gelato: se pesa vaschetta por vaschetta (d.v = ["4.215", "3.870", ...]).
+// Si la sucursal cargó el peso de la vaschetta vacía (tara), se descuenta de cada pesada.
+function filledPans(d) {
+  return (d && Array.isArray(d.v) ? d.v : []).filter((w) => String(w ?? "").trim() !== "");
 }
-function stockEntryTotal(p, d) {
+function stockEntryHasValue(d) {
+  if (!d) return false;
+  if (filledPans(d).length > 0) return true;
+  return ["b", "s", "u"].some((f) => d[f] !== undefined && String(d[f]).trim() !== "");
+}
+function stockEntryTotal(p, d, tare = 0) {
   if (!d) return 0;
+  const pans = filledPans(d);
+  if (pans.length > 0) {
+    const t = stockNum(tare);
+    return pans.reduce((acc, w) => acc + Math.max(0, stockNum(w) - t), 0);
+  }
   return stockNum(d.b) * (p.box || 0) + stockNum(d.s) * (p.sub || 0) + stockNum(d.u);
+}
+function isPanProduct(p) {
+  return p && p.vendor === "GELATO";
+}
+function readGelatoTare(sucursal) {
+  try { return localStorage.getItem("gelato_tare_" + sucursal) || ""; } catch { return ""; }
+}
+function writeGelatoTare(sucursal, v) {
+  try { localStorage.setItem("gelato_tare_" + sucursal, v); } catch {}
 }
 function findStockProduct(vendor, item, extraProducts = []) {
   const base = (STOCK_VENDORS[vendor] || []).find((p) => p.item === item);
@@ -987,6 +1024,9 @@ function findStockProduct(vendor, item, extraProducts = []) {
   return extra ? { item: extra.item, code: extra.code || "" } : { item, code: "" };
 }
 function stockItemBreakdown(it) {
+  if (it.pans && it.pans.length) {
+    return `${it.pans.length} vaschetta${it.pans.length === 1 ? "" : "s"}: ${it.pans.map(fmtStockNum).join(" + ")}${it.tare ? ` (tara ${fmtStockNum(it.tare)} c/u)` : ""}`;
+  }
   const parts = [];
   if (it.boxes) parts.push(`${fmtStockNum(it.boxes)} cj`);
   if (it.subs) parts.push(`${fmtStockNum(it.subs)} paq`);
@@ -1108,7 +1148,7 @@ function buildStockMailBody(stockCount, lang = "es") {
     stockCount.items.filter((it) => it.vendor === v).forEach((it) => {
       const br = stockItemBreakdown(it);
       const u = it.unit ? " " + it.unit : "";
-      body += `  - ${it.item}: ${it.quantity}${u}${br && (it.boxes || it.subs) ? ` (${br})` : ""}\n`;
+      body += `  - ${it.item}: ${it.quantity}${u}${br && (it.boxes || it.subs || (it.pans && it.pans.length)) ? ` (${br})` : ""}\n`;
     });
     body += `\n`;
   });
@@ -1167,6 +1207,12 @@ export default function App() {
   const [stockActiveVendor, setStockActiveVendor] = useState(STOCK_VENDOR_ORDER[0]);
   const [stockSearch, setStockSearch] = useState("");
   const [stockDraft, setStockDraft] = useState({});
+  const [gelatoTare, setGelatoTareState] = useState("");
+  useEffect(() => { if (sucursal) setGelatoTareState(readGelatoTare(sucursal)); }, [sucursal]);
+  function setGelatoTare(v) {
+    setGelatoTareState(v);
+    if (sucursal) writeGelatoTare(sucursal, v);
+  }
   const [stockSubmitting, setStockSubmitting] = useState(false);
   const [lastStockCount, setLastStockCount] = useState(null);
   const [stockExtraProducts, setStockExtraProducts] = useState([]);
@@ -1494,11 +1540,13 @@ export default function App() {
       const vendor = key.slice(0, sep);
       const itemName = key.slice(sep + 1);
       const p = findStockProduct(vendor, itemName, stockExtraProducts);
-      const total = stockEntryTotal(p, d);
+      const pans = filledPans(d).map(stockNum);
+      const total = stockEntryTotal(p, d, gelatoTare);
       items.push({
         vendor, item: itemName, code: p.code || "",
-        boxes: stockNum(d.b), subs: stockNum(d.s), units: stockNum(d.u),
+        boxes: pans.length ? 0 : stockNum(d.b), subs: pans.length ? 0 : stockNum(d.s), units: pans.length ? total : stockNum(d.u),
         perBox: p.box || null, perSub: p.sub || null, unit: p.unit || "",
+        ...(pans.length ? { pans, tare: stockNum(gelatoTare) } : {}),
         total, quantity: fmtStockNum(total),
       });
     });
@@ -1720,6 +1768,8 @@ export default function App() {
           setSearch={setStockSearch}
           draft={stockDraft}
           setQty={setStockQty}
+          gelatoTare={gelatoTare}
+          setGelatoTare={setGelatoTare}
           onSubmit={submitStockCount}
           submitting={stockSubmitting}
           extraProducts={stockExtraProducts}
@@ -2370,10 +2420,110 @@ function OrderForm({ sucursal, onBack, onViewHistory, activeVendor, setActiveVen
   );
 }
 
-function StockItemRow({ p, draft, setQty, lang, onFocusItem, onBlurItem, showVendorTag, prev }) {
+function PanRow({ p, d, setQty, lang, onFocusItem, onBlurItem, showVendorTag, prev, tare, open, setOpen }) {
+  const t = STR[lang];
+  const key = p.vendor + "|" + p.item;
+  const pans = Array.isArray(d.v) ? d.v : [];
+  const filled = filledPans(d);
+  const firstRef = useRef(null);
+  const rowRef = useRef(null);
+  const total = stockEntryTotal(p, d, tare);
+  // Siempre hay un casillero vacío al final: al completar uno, aparece el siguiente.
+  const slots = [...pans];
+  while (slots.length > 0 && String(slots[slots.length - 1] ?? "").trim() === "" && String(slots[slots.length - 2] ?? "").trim() === "") slots.pop();
+  if (slots.length === 0 || String(slots[slots.length - 1] ?? "").trim() !== "") slots.push("");
+
+  function setPan(i, value) {
+    const next = [...slots];
+    next[i] = sanitizeStockQty(value);
+    setQty(p.vendor, p.item, "v", next);
+  }
+  function removePan(i) {
+    const next = slots.filter((_, idx) => idx !== i);
+    setQty(p.vendor, p.item, "v", next);
+  }
+  function toggle() {
+    const willOpen = !open;
+    setOpen(willOpen);
+    if (willOpen) setTimeout(() => firstRef.current && firstRef.current.focus(), 60);
+  }
+  const hasPrev = prev !== undefined && prev !== null && prev !== "";
+  return (
+    <div ref={rowRef} style={{ ...styles.itemRow, flexDirection: "column", alignItems: "stretch", gap: 10, padding: 0 }}>
+      <button type="button" onClick={toggle} style={styles.panHead}>
+        <div style={{ minWidth: 0, flex: 1, textAlign: "left" }}>
+          <div style={styles.itemName}>{p.item}</div>
+          <div style={styles.itemCode}>
+            {showVendorTag ? getStockVendorLabel(p.vendor, lang) + " · " : ""}
+            {filled.length > 0 ? t.nPans(filled.length) : t.tapToWeigh}
+            {hasPrev && <span style={{ ...styles.stockPrevTag }}>{t.stockPrev}: {prev} kg</span>}
+          </div>
+        </div>
+        <div style={{ textAlign: "right", flexShrink: 0 }}>
+          <div style={{ fontSize: 16, fontWeight: 700, color: filled.length ? "var(--ink)" : "var(--muted-faint)" }}>{fmtStockNum(total)} kg</div>
+        </div>
+        <ChevronDown size={18} color="var(--muted-faint)" style={{ flexShrink: 0, transition: "transform .2s", transform: open ? "rotate(180deg)" : "none" }} />
+      </button>
+      {open && (
+        <div style={styles.panBody}>
+          <div style={styles.panGrid} data-pans>
+            {slots.map((w, i) => {
+              const isLastEmpty = i === slots.length - 1 && String(w).trim() === "";
+              return (
+                <div key={i} style={{ ...styles.panCell, ...(isLastEmpty ? styles.panCellNew : {}) }}>
+                  <span style={styles.panLabel}>{t.panN(i + 1)}</span>
+                  <div style={styles.panInputWrap}>
+                    <input
+                      ref={i === 0 ? firstRef : undefined}
+                      style={{ ...styles.qtyInput, width: "auto", flex: 1, minWidth: 0, background: "var(--paper)" }}
+                      inputMode="decimal"
+                      placeholder="0,000"
+                      value={w}
+                      onChange={(e) => setPan(i, e.target.value)}
+                      onFocus={(e) => {
+                        // Pasar de una vaschetta a otra del mismo sabor no cuenta como "nuevo foco".
+                        const grid = rowRef.current && rowRef.current.querySelector("[data-pans]");
+                        if (!(e.relatedTarget && grid && grid.contains(e.relatedTarget))) onFocusItem(key);
+                      }}
+                      onBlur={() => setTimeout(() => {
+                        // Si el foco pasó a otra vaschetta del mismo sabor, no reordenar todavía.
+                        if (!(rowRef.current && rowRef.current.contains(document.activeElement))) onBlurItem();
+                      }, 0)}
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter") {
+                          const inputs = e.currentTarget.closest("[data-pans]")?.querySelectorAll("input");
+                          const nextInput = inputs && inputs[i + 1];
+                          if (nextInput) nextInput.focus(); else e.currentTarget.blur();
+                        }
+                      }}
+                    />
+                    <span style={styles.panUnit}>kg</span>
+                  </div>
+                  {!isLastEmpty && (
+                    <button type="button" aria-label={t.removePan} style={styles.panRemove} onClick={() => removePan(i)}>×</button>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+          <div style={styles.panFooter}>
+            <span>{filled.length > 0 ? `${filled.map((w) => fmtStockNum(stockNum(w))).join(" + ")}${stockNum(tare) ? ` − ${t.tareShort} ${fmtStockNum(stockNum(tare))} × ${filled.length}` : ""}` : t.panHint}</span>
+            <strong style={{ color: "var(--ink)" }}>{fmtStockNum(total)} kg</strong>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function StockItemRow({ p, draft, setQty, lang, onFocusItem, onBlurItem, showVendorTag, prev, tare, openPans, setOpenPans }) {
   const t = STR[lang];
   const key = p.vendor + "|" + p.item;
   const d = draft[key] || {};
+  if (isPanProduct(p)) {
+    return <PanRow p={p} d={d} setQty={setQty} lang={lang} onFocusItem={onFocusItem} onBlurItem={onBlurItem} showVendorTag={showVendorTag} prev={prev} tare={tare}
+      open={!!(openPans && openPans[key])} setOpen={(v) => setOpenPans && setOpenPans((o) => ({ ...o, [key]: v }))} />;
+  }
   const isKg = p.unit === "kg";
   const fields = [];
   if (p.box) fields.push({ f: "b", label: t.stockBoxes, hint: `×${p.box}` });
@@ -2422,7 +2572,7 @@ function StockItemRow({ p, draft, setQty, lang, onFocusItem, onBlurItem, showVen
   );
 }
 
-function StockForm({ sucursal, onBack, activeVendor, setActiveVendor, search, setSearch, draft, setQty, onSubmit, submitting, extraProducts, onAddProduct, theme, onToggleTheme, lang, onToggleLang }) {
+function StockForm({ sucursal, onBack, activeVendor, setActiveVendor, search, setSearch, draft, setQty, gelatoTare = "", setGelatoTare, onSubmit, submitting, extraProducts, onAddProduct, theme, onToggleTheme, lang, onToggleLang }) {
   const t = STR[lang];
   const [focusedKey, setFocusedKey] = useState(null);
   const frozenHadValueRef = useRef(false);
@@ -2433,6 +2583,7 @@ function StockForm({ sucursal, onBack, activeVendor, setActiveVendor, search, se
   const [showConfirm, setShowConfirm] = useState(false);
 
   const lastStock = useMemo(() => readLastStock(sucursal), [sucursal]);
+  const [openPans, setOpenPans] = useState({});
 
   function handleFocusItem(key) {
     frozenHadValueRef.current = stockEntryHasValue(draft[key]);
@@ -2550,13 +2701,31 @@ function StockForm({ sucursal, onBack, activeVendor, setActiveVendor, search, se
                 />
               </div>
 
+              {activeVendor === "GELATO" && (
+                <div style={styles.tareCard}>
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={styles.tareTitle}>{t.tareTitle}</div>
+                    <div style={styles.tareSub}>{t.tareSub}</div>
+                  </div>
+                  <div style={styles.panInputWrap}>
+                    <input
+                      style={{ ...styles.qtyInput, width: 86 }}
+                      inputMode="decimal"
+                      placeholder="0"
+                      value={gelatoTare}
+                      onChange={(e) => setGelatoTare && setGelatoTare(sanitizeStockQty(e.target.value))}
+                    />
+                    <span style={styles.panUnit}>kg</span>
+                  </div>
+                </div>
+              )}
               <div style={styles.itemList}>
                 {withQty.map((p) => (
-                  <StockItemRow key={p.vendor + "|" + p.item} p={p} draft={draft} setQty={setQty} lang={lang} onFocusItem={handleFocusItem} onBlurItem={handleBlurItem} showVendorTag={isTodos} prev={lastStock.items && lastStock.items[p.vendor + "|" + p.item]} />
+                  <StockItemRow key={p.vendor + "|" + p.item} p={p} tare={gelatoTare} openPans={openPans} setOpenPans={setOpenPans} draft={draft} setQty={setQty} lang={lang} onFocusItem={handleFocusItem} onBlurItem={handleBlurItem} showVendorTag={isTodos} prev={lastStock.items && lastStock.items[p.vendor + "|" + p.item]} />
                 ))}
                 {rest.length > 0 && withQty.length > 0 && <div style={styles.itemSectionLabel}>{t.restOfProducts}</div>}
                 {rest.map((p) => (
-                  <StockItemRow key={p.vendor + "|" + p.item} p={p} draft={draft} setQty={setQty} lang={lang} onFocusItem={handleFocusItem} onBlurItem={handleBlurItem} showVendorTag={isTodos} prev={lastStock.items && lastStock.items[p.vendor + "|" + p.item]} />
+                  <StockItemRow key={p.vendor + "|" + p.item} p={p} tare={gelatoTare} openPans={openPans} setOpenPans={setOpenPans} draft={draft} setQty={setQty} lang={lang} onFocusItem={handleFocusItem} onBlurItem={handleBlurItem} showVendorTag={isTodos} prev={lastStock.items && lastStock.items[p.vendor + "|" + p.item]} />
                 ))}
                 {sourceItems.length === 0 && <div style={styles.emptyRow}>{t.noMatch(search)}</div>}
               </div>
@@ -2580,7 +2749,7 @@ function StockForm({ sucursal, onBack, activeVendor, setActiveVendor, search, se
               return (
                 <div key={key} style={styles.ticketLine}>
                   <span style={styles.ticketLineName}>{itemName}</span>
-                  <span style={styles.ticketLineQty}>{fmtStockNum(stockEntryTotal(prod, d))}{prod.unit ? " " + prod.unit : ""}</span>
+                  <span style={styles.ticketLineQty}>{fmtStockNum(stockEntryTotal(prod, d, gelatoTare))}{prod.unit ? " " + prod.unit : ""}</span>
                 </div>
               );
             })}
@@ -3584,7 +3753,7 @@ function StockCountCard({ stockCount, expanded, onToggle, lang = "es" }) {
               <div style={styles.vendorLabel}>{getStockVendorLabel(v, lang)}</div>
               {stockCount.items.filter((it) => it.vendor === v).map((it, i) => (
                 <div key={i} style={styles.detailLine}>
-                  <span><strong>{it.item}</strong>{(it.boxes || it.subs) ? <span style={{ color: "var(--muted-faint)", fontSize: 12 }}> · {stockItemBreakdown(it)}</span> : null}</span>
+                  <span><strong>{it.item}</strong>{(it.boxes || it.subs || (it.pans && it.pans.length)) ? <span style={{ color: "var(--muted-faint)", fontSize: 12 }}> · {stockItemBreakdown(it)}</span> : null}</span>
                   <span style={styles.detailQty}>{it.quantity}{it.unit ? " " + it.unit : ""}</span>
                 </div>
               ))}
@@ -3621,6 +3790,19 @@ function TopBar({ onBack, title, subtitle, theme, onToggleTheme, lang, onToggleL
 }
 
 const styles = {
+  tareCard: { display: "flex", alignItems: "center", gap: 14, background: "var(--paper)", border: "1px solid var(--line)", borderRadius: 18, padding: "14px 16px", marginBottom: 14, boxShadow: "var(--shadow-sm)" },
+  tareTitle: { fontSize: 14, fontWeight: 650, color: "var(--ink)" },
+  tareSub: { fontSize: 12, color: "var(--muted)", marginTop: 2, lineHeight: 1.35 },
+  panHead: { display: "flex", alignItems: "center", gap: 12, width: "100%", padding: "14px 16px", background: "none", border: "none", cursor: "pointer", color: "inherit", font: "inherit" },
+  panBody: { padding: "0 16px 16px", animation: "fadeIn .2s ease both" },
+  panGrid: { display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(130px, 1fr))", gap: 10 },
+  panCell: { position: "relative", display: "flex", flexDirection: "column", gap: 5, background: "var(--paper-2)", borderRadius: 14, padding: "10px 10px 10px" },
+  panCellNew: { background: "transparent", border: "1.5px dashed var(--line)" },
+  panLabel: { fontSize: 11, fontWeight: 700, color: "var(--muted)", letterSpacing: "0.04em", textTransform: "uppercase" },
+  panInputWrap: { display: "flex", alignItems: "center", gap: 6 },
+  panUnit: { fontSize: 12, color: "var(--muted)", fontWeight: 600 },
+  panRemove: { position: "absolute", top: 4, right: 6, width: 24, height: 24, borderRadius: 999, border: "none", background: "transparent", color: "var(--muted-faint)", fontSize: 18, lineHeight: 1, cursor: "pointer" },
+  panFooter: { display: "flex", justifyContent: "space-between", alignItems: "center", gap: 10, marginTop: 12, paddingTop: 10, borderTop: "1px solid var(--line)", fontSize: 12, color: "var(--muted)" },
   page: { minHeight: "100vh", background: "var(--cream)", color: "var(--ink)", fontFamily: "'Inter Variable', 'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif", WebkitFontSmoothing: "antialiased" },
   center: { display: "flex", flexDirection: "column", alignItems: "center", textAlign: "center", padding: "calc(72px + env(safe-area-inset-top, 0px)) 22px 40px", maxWidth: 520, margin: "0 auto", animation: "fadeIn .3s ease both" },
   homeDark: { minHeight: "100dvh", overflow: "hidden", background: "var(--cream)", display: "flex", flexDirection: "column", alignItems: "center", width: "100%", padding: "calc(84px + env(safe-area-inset-top, 0px)) 22px calc(36px + env(safe-area-inset-bottom, 0px))", position: "relative", animation: "fadeIn .35s ease both" },

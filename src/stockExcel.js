@@ -183,6 +183,11 @@ export async function buildStockWorkbook(stockCount, catalog, lang = "es") {
       row.getCell(8).font = { name: "Arial", size: 10, bold: true };
       row.getCell(9).font = { name: "Arial", size: 9, color: { argb: C.muted } };
       if (it) row.getCell(2).font = { name: "Arial", size: 10, bold: true };
+      if (it && it.pans && it.pans.length) {
+        const note = `${it.pans.length} vaschetta${it.pans.length === 1 ? "" : "s"}: ${it.pans.join(" + ")} kg` + (it.tare ? `\nTara: ${it.tare} kg c/u` : "");
+        row.getCell(7).note = note;
+        row.getCell(2).value = `${p.item}  (${it.pans.length} vasch.)`;
+      }
       r++;
     });
     catStats.push({ label: cat.label, total: cat.products.length, counted: nCounted });

@@ -1,7 +1,7 @@
 import { useState, useEffect, useMemo, useRef } from "react";
 import {
   Search, Package, ClipboardList, Store, CheckCircle2, Clock, Loader2,
-  ArrowLeft, Send, ChevronDown, ChevronUp, Lock, CalendarDays, Sun, Moon,
+  ArrowLeft, Send, ChevronDown, ChevronUp, Lock, CalendarDays, Sun, Moon, Download,
 } from "lucide-react";
 import { supabase } from "./supabaseClient";
 
@@ -587,6 +587,12 @@ const STR = {
     stockBoxShort: "Caja x",
     stockPackShort: "Paq. x",
     stockPrev: "Antes",
+    excelBtn: "Descargar / compartir Excel",
+    excelWorking: "Armando el Excel…",
+    excelDone: "Excel listo",
+    excelError: "No se pudo generar el Excel. Probá de nuevo.",
+    excelHint: (m) => `En el celular se abre el menú para compartir: elegí Mail y mandalo a ${m}. Si preferís, también podés pegar la tabla en el mail:`,
+
     orderSummary: "Resumen del pedido",
     itemLoaded: "ítem cargado",
     itemsLoaded: "ítems cargados",
@@ -771,6 +777,12 @@ const STR = {
     stockBoxShort: "Box x",
     stockPackShort: "Pack x",
     stockPrev: "Before",
+    excelBtn: "Download / share Excel",
+    excelWorking: "Building the Excel…",
+    excelDone: "Excel ready",
+    excelError: "Couldn't build the Excel. Try again.",
+    excelHint: (m) => `On a phone the share menu opens: pick Mail and send it to ${m}. You can also paste the table into the email:`,
+
     orderSummary: "Order summary",
     itemLoaded: "item loaded",
     itemsLoaded: "items loaded",
@@ -1489,10 +1501,11 @@ export default function App() {
       if (error) console.warn("stock_counts insert skipped:", error);
     } catch (e) { console.warn("stock_counts insert skipped:", e); }
     setStockSubmitting(false);
+    const previous = readLastStock(sucursal);
     writeLastStock(sucursal, items);
     setStockDraft({});
     setStockCounts((prev) => [newCount, ...prev]);
-    setLastStockCount(newCount);
+    setLastStockCount({ ...newCount, prev: previous.items || {}, prevDate: previous.date || null });
     setScreen("stock-confirm");
   }
 
@@ -1683,6 +1696,7 @@ export default function App() {
           onNewCount={() => setScreen("stock-form")}
           onMenu={() => setScreen("sucursal-menu")}
           onHome={() => { setSucursal(null); setScreen("home"); }}
+          extraProducts={stockExtraProducts}
           lang={lang}
         />
       )}
@@ -2691,8 +2705,47 @@ function Confirm({ sucursal, lastOrder, onNewOrder, onHistory, onHome, lang }) {
   );
 }
 
-function StockConfirm({ sucursal, lastStockCount, onNewCount, onMenu, onHome, lang }) {
+function StockConfirm({ sucursal, lastStockCount, onNewCount, onMenu, onHome, extraProducts = [], lang }) {
   const t = STR[lang];
+  const [excelState, setExcelState] = useState("idle"); // idle | working | done | error
+
+  async function handleExcel() {
+    if (!lastStockCount) return;
+    setExcelState("working");
+    try {
+      const { buildStockWorkbook, stockExcelFileName } = await import("./stockExcel.js");
+      const catalog = STOCK_REAL_CATEGORIES.map((cat) => ({
+        category: cat,
+        label: getStockVendorLabel(cat, lang),
+        products: [
+          ...STOCK_VENDORS[cat],
+          ...extraProducts.filter((e) => e.category === cat).map((e) => ({ item: e.item, code: e.code || "" })),
+        ],
+      }));
+      const blob = await buildStockWorkbook(lastStockCount, catalog, lang);
+      const name = stockExcelFileName(lastStockCount);
+      const file = new File([blob], name, { type: blob.type });
+      if (navigator.canShare && navigator.canShare({ files: [file] })) {
+        try {
+          await navigator.share({ files: [file], title: name });
+          setExcelState("done");
+          return;
+        } catch (e) {
+          if (e && e.name === "AbortError") { setExcelState("idle"); return; }
+        }
+      }
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url; a.download = name;
+      document.body.appendChild(a); a.click(); a.remove();
+      setTimeout(() => URL.revokeObjectURL(url), 4000);
+      setExcelState("done");
+    } catch (e) {
+      console.error("excel error:", e);
+      setExcelState("error");
+    }
+  }
+
   const textRef = useRef(null);
   const [selected, setSelected] = useState(false);
   const [copiedTable, setCopiedTable] = useState(false);
@@ -2740,8 +2793,18 @@ function StockConfirm({ sucursal, lastStockCount, onNewCount, onMenu, onHome, la
       </p>
       {lastStockCount && (
         <div style={{ width: "100%", maxWidth: 460, marginTop: 14 }}>
+          <button
+            onClick={handleExcel}
+            disabled={excelState === "working"}
+            style={{ ...styles.submitBtn, width: "100%", background: "var(--pistachio-dark)", marginBottom: 6 }}
+          >
+            {excelState === "working" ? <Loader2 size={16} style={{ animation: "spin 1s linear infinite" }} /> : excelState === "done" ? <CheckCircle2 size={16} /> : <Download size={16} />}
+            {excelState === "working" ? t.excelWorking : excelState === "done" ? t.excelDone : excelState === "error" ? t.excelError : t.excelBtn}
+          </button>
+          <p style={{ fontSize: 12, color: "var(--muted)", margin: "0 0 14px" }}>{t.excelHint(ORDER_EMAIL)}</p>
           <ol style={{ textAlign: "left", fontSize: 13, color: "var(--muted-strong)", paddingLeft: 20, margin: "0 0 12px" }}>
             <li>{t.stepCopyTable}</li>
+
             <li>{t.stepOpenMail(ORDER_EMAIL)}<strong>Ctrl+V</strong> ({lang === "en" ? "or Cmd+V on Mac" : "o Cmd+V en Mac"}).</li>
             <li>{t.stockStepSameFormat}</li>
           </ol>

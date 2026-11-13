@@ -208,6 +208,48 @@ export async function buildStockWorkbook(stockCount, catalog, lang = "es") {
     ws.getColumn(11).hidden = true;
   }
 
+  // ── Hoja Desperdicio (solo si se cargó) ───────────────────────────────
+  const waste = stockCount.waste || [];
+  if (waste.length) {
+    const wsW = wb.addWorksheet(es ? "Desperdicio" : "Waste", {
+      views: [{ state: "frozen", ySplit: 3, showGridLines: false }],
+      pageSetup: { orientation: "landscape", fitToPage: true, fitToWidth: 1, fitToHeight: 0 },
+    });
+    wsW.columns = [{ width: 16 }, { width: 50 }, { width: 9 }, { width: 10 }, { width: 10 }, { width: 12 }, { width: 8 }, { width: 40 }];
+    wsW.mergeCells("A1:H1");
+    const tw = wsW.getCell("A1");
+    tw.value = es ? `DESPERDICIO · ${stockCount.sucursal} · ${fmtDate(stockCount.date)}` : `WASTE · ${stockCount.sucursal} · ${fmtDate(stockCount.date)}`;
+    tw.font = { name: "Arial", size: 14, bold: true, color: { argb: "FFFFFFFF" } };
+    tw.fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FFB3261E" } };
+    tw.alignment = { vertical: "middle", indent: 1 };
+    wsW.getRow(1).height = 28;
+    const hw = wsW.getRow(3);
+    hw.values = es ? ["Categoría", "Producto", "Cajas", "Paquetes", "Sueltas", "TOTAL", "Unidad", "Motivo"] : ["Category", "Product", "Boxes", "Packs", "Loose", "TOTAL", "Unit", "Reason"];
+    hw.eachCell((cell, col) => {
+      cell.font = { name: "Arial", size: 10, bold: true, color: { argb: "FFFFFFFF" } };
+      cell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: C.black } };
+      cell.alignment = { horizontal: col === 2 || col === 8 ? "left" : "center", vertical: "middle" };
+      cell.border = border;
+    });
+    const labelOf = {};
+    catalog.forEach((c) => { labelOf[c.category] = c.label; });
+    waste.forEach((it, i) => {
+      const row = wsW.getRow(4 + i);
+      const pansTxt = it.pans && it.pans.length ? `  (${it.pans.length} vasch.)` : "";
+      row.values = [labelOf[it.vendor] || it.vendor, it.item + pansTxt, it.boxes || null, it.subs || null,
+        it.pans && it.pans.length ? null : (it.units || null), Number(it.total ?? it.quantity), it.unit || "u", it.reason || ""];
+      row.eachCell({ includeEmpty: true }, (cell, col) => {
+        if (col > 8) return;
+        cell.border = border;
+        cell.font = { name: "Arial", size: 10, bold: col === 6 };
+        cell.alignment = { vertical: "middle", horizontal: col === 2 || col === 8 || col === 1 ? "left" : "center", wrapText: col === 8 };
+        if (col >= 3 && col <= 6) cell.numFmt = NUM;
+        if (i % 2 === 1) cell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: C.beigeLight } };
+      });
+      if (it.pans && it.pans.length) row.getCell(6).note = `${it.pans.join(" + ")} kg` + (it.tare ? `\nTara: ${it.tare} kg c/u` : "");
+    });
+  }
+
   // ── Hoja 2: Resumen ───────────────────────────────────────────────────
   const rs = wb.addWorksheet(es ? "Resumen" : "Summary", { views: [{ showGridLines: false }] });
   rs.columns = [{ width: 28 }, { width: 14 }, { width: 14 }, { width: 14 }];
@@ -254,6 +296,13 @@ export async function buildStockWorkbook(stockCount, catalog, lang = "es") {
     cell.alignment = { horizontal: col === 1 ? "left" : "center", indent: col === 1 ? 1 : 0 };
   });
   tot.getCell(4).numFmt = "0%";
+  if (waste.length) {
+    const wr = rs.getRow(rr + 2);
+    wr.values = [es ? "Productos con desperdicio" : "Products with waste", waste.length];
+    wr.getCell(1).font = { name: "Arial", size: 10, bold: true, color: { argb: "FFB3261E" } };
+    wr.getCell(2).font = { name: "Arial", size: 10, bold: true, color: { argb: "FFB3261E" } };
+    wr.getCell(2).alignment = { horizontal: "center" };
+  }
 
   const buf = await wb.xlsx.writeBuffer();
   return new Blob([buf], { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" });

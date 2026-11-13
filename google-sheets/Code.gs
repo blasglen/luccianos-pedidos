@@ -18,7 +18,7 @@
 
 var TABLES = {
   orders: { sheet: 'Pedidos', cols: ['id', 'fecha', 'sucursal', 'estado', 'cancelado_en', 'notas', 'cant_productos', 'json'] },
-  stock_counts: { sheet: 'Conteos', cols: ['id', 'fecha', 'sucursal', 'cant_productos', 'json'] },
+  stock_counts: { sheet: 'Conteos', cols: ['id', 'fecha', 'sucursal', 'cant_productos', 'cant_desperdicio', 'json'] },
   stock_extra_products: { sheet: 'Productos extra', cols: ['id', 'categoria', 'producto', 'json'] },
 };
 
@@ -97,7 +97,7 @@ function toRow_(table, r) {
     return [r.id, toDate_(r.date), r.sucursal, r.status || 'pendiente', r.canceled_at ? toDate_(r.canceled_at) : '', r.notes || '', (r.items || []).length, json];
   }
   if (table === 'stock_counts') {
-    return [r.id, toDate_(r.date), r.sucursal, (r.items || []).length, json];
+    return [r.id, toDate_(r.date), r.sucursal, (r.items || []).length, (r.waste || []).length, json];
   }
   return [r.id, r.category || '', r.item || '', json];
 }
@@ -151,13 +151,16 @@ function writeDetail_(table, r) {
     if (rows.length) sh.getRange(sh.getLastRow() + 1, 1, rows.length, cols.length).setValues(rows);
   }
   if (table === 'stock_counts') {
-    var cols2 = ['conteo_id', 'fecha', 'sucursal', 'categoria', 'producto', 'cajas', 'paquetes', 'sueltas', 'vaschettas', 'total', 'unidad'];
+    var cols2 = ['conteo_id', 'fecha', 'sucursal', 'tipo', 'categoria', 'producto', 'cajas', 'paquetes', 'sueltas', 'vaschettas', 'total', 'unidad', 'motivo'];
     var sh2 = ss.getSheetByName('Conteos detalle') || newSheet_(ss, 'Conteos detalle', cols2);
-    var rows2 = (r.items || []).map(function (it) {
-      return [r.id, toDate_(r.date), r.sucursal, it.vendor || '', it.item || '',
-        it.boxes || '', it.subs || '', (it.pans && it.pans.length) ? '' : (it.units || ''),
-        (it.pans && it.pans.length) ? it.pans.length : '', num_(it.total !== undefined ? it.total : it.quantity), it.unit || 'u'];
-    });
+    var mk = function (tipo) {
+      return function (it) {
+        return [r.id, toDate_(r.date), r.sucursal, tipo, it.vendor || '', it.item || '',
+          it.boxes || '', it.subs || '', (it.pans && it.pans.length) ? '' : (it.units || ''),
+          (it.pans && it.pans.length) ? it.pans.length : '', num_(it.total !== undefined ? it.total : it.quantity), it.unit || 'u', it.reason || ''];
+      };
+    };
+    var rows2 = (r.items || []).map(mk('Stock')).concat((r.waste || []).map(mk('Desperdicio')));
     if (rows2.length) sh2.getRange(sh2.getLastRow() + 1, 1, rows2.length, cols2.length).setValues(rows2);
   }
 }
@@ -193,7 +196,7 @@ function setup() {
   Object.keys(TABLES).forEach(sheet_);
   var ss = SpreadsheetApp.getActiveSpreadsheet();
   if (!ss.getSheetByName('Pedidos detalle')) newSheet_(ss, 'Pedidos detalle', ['pedido_id', 'fecha', 'sucursal', 'proveedor', 'codigo', 'producto', 'cantidad']);
-  if (!ss.getSheetByName('Conteos detalle')) newSheet_(ss, 'Conteos detalle', ['conteo_id', 'fecha', 'sucursal', 'categoria', 'producto', 'cajas', 'paquetes', 'sueltas', 'vaschettas', 'total', 'unidad']);
+  if (!ss.getSheetByName('Conteos detalle')) newSheet_(ss, 'Conteos detalle', ['conteo_id', 'fecha', 'sucursal', 'tipo', 'categoria', 'producto', 'cajas', 'paquetes', 'sueltas', 'vaschettas', 'total', 'unidad', 'motivo']);
   var def = ss.getSheetByName('Hoja 1') || ss.getSheetByName('Sheet1');
   if (def && ss.getSheets().length > 1 && def.getLastRow() === 0) ss.deleteSheet(def);
 }

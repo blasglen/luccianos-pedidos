@@ -1,7 +1,7 @@
 import { useState, useEffect, useMemo, useRef } from "react";
 import {
   Search, Package, ClipboardList, Store, CheckCircle2, Clock, Loader2,
-  ArrowLeft, Send, ChevronDown, ChevronUp, Lock, CalendarDays, Sun, Moon, Download, ChevronRight,
+  ArrowLeft, Send, ChevronDown, ChevronUp, Lock, CalendarDays, Sun, Moon, Download, ChevronRight, Trash2,
 } from "lucide-react";
 import { apiConfigured, listRows, insertRow, updateRow, upsertRows, login as apiLogin, readSession, saveSession, clearSession } from "./api";
 
@@ -589,6 +589,20 @@ const STR = {
     stockPackShort: "Paq. x",
     stockPrev: "Antes",
     stockPacksShort: "Paq.",
+    wasteSubtitle: "Desperdicio",
+    wasteBannerTitle: "Cargá lo que se desperdició",
+    wasteBannerSub: (n) => `El conteo de stock (${n} ${n === 1 ? "producto" : "productos"}) ya está guardado acá. Cargá solo lo tirado o vencido y enviá todo junto.`,
+    wasteNone: "Sin desperdicio cargado",
+    nWasted: (n) => `${n} ${n === 1 ? "producto con desperdicio" : "productos con desperdicio"}`,
+    sendWithWaste: "Enviar todo",
+    confirmContinue: "Continuar",
+    confirmSendWasteBody: (n, w) => `Vas a enviar el conteo (${n} ${n === 1 ? "producto" : "productos"})${w ? ` y el desperdicio (${w} ${w === 1 ? "producto" : "productos"})` : " sin desperdicio"}.`,
+    askWasteTitle: "¿Hubo desperdicio?",
+    askWasteBody: "Si se tiró o venció algo desde el último conteo, cargalo ahora y se envía junto con el stock.",
+    askWasteYes: "Sí, cargar desperdicio",
+    askWasteNo: "No, enviar conteo",
+    wasteReasonPh: "Motivo (opcional): vencido, se cayó, mal estado…",
+    wasteTitle: "Desperdicio",
     tareTitle: "Peso de la vaschetta vacía",
     tareSub: "Se descuenta de cada pesada. Dejalo en 0 si ya pesás el helado neto.",
     tareShort: "tara",
@@ -793,6 +807,20 @@ const STR = {
     stockPackShort: "Pack x",
     stockPrev: "Before",
     stockPacksShort: "Pack",
+    wasteSubtitle: "Waste",
+    wasteBannerTitle: "Enter what was wasted",
+    wasteBannerSub: (n) => `The stock count (${n} ${n === 1 ? "product" : "products"}) is kept here. Enter only what was thrown away or expired and send everything together.`,
+    wasteNone: "No waste entered",
+    nWasted: (n) => `${n} ${n === 1 ? "product with waste" : "products with waste"}`,
+    sendWithWaste: "Send all",
+    confirmContinue: "Continue",
+    confirmSendWasteBody: (n, w) => `You're sending the count (${n} ${n === 1 ? "product" : "products"})${w ? ` and waste (${w} ${w === 1 ? "product" : "products"})` : " with no waste"}.`,
+    askWasteTitle: "Was there any waste?",
+    askWasteBody: "If anything was thrown away or expired since the last count, enter it now and it's sent with the stock.",
+    askWasteYes: "Yes, enter waste",
+    askWasteNo: "No, send count",
+    wasteReasonPh: "Reason (optional): expired, dropped, spoiled…",
+    wasteTitle: "Waste",
     tareTitle: "Empty pan weight",
     tareSub: "Subtracted from each weighing. Leave 0 if you already weigh net gelato.",
     tareShort: "tare",
@@ -1157,6 +1185,17 @@ function buildStockMailBody(stockCount, lang = "es") {
     });
     body += `\n`;
   });
+  if (stockCount.waste && stockCount.waste.length) {
+    body += `${lang === "en" ? "WASTE" : "DESPERDICIO"}\n`;
+    STOCK_REAL_CATEGORIES.filter((v) => stockCount.waste.some((it) => it.vendor === v)).forEach((v) => {
+      body += `${getStockVendorLabel(v, lang)}\n`;
+      stockCount.waste.filter((it) => it.vendor === v).forEach((it) => {
+        const u = it.unit ? " " + it.unit : "";
+        body += `  - ${it.item}: ${it.quantity}${u}${it.reason ? ` — ${it.reason}` : ""}\n`;
+      });
+      body += `\n`;
+    });
+  }
   return body;
 }
 
@@ -1190,6 +1229,19 @@ function buildStockHtmlTable(stockCount, lang = "es") {
     html += `</table>`;
   });
 
+  if (stockCount.waste && stockCount.waste.length) {
+    html += `<p style="margin:10px 0 8px;font-weight:bold;font-size:15px;color:#B3261E;">${lang === "en" ? "Waste" : "Desperdicio"}</p>`;
+    html += `<table style="border-collapse:collapse;margin-bottom:18px;">`;
+    const W = lang === "en" ? ["Category", "Item", "Total", "Reason"] : ["Categoría", "Item", "Total", "Motivo"];
+    html += `<tr>${W.map((h, i) => `<td style="${i === 2 ? headerCellCenter : headerCell}">${h}</td>`).join("")}</tr>`;
+    stockCount.waste.forEach((it) => {
+      const tot = escapeHtml(it.quantity) + (it.unit ? " " + escapeHtml(it.unit) : "");
+      html += `<tr><td style="${dataCell}">${escapeHtml(getStockVendorLabel(it.vendor, lang))}</td><td style="${dataCell}">${escapeHtml(it.item)}</td>`
+        + `<td style="${dataCellCenter}font-weight:bold;">${tot}</td><td style="${dataCell}">${escapeHtml(it.reason || "")}</td></tr>`;
+    });
+    html += `</table>`;
+  }
+
   html += `</div>`;
   return html;
 }
@@ -1212,6 +1264,8 @@ export default function App() {
   const [stockActiveVendor, setStockActiveVendor] = useState(STOCK_VENDOR_ORDER[0]);
   const [stockSearch, setStockSearch] = useState("");
   const [stockDraft, setStockDraft] = useState({});
+  const [wasteDraft, setWasteDraft] = useState({});
+  const [stockStage, setStockStage] = useState("stock"); // "stock" | "waste"
   const [gelatoTare, setGelatoTareState] = useState("");
   useEffect(() => { if (sucursal) setGelatoTareState(readGelatoTare(sucursal)); }, [sucursal]);
   function setGelatoTare(v) {
@@ -1277,6 +1331,7 @@ export default function App() {
         setScreen(OWN_SUCURSALES.includes(sucursal) ? "sucursal-menu" : "sucursal-select");
         break;
       case "stock-form":
+        if (stockStage === "waste") { setStockStage("stock"); break; }
         setScreen("sucursal-menu");
         break;
       case "sucursal-history":
@@ -1510,6 +1565,10 @@ export default function App() {
     const key = vendor + "|" + item;
     setStockDraft((d) => ({ ...d, [key]: { ...(d[key] || {}), [field]: value } }));
   }
+  function setWasteQty(vendor, item, field, value) {
+    const key = vendor + "|" + item;
+    setWasteDraft((d) => ({ ...d, [key]: { ...(d[key] || {}), [field]: value } }));
+  }
 
   async function addStockProduct(category, itemName) {
     const newProduct = {
@@ -1528,9 +1587,9 @@ export default function App() {
     return true;
   }
 
-  async function submitStockCount() {
+  function draftToItems(draft) {
     const items = [];
-    Object.entries(stockDraft).forEach(([key, d]) => {
+    Object.entries(draft).forEach(([key, d]) => {
       if (!stockEntryHasValue(d)) return;
       const sep = key.indexOf("|");
       const vendor = key.slice(0, sep);
@@ -1544,8 +1603,15 @@ export default function App() {
         perBox: p.box || null, perSub: p.sub || null, unit: p.unit || "",
         ...(pans.length ? { pans, tare: stockNum(gelatoTare) } : {}),
         total, quantity: fmtStockNum(total),
+        ...(d.r && String(d.r).trim() ? { reason: String(d.r).trim() } : {}),
       });
     });
+    return items;
+  }
+
+  async function submitStockCount() {
+    const items = draftToItems(stockDraft);
+    const waste = draftToItems(wasteDraft);
     if (items.length === 0) {
       setToast({ type: "error", text: STR[lang].errNoQtyToSubmit });
       return;
@@ -1555,6 +1621,7 @@ export default function App() {
       sucursal,
       date: new Date().toISOString(),
       items,
+      ...(waste.length ? { waste } : {}),
     };
     // El raconto se envía por mail desde la pantalla de confirmación.
     // Guardarlo en la base de datos es opcional: si falla, se sigue igual.
@@ -1570,6 +1637,8 @@ export default function App() {
     const previous = readLastStock(sucursal);
     writeLastStock(sucursal, items);
     setStockDraft({});
+    setWasteDraft({});
+    setStockStage("stock");
     setStockCounts((prev) => [newCount, ...prev]);
     setLastStockCount({ ...newCount, prev: previous.items || {}, prevDate: previous.date || null });
     setScreen("stock-confirm");
@@ -1763,8 +1832,11 @@ export default function App() {
           setActiveVendor={setStockActiveVendor}
           search={stockSearch}
           setSearch={setStockSearch}
-          draft={stockDraft}
-          setQty={setStockQty}
+          draft={stockStage === "waste" ? wasteDraft : stockDraft}
+          setQty={stockStage === "waste" ? setWasteQty : setStockQty}
+          mode={stockStage}
+          stockCountN={Object.values(stockDraft).filter(stockEntryHasValue).length}
+          onStartWaste={() => { setStockStage("waste"); setStockActiveVendor(STOCK_VENDOR_ORDER[0]); setStockSearch(""); window.scrollTo(0, 0); }}
           gelatoTare={gelatoTare}
           setGelatoTare={setGelatoTare}
           onSubmit={submitStockCount}
@@ -2247,7 +2319,7 @@ function OrderForm({ sucursal, onBack, onViewHistory, activeVendor, setActiveVen
   );
 }
 
-function PanRow({ p, d, setQty, lang, onFocusItem, onBlurItem, showVendorTag, prev, tare, open, setOpen }) {
+function PanRow({ p, d, setQty, lang, onFocusItem, onBlurItem, showVendorTag, prev, tare, open, setOpen, mode }) {
   const t = STR[lang];
   const key = p.vendor + "|" + p.item;
   const pans = Array.isArray(d.v) ? d.v : [];
@@ -2337,18 +2409,32 @@ function PanRow({ p, d, setQty, lang, onFocusItem, onBlurItem, showVendorTag, pr
             <span>{filled.length > 0 ? `${filled.map((w) => fmtStockNum(stockNum(w))).join(" + ")}${stockNum(tare) ? ` − ${t.tareShort} ${fmtStockNum(stockNum(tare))} × ${filled.length}` : ""}` : t.panHint}</span>
             <strong style={{ color: "var(--ink)" }}>{fmtStockNum(total)} kg</strong>
           </div>
+          {mode === "waste" && <div style={{ marginTop: 10 }}><WasteReason p={p} d={d} setQty={setQty} lang={lang} /></div>}
         </div>
       )}
     </div>
   );
 }
 
-function StockItemRow({ p, draft, setQty, lang, onFocusItem, onBlurItem, showVendorTag, prev, tare, openPans, setOpenPans }) {
+function WasteReason({ p, d, setQty, lang }) {
+  const t = STR[lang];
+  if (!stockEntryHasValue(d)) return null;
+  return (
+    <input
+      style={{ ...styles.authInput, marginBottom: 0, marginTop: 2, padding: "10px 12px", fontSize: 13 }}
+      placeholder={t.wasteReasonPh}
+      value={d.r || ""}
+      onChange={(e) => setQty(p.vendor, p.item, "r", e.target.value)}
+    />
+  );
+}
+
+function StockItemRow({ p, draft, setQty, lang, onFocusItem, onBlurItem, showVendorTag, prev, tare, openPans, setOpenPans, mode }) {
   const t = STR[lang];
   const key = p.vendor + "|" + p.item;
   const d = draft[key] || {};
   if (isPanProduct(p)) {
-    return <PanRow p={p} d={d} setQty={setQty} lang={lang} onFocusItem={onFocusItem} onBlurItem={onBlurItem} showVendorTag={showVendorTag} prev={prev} tare={tare}
+    return <PanRow p={p} d={d} setQty={setQty} lang={lang} onFocusItem={onFocusItem} onBlurItem={onBlurItem} showVendorTag={showVendorTag} prev={prev} tare={tare} mode={mode}
       open={!!(openPans && openPans[key])} setOpen={(v) => setOpenPans && setOpenPans((o) => ({ ...o, [key]: v }))} />;
   }
   const isKg = p.unit === "kg";
@@ -2395,11 +2481,12 @@ function StockItemRow({ p, draft, setQty, lang, onFocusItem, onBlurItem, showVen
           <strong>{fmtStockNum(total)}{p.unit ? " " + p.unit : ""}</strong>
         </div>
       </div>
+      {mode === "waste" && <WasteReason p={p} d={d} setQty={setQty} lang={lang} />}
     </div>
   );
 }
 
-function StockForm({ sucursal, onBack, activeVendor, setActiveVendor, search, setSearch, draft, setQty, gelatoTare = "", setGelatoTare, onSubmit, submitting, extraProducts, onAddProduct, theme, onToggleTheme, lang, onToggleLang }) {
+function StockForm({ sucursal, onBack, activeVendor, setActiveVendor, search, setSearch, draft, setQty, mode = "stock", stockCountN = 0, onStartWaste, gelatoTare = "", setGelatoTare, onSubmit, submitting, extraProducts, onAddProduct, theme, onToggleTheme, lang, onToggleLang }) {
   const t = STR[lang];
   const [focusedKey, setFocusedKey] = useState(null);
   const frozenHadValueRef = useRef(false);
@@ -2408,6 +2495,8 @@ function StockForm({ sucursal, onBack, activeVendor, setActiveVendor, search, se
   const [showAddConfirm, setShowAddConfirm] = useState(false);
   const [addingProduct, setAddingProduct] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
+  const [askWaste, setAskWaste] = useState(false);
+  const isWaste = mode === "waste";
 
   const lastStock = useMemo(() => readLastStock(sucursal), [sucursal]);
   const [openPans, setOpenPans] = useState({});
@@ -2472,7 +2561,16 @@ function StockForm({ sucursal, onBack, activeVendor, setActiveVendor, search, se
 
   return (
     <div style={styles.wrap}>
-      <TopBar onBack={onBack} title={sucursal} subtitle={t.stockSubtitle} theme={theme} onToggleTheme={onToggleTheme} lang={lang} onToggleLang={onToggleLang} />
+      <TopBar onBack={onBack} title={sucursal} subtitle={isWaste ? t.wasteSubtitle : t.stockSubtitle} theme={theme} onToggleTheme={onToggleTheme} lang={lang} onToggleLang={onToggleLang} />
+      {isWaste && (
+        <div style={styles.wasteBanner}>
+          <Trash2 size={20} style={{ flexShrink: 0 }} />
+          <div>
+            <div style={{ fontWeight: 700 }}>{t.wasteBannerTitle}</div>
+            <div style={{ fontSize: 13, opacity: 0.85, marginTop: 2 }}>{t.wasteBannerSub(stockCountN)}</div>
+          </div>
+        </div>
+      )}
       <div className="order-layout" style={styles.formLayout}>
         <div style={styles.formMain}>
           <div className="chips" style={styles.tabs}>
@@ -2548,11 +2646,11 @@ function StockForm({ sucursal, onBack, activeVendor, setActiveVendor, search, se
               )}
               <div style={styles.itemList}>
                 {withQty.map((p) => (
-                  <StockItemRow key={p.vendor + "|" + p.item} p={p} tare={gelatoTare} openPans={openPans} setOpenPans={setOpenPans} draft={draft} setQty={setQty} lang={lang} onFocusItem={handleFocusItem} onBlurItem={handleBlurItem} showVendorTag={isTodos} prev={lastStock.items && lastStock.items[p.vendor + "|" + p.item]} />
+                  <StockItemRow key={p.vendor + "|" + p.item} p={p} tare={gelatoTare} openPans={openPans} setOpenPans={setOpenPans} draft={draft} setQty={setQty} lang={lang} onFocusItem={handleFocusItem} onBlurItem={handleBlurItem} showVendorTag={isTodos} prev={isWaste ? undefined : (lastStock.items && lastStock.items[p.vendor + "|" + p.item])} mode={mode} />
                 ))}
                 {rest.length > 0 && withQty.length > 0 && <div style={styles.itemSectionLabel}>{t.restOfProducts}</div>}
                 {rest.map((p) => (
-                  <StockItemRow key={p.vendor + "|" + p.item} p={p} tare={gelatoTare} openPans={openPans} setOpenPans={setOpenPans} draft={draft} setQty={setQty} lang={lang} onFocusItem={handleFocusItem} onBlurItem={handleBlurItem} showVendorTag={isTodos} prev={lastStock.items && lastStock.items[p.vendor + "|" + p.item]} />
+                  <StockItemRow key={p.vendor + "|" + p.item} p={p} tare={gelatoTare} openPans={openPans} setOpenPans={setOpenPans} draft={draft} setQty={setQty} lang={lang} onFocusItem={handleFocusItem} onBlurItem={handleBlurItem} showVendorTag={isTodos} prev={isWaste ? undefined : (lastStock.items && lastStock.items[p.vendor + "|" + p.item])} mode={mode} />
                 ))}
                 {sourceItems.length === 0 && <div style={styles.emptyRow}>{t.noMatch(search)}</div>}
               </div>
@@ -2582,19 +2680,19 @@ function StockForm({ sucursal, onBack, activeVendor, setActiveVendor, search, se
             })}
           </div>
           <div style={styles.ticketDivider} />
-          <button style={styles.submitBtn} onClick={() => setShowConfirm(true)} disabled={submitting || draftCount === 0}>
+          <button style={styles.submitBtn} onClick={() => setShowConfirm(true)} disabled={submitting || (!isWaste && draftCount === 0)}>
             {submitting ? <Loader2 size={16} style={{ animation: "spin 1s linear infinite" }} /> : <Send size={16} />}
-            {submitting ? t.sending : t.sendCount}
+            {submitting ? t.sending : isWaste ? t.sendWithWaste : t.sendCount}
           </button>
         </div>
       </div>
 
       {!isAddTab && (
         <div className="mobile-cta" style={styles.mobileCta}>
-          <div style={styles.mobileCtaCount}>{draftCount === 0 ? t.stockNoItemsYet : t.nCounted(draftCount)}</div>
-          <button style={{ ...styles.submitBtn, ...styles.mobileCtaBtn }} onClick={() => setShowConfirm(true)} disabled={submitting || draftCount === 0}>
+          <div style={styles.mobileCtaCount}>{isWaste ? (draftCount === 0 ? t.wasteNone : t.nWasted(draftCount)) : (draftCount === 0 ? t.stockNoItemsYet : t.nCounted(draftCount))}</div>
+          <button style={{ ...styles.submitBtn, ...styles.mobileCtaBtn }} onClick={() => setShowConfirm(true)} disabled={submitting || (!isWaste && draftCount === 0)}>
             {submitting ? <Loader2 size={16} style={{ animation: "spin 1s linear infinite" }} /> : <Send size={16} />}
-            {submitting ? t.sending : t.sendCount}
+            {submitting ? t.sending : isWaste ? t.sendWithWaste : t.sendCount}
           </button>
         </div>
       )}
@@ -2603,15 +2701,32 @@ function StockForm({ sucursal, onBack, activeVendor, setActiveVendor, search, se
         <div className="modal-overlay" style={styles.modalOverlay} onClick={() => setShowConfirm(false)}>
           <div className="modal-box" style={styles.modalBox} onClick={(e) => e.stopPropagation()}>
             <h2 style={styles.modalTitle}>{t.confirmSendStockTitle}</h2>
-            <p style={styles.modalBody}>{t.confirmSendStockBody(draftCount)}</p>
+            <p style={styles.modalBody}>{isWaste ? t.confirmSendWasteBody(stockCountN, draftCount) : t.confirmSendStockBody(draftCount)}</p>
             <div style={styles.modalActions}>
               <button style={styles.secondaryBtn} onClick={() => setShowConfirm(false)}>{t.confirmSendCancel}</button>
               <button
                 style={{ ...styles.submitBtn, width: "auto", padding: "10px 18px" }}
-                onClick={() => { setShowConfirm(false); onSubmit(); }}
+                onClick={() => { setShowConfirm(false); if (isWaste) onSubmit(); else setAskWaste(true); }}
                 disabled={submitting}
               >
-                {t.confirmSendStockOk}
+                {isWaste ? t.confirmSendStockOk : t.confirmContinue}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {askWaste && (
+        <div className="modal-overlay" style={styles.modalOverlay} onClick={() => setAskWaste(false)}>
+          <div className="modal-box" style={styles.modalBox} onClick={(e) => e.stopPropagation()}>
+            <h2 style={styles.modalTitle}>{t.askWasteTitle}</h2>
+            <p style={styles.modalBody}>{t.askWasteBody}</p>
+            <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+              <button style={{ ...styles.submitBtn }} onClick={() => { setAskWaste(false); onStartWaste && onStartWaste(); }}>
+                <Trash2 size={16} /> {t.askWasteYes}
+              </button>
+              <button style={{ ...styles.secondaryBtn, width: "100%" }} onClick={() => { setAskWaste(false); onSubmit(); }} disabled={submitting}>
+                {t.askWasteNo}
               </button>
             </div>
           </div>
@@ -2905,6 +3020,28 @@ function StockConfirm({ sucursal, lastStockCount, onNewCount, onMenu, onHome, ex
               </div>
             ))}
           </div>
+
+          {lastStockCount.waste && lastStockCount.waste.length > 0 && (
+            <div style={{ ...styles.tablePreviewWrap, marginTop: 4 }}>
+              <div style={{ ...styles.tablePreviewVendor, color: "#B3261E", fontSize: 14 }}>{t.wasteTitle}</div>
+              <table style={styles.tablePreviewTable}>
+                <tbody>
+                  <tr>
+                    <td style={styles.tablePreviewHeaderCell}>Item</td>
+                    <td style={{ ...styles.tablePreviewHeaderCell, textAlign: "center" }}>{t.stockTotal}</td>
+                    <td style={styles.tablePreviewHeaderCell}>{lang === "en" ? "Reason" : "Motivo"}</td>
+                  </tr>
+                  {lastStockCount.waste.map((it, i) => (
+                    <tr key={i}>
+                      <td style={styles.tablePreviewDataCell}>{it.item}</td>
+                      <td style={{ ...styles.tablePreviewDataCell, textAlign: "center", fontWeight: 700 }}>{it.quantity}{it.unit ? " " + it.unit : ""}</td>
+                      <td style={styles.tablePreviewDataCell}>{it.reason || ""}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
 
           <details style={{ marginTop: 6 }}>
             <summary style={styles.textLink}>{t.plainTextFallback}</summary>
@@ -3586,6 +3723,17 @@ function StockCountCard({ stockCount, expanded, onToggle, lang = "es" }) {
               ))}
             </div>
           ))}
+          {stockCount.waste && stockCount.waste.length > 0 && (
+            <div style={{ marginBottom: 10 }}>
+              <div style={{ ...styles.vendorLabel, color: "#B3261E" }}>{STR[lang].wasteTitle}</div>
+              {stockCount.waste.map((it, i) => (
+                <div key={i} style={styles.detailLine}>
+                  <span><strong>{it.item}</strong>{it.reason ? <span style={{ color: "var(--muted-faint)", fontSize: 12 }}> · {it.reason}</span> : null}</span>
+                  <span style={styles.detailQty}>{it.quantity}{it.unit ? " " + it.unit : ""}</span>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
       )}
     </div>
@@ -3617,6 +3765,7 @@ function TopBar({ onBack, title, subtitle, theme, onToggleTheme, lang, onToggleL
 }
 
 const styles = {
+  wasteBanner: { display: "flex", gap: 12, alignItems: "flex-start", background: "var(--terracotta)", color: "#fff", borderRadius: 18, padding: "14px 16px", marginBottom: 14, boxShadow: "var(--shadow-sm)" },
   tareCard: { display: "flex", alignItems: "center", gap: 14, background: "var(--paper)", border: "1px solid var(--line)", borderRadius: 18, padding: "14px 16px", marginBottom: 14, boxShadow: "var(--shadow-sm)" },
   tareTitle: { fontSize: 14, fontWeight: 650, color: "var(--ink)" },
   tareSub: { fontSize: 12, color: "var(--muted)", marginTop: 2, lineHeight: 1.35 },

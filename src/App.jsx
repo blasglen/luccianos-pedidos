@@ -619,6 +619,18 @@ const STR = {
     excelBtn: "Descargar / compartir Excel",
     excelDownload: "Descargar Excel",
     analisisTitle: "Análisis",
+    delStockBtn: "Eliminar este conteo",
+    delConfirmTitle: "¿Eliminar el conteo?",
+    delConfirmBody: (s, d) => `Vas a eliminar el conteo de ${s} del ${d}. Deja de aparecer en la app, en el Excel y en el Análisis.`,
+    delConfirmYes: "Sí, eliminar",
+    delPassTitle: "Confirmá con tu contraseña",
+    delPassBody: "Para eliminar, ingresá la contraseña del usuario del Depósito.",
+    delFinal: "Eliminar",
+    delDeleting: "Eliminando…",
+    delNeedPassword: "Ingresá la contraseña.",
+    delWrongPassword: "Contraseña incorrecta.",
+    delError: "No se pudo eliminar. Probá de nuevo.",
+    stockDeleted: "Conteo eliminado.",
     excelWorking: "Armando el Excel…",
     excelDone: "Excel listo",
     excelError: "No se pudo generar el Excel. Probá de nuevo.",
@@ -840,6 +852,18 @@ const STR = {
     excelBtn: "Download / share Excel",
     excelDownload: "Download Excel",
     analisisTitle: "Analysis",
+    delStockBtn: "Delete this count",
+    delConfirmTitle: "Delete the count?",
+    delConfirmBody: (s, d) => `You're deleting ${s}'s count from ${d}. It will no longer show in the app, the Excel or the Analysis.`,
+    delConfirmYes: "Yes, delete",
+    delPassTitle: "Confirm with your password",
+    delPassBody: "To delete, enter the Depósito user's password.",
+    delFinal: "Delete",
+    delDeleting: "Deleting…",
+    delNeedPassword: "Enter the password.",
+    delWrongPassword: "Wrong password.",
+    delError: "Couldn't delete. Try again.",
+    stockDeleted: "Count deleted.",
     excelWorking: "Building the Excel…",
     excelDone: "Excel ready",
     excelError: "Couldn't build the Excel. Try again.",
@@ -1458,7 +1482,7 @@ export default function App() {
     if (apiConfigured()) {
       try {
         const rows = await listRows("stock_counts");
-        setStockCounts(rows.sort((a, b) => new Date(b.date) - new Date(a.date)));
+        setStockCounts(rows.filter((r) => !r.deleted).sort((a, b) => new Date(b.date) - new Date(a.date)));
       } catch (e) {
         console.warn("stock_counts load error:", e);
       }
@@ -1661,6 +1685,23 @@ export default function App() {
     setStockCounts((prev) => [newCount, ...prev]);
     setLastStockCount({ ...newCount, prev: previous.items || {}, prevDate: previous.date || null });
     setScreen("stock-confirm");
+  }
+
+  // Borrar un conteo desde el Depósito: pide de nuevo la clave. Se marca como
+  // eliminado en la planilla (queda el registro con fecha de baja) y desaparece de la app.
+  async function deleteStockCount(id, password) {
+    const email = depositoSession?.email || "";
+    const ok = await apiLogin(email, password);
+    if (!ok) return "wrong-password";
+    try {
+      await updateRow("stock_counts", id, { deleted: true, deleted_at: new Date().toISOString() }, { email, password });
+    } catch (e) {
+      console.warn("stock_counts delete error:", e);
+      return "error";
+    }
+    setStockCounts((prev) => prev.filter((c) => c.id !== id));
+    setToast({ type: "success", text: STR[lang].stockDeleted });
+    return "ok";
   }
 
   async function updateStatus(orderId, status) {
@@ -1936,6 +1977,7 @@ export default function App() {
           setExpandedOrder={setExpandedOrder}
           updateStatus={updateStatus}
           onImportOrders={importOrders}
+          onDeleteStockCount={deleteStockCount}
           userEmail={depositoSession?.email}
           onLogout={() => { clearSession(); setDepositoSession(null); setScreen("home"); }}
           theme={theme}
@@ -3338,7 +3380,7 @@ function DateRangePicker({ from, to, setFrom, setTo, lang }) {
   );
 }
 
-function Deposito({ onBack, loading, orders, allOrders, filterSucursal, setFilterSucursal, filterStatus, setFilterStatus, filterDateFrom, setFilterDateFrom, filterDateTo, setFilterDateTo, depositoView, setDepositoView, depositoSection, setDepositoSection, depositoStockView, setDepositoStockView, stockCounts, allStockCounts, stockExtraProducts = [], stockCountsLoading, expandedStockCount, setExpandedStockCount, expandedOrder, setExpandedOrder, updateStatus, onImportOrders, userEmail, onLogout, theme, onToggleTheme, lang, onToggleLang }) {
+function Deposito({ onBack, loading, orders, allOrders, filterSucursal, setFilterSucursal, filterStatus, setFilterStatus, filterDateFrom, setFilterDateFrom, filterDateTo, setFilterDateTo, depositoView, setDepositoView, depositoSection, setDepositoSection, depositoStockView, setDepositoStockView, stockCounts, allStockCounts, stockExtraProducts = [], stockCountsLoading, expandedStockCount, setExpandedStockCount, expandedOrder, setExpandedOrder, updateStatus, onImportOrders, onDeleteStockCount, userEmail, onLogout, theme, onToggleTheme, lang, onToggleLang }) {
   const t = STR[lang];
   const pendingCount = allOrders.filter((o) => o.status === "pendiente").length;
   const [showExport, setShowExport] = useState(false);
@@ -3566,6 +3608,7 @@ function Deposito({ onBack, loading, orders, allOrders, filterSucursal, setFilte
                   onToggle={() => setExpandedStockCount(expandedStockCount === c.id ? null : c.id)}
                   allStockCounts={allStockCounts}
                   extraProducts={stockExtraProducts}
+                  onDelete={onDeleteStockCount}
                   lang={lang}
                 />
               ))}
@@ -3795,9 +3838,22 @@ function OrderCard({ order, expanded, onToggle, showSucursal, actions, allOrders
   );
 }
 
-function StockCountCard({ stockCount, expanded, onToggle, allStockCounts = [], extraProducts = [], lang = "es" }) {
+function StockCountCard({ stockCount, expanded, onToggle, allStockCounts = [], extraProducts = [], onDelete, lang = "es" }) {
   const t = STR[lang];
   const [excelState, setExcelState] = useState("idle");
+  const [delStep, setDelStep] = useState(null); // null | "confirm" | "password"
+  const [delPass, setDelPass] = useState("");
+  const [delError, setDelError] = useState(null);
+  const [deleting, setDeleting] = useState(false);
+  function closeDelete() { setDelStep(null); setDelPass(""); setDelError(null); }
+  async function confirmDelete() {
+    if (!delPass) { setDelError(t.delNeedPassword); return; }
+    setDeleting(true); setDelError(null);
+    const r = await onDelete(stockCount.id, delPass);
+    setDeleting(false);
+    if (r === "ok") { closeDelete(); return; }
+    setDelError(r === "wrong-password" ? t.delWrongPassword : t.delError);
+  }
   async function handleExcel(e) {
     e && e.stopPropagation();
     setExcelState("working");
@@ -3850,6 +3906,53 @@ function StockCountCard({ stockCount, expanded, onToggle, allStockCounts = [], e
               ))}
             </div>
           )}
+          {onDelete && (
+            <button style={styles.dangerLink} onClick={() => setDelStep("confirm")}>
+              <Trash2 size={14} /> {t.delStockBtn}
+            </button>
+          )}
+        </div>
+      )}
+
+      {delStep === "confirm" && (
+        <div className="modal-overlay" style={styles.modalOverlay} onClick={closeDelete}>
+          <div className="modal-box" style={styles.modalBox} onClick={(e) => e.stopPropagation()}>
+            <h2 style={styles.modalTitle}>{t.delConfirmTitle}</h2>
+            <p style={styles.modalBody}>{t.delConfirmBody(stockCount.sucursal, fmtDate(stockCount.date, lang))}</p>
+            <div style={styles.modalActions}>
+              <button style={styles.secondaryBtn} onClick={closeDelete}>{t.confirmSendCancel}</button>
+              <button style={{ ...styles.submitBtn, width: "auto", padding: "10px 18px", background: "#B3261E", boxShadow: "none" }} onClick={() => setDelStep("password")}>
+                {t.delConfirmYes}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {delStep === "password" && (
+        <div className="modal-overlay" style={styles.modalOverlay} onClick={closeDelete}>
+          <div className="modal-box" style={styles.modalBox} onClick={(e) => e.stopPropagation()}>
+            <h2 style={styles.modalTitle}>{t.delPassTitle}</h2>
+            <p style={styles.modalBody}>{t.delPassBody}</p>
+            <input
+              type="password"
+              autoFocus
+              autoComplete="current-password"
+              style={styles.authInput}
+              placeholder={t.passwordPlaceholder}
+              value={delPass}
+              onChange={(e) => setDelPass(e.target.value)}
+              onKeyDown={(e) => { if (e.key === "Enter") confirmDelete(); }}
+            />
+            {delError && <div style={{ color: "#B3261E", fontSize: 13, fontWeight: 600, margin: "0 0 10px" }}>{delError}</div>}
+            <div style={styles.modalActions}>
+              <button style={styles.secondaryBtn} onClick={closeDelete} disabled={deleting}>{t.confirmSendCancel}</button>
+              <button style={{ ...styles.submitBtn, width: "auto", padding: "10px 18px", background: "#B3261E", boxShadow: "none" }} onClick={confirmDelete} disabled={deleting}>
+                {deleting ? <Loader2 size={16} style={{ animation: "spin 1s linear infinite" }} /> : <Trash2 size={16} />}
+                {deleting ? t.delDeleting : t.delFinal}
+              </button>
+            </div>
+          </div>
         </div>
       )}
     </div>
@@ -3881,6 +3984,7 @@ function TopBar({ onBack, title, subtitle, theme, onToggleTheme, lang, onToggleL
 }
 
 const styles = {
+  dangerLink: { display: "inline-flex", alignItems: "center", gap: 6, marginTop: 8, padding: "8px 0", background: "none", border: "none", color: "#B3261E", fontSize: 13, fontWeight: 600, cursor: "pointer" },
   wasteBanner: { display: "flex", gap: 12, alignItems: "flex-start", background: "var(--terracotta)", color: "#fff", borderRadius: 18, padding: "14px 16px", marginBottom: 14, boxShadow: "var(--shadow-sm)" },
   tareCard: { display: "flex", alignItems: "center", gap: 14, background: "var(--paper)", border: "1px solid var(--line)", borderRadius: 18, padding: "14px 16px", marginBottom: 14, boxShadow: "var(--shadow-sm)" },
   tareTitle: { fontSize: 14, fontWeight: 650, color: "var(--ink)" },

@@ -538,6 +538,7 @@ const STR = {
     errChoosePassword: "Elegí una contraseña nueva.",
 
     progressRestored: "Recuperamos el conteo que tenías a medias.",
+    clearedOk: "Listo, se borró todo. Podés empezar de cero.",
     pinTitle: "Ingresá el PIN",
     pinSub: "Pedíselo a quien administra la herramienta si no lo tenés.",
     pinWrong: "PIN incorrecto. Probá de nuevo.",
@@ -663,6 +664,14 @@ const STR = {
     delConfirmYes: "Sí, eliminar",
     delPassTitle: "Confirmá con tu contraseña",
     delPassBody: "Para eliminar, ingresá la contraseña del usuario del Depósito.",
+    clearAllCount: "Borrar todo lo cargado",
+    clearAllReception: "Borrar toda la recepción",
+    clearAllCountQ: "¿Borrar todo el conteo?",
+    clearAllReceptionQ: "¿Borrar toda la recepción?",
+    clearAllBody: "Se borra todo lo cargado hasta ahora (stock y desperdicio) y empezás de cero. No se puede deshacer.",
+    clearPassBody: "Para borrar, ingresá la contraseña de tu usuario de sucursal.",
+    clearWrongPassword: "Contraseña incorrecta (o sin conexión).",
+    clearAllFinal: "Borrar todo",
     delFinal: "Eliminar",
     delDeleting: "Eliminando…",
     delNeedPassword: "Ingresá la contraseña.",
@@ -816,6 +825,7 @@ const STR = {
     errChoosePassword: "Choose a new password.",
 
     progressRestored: "We restored the count you had in progress.",
+    clearedOk: "Done, everything was cleared. You can start over.",
     pinTitle: "Enter the PIN",
     pinSub: "Ask whoever manages this tool if you don't have it.",
     pinWrong: "Wrong PIN. Try again.",
@@ -941,6 +951,14 @@ const STR = {
     delConfirmYes: "Yes, delete",
     delPassTitle: "Confirm with your password",
     delPassBody: "To delete, enter the Depósito user's password.",
+    clearAllCount: "Clear everything entered",
+    clearAllReception: "Clear the whole receipt",
+    clearAllCountQ: "Clear the whole count?",
+    clearAllReceptionQ: "Clear the whole receipt?",
+    clearAllBody: "Everything entered so far (stock and waste) is cleared and you start over. This can't be undone.",
+    clearPassBody: "To clear, enter your store user's password.",
+    clearWrongPassword: "Wrong password (or no connection).",
+    clearAllFinal: "Clear everything",
     delFinal: "Delete",
     delDeleting: "Deleting…",
     delNeedPassword: "Enter the password.",
@@ -1834,6 +1852,18 @@ export default function App() {
     setScreen("sucursal-menu");
   }
 
+  // Borrar todo lo cargado (conteo o recepción): pide la contraseña del usuario de sucursal.
+  async function clearProgress(which, password) {
+    const user = branchSession && branchSession.user;
+    if (!user) return "error";
+    const ok = await branchLogin(user, password);
+    if (!ok) return "wrong-password";
+    if (which === "reception") { setReceptionDraft({}); setReceptionMeta(emptyReceptionMeta()); }
+    else { setStockDraft({}); setWasteDraft({}); setStockStage("stock"); }
+    setToast({ type: "success", text: STR[lang].clearedOk });
+    return "ok";
+  }
+
   // Guarda el avance del conteo en el celular y lo recupera al volver a entrar.
   const progressFor = useRef(null);
   const skipProgressSave = useRef(false);
@@ -2128,6 +2158,8 @@ export default function App() {
           setReceptionMeta={setReceptionMeta}
           onSubmit={submitReception}
           submitting={receptionSubmitting}
+          canClear={Object.values(receptionDraft).some(stockEntryHasValue)}
+          onClearAll={(p) => clearProgress("reception", p)}
           extraProducts={stockExtraProducts}
           onAddProduct={addStockProduct}
           theme={theme}
@@ -2165,6 +2197,8 @@ export default function App() {
           setGelatoTare={setGelatoTare}
           onSubmit={submitStockCount}
           submitting={stockSubmitting}
+          canClear={Object.values(stockDraft).some(stockEntryHasValue) || Object.values(wasteDraft).some(stockEntryHasValue)}
+          onClearAll={(p) => clearProgress("stock", p)}
           extraProducts={stockExtraProducts}
           onAddProduct={addStockProduct}
           theme={theme}
@@ -2955,8 +2989,9 @@ function StockKindPicker({ sucursal, kind, onBack, onPick, theme, onToggleTheme,
   );
 }
 
-function StockForm({ kindLabel, sucursal, onBack, activeVendor, setActiveVendor, search, setSearch, draft, setQty, mode = "stock", stockCountN = 0, onStartWaste, receptionMeta, setReceptionMeta, gelatoTare = "", setGelatoTare, onSubmit, submitting, extraProducts, onAddProduct, theme, onToggleTheme, lang, onToggleLang }) {
+function StockForm({ kindLabel, sucursal, onBack, activeVendor, setActiveVendor, search, setSearch, draft, setQty, mode = "stock", stockCountN = 0, onStartWaste, receptionMeta, setReceptionMeta, gelatoTare = "", setGelatoTare, onSubmit, submitting, extraProducts, onAddProduct, canClear = false, onClearAll, theme, onToggleTheme, lang, onToggleLang }) {
   const t = STR[lang];
+  const [clearOpen, setClearOpen] = useState(false);
   const [focusedKey, setFocusedKey] = useState(null);
   const frozenHadValueRef = useRef(false);
   const [newCategory, setNewCategory] = useState(STOCK_REAL_CATEGORIES[0]);
@@ -3108,6 +3143,22 @@ function StockForm({ kindLabel, sucursal, onBack, activeVendor, setActiveVendor,
                   onChange={(e) => setSearch(e.target.value)}
                 />
               </div>
+
+              {canClear && onClearAll && (
+                <div style={{ display: "flex", justifyContent: "flex-end", margin: "-4px 2px 10px" }}>
+                  <button style={styles.dangerLink} onClick={() => setClearOpen(true)}>
+                    <Trash2 size={14} /> {isReception ? t.clearAllReception : t.clearAllCount}
+                  </button>
+                </div>
+              )}
+              {clearOpen && (
+                <ClearAllDialog
+                  lang={lang}
+                  title={isReception ? t.clearAllReceptionQ : t.clearAllCountQ}
+                  onCancel={() => setClearOpen(false)}
+                  onConfirm={async (pass) => { const r = await onClearAll(pass); if (r === "ok") setClearOpen(false); return r; }}
+                />
+              )}
 
               {activeVendor === "GELATO" && mode === "stock" && (
                 <div style={styles.tareCard}>
@@ -4307,6 +4358,54 @@ function OrderCard({ order, expanded, onToggle, showSucursal, actions, allOrders
           </div>
         </div>
       )}
+    </div>
+  );
+}
+
+// Doble confirmación para borrar todo lo cargado: pregunta y después contraseña del usuario.
+function ClearAllDialog({ title, onCancel, onConfirm, lang }) {
+  const t = STR[lang];
+  const [step, setStep] = useState("confirm");
+  const [pass, setPass] = useState("");
+  const [err, setErr] = useState(null);
+  const [busy, setBusy] = useState(false);
+  async function go() {
+    if (!pass) { setErr(t.delNeedPassword); return; }
+    setBusy(true); setErr(null);
+    const r = await onConfirm(pass);
+    setBusy(false);
+    if (r !== "ok") setErr(r === "wrong-password" ? t.clearWrongPassword : t.delError);
+  }
+  const danger = { ...styles.submitBtn, width: "auto", padding: "10px 18px", background: "#B3261E", boxShadow: "none" };
+  return (
+    <div className="modal-overlay" style={styles.modalOverlay} onClick={busy ? undefined : onCancel}>
+      <div className="modal-box" style={styles.modalBox} onClick={(e) => e.stopPropagation()}>
+        {step === "confirm" ? (
+          <>
+            <h2 style={styles.modalTitle}>{title}</h2>
+            <p style={styles.modalBody}>{t.clearAllBody}</p>
+            <div style={styles.modalActions}>
+              <button style={styles.secondaryBtn} onClick={onCancel}>{t.confirmSendCancel}</button>
+              <button style={danger} onClick={() => setStep("password")}>{t.delConfirmYes}</button>
+            </div>
+          </>
+        ) : (
+          <>
+            <h2 style={styles.modalTitle}>{t.delPassTitle}</h2>
+            <p style={styles.modalBody}>{t.clearPassBody}</p>
+            <input type="password" autoFocus autoComplete="current-password" style={styles.authInput} placeholder={t.passwordPlaceholder}
+              value={pass} onChange={(e) => setPass(e.target.value)} onKeyDown={(e) => { if (e.key === "Enter") go(); }} />
+            {err && <div style={{ color: "#B3261E", fontSize: 13, fontWeight: 600, margin: "0 0 10px" }}>{err}</div>}
+            <div style={styles.modalActions}>
+              <button style={styles.secondaryBtn} onClick={onCancel} disabled={busy}>{t.confirmSendCancel}</button>
+              <button style={danger} onClick={go} disabled={busy}>
+                {busy ? <Loader2 size={16} style={{ animation: "spin 1s linear infinite" }} /> : <Trash2 size={16} />}
+                {t.clearAllFinal}
+              </button>
+            </div>
+          </>
+        )}
+      </div>
     </div>
   );
 }

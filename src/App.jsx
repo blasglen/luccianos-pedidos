@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo, useRef } from "react";
+import { useState, lazy, Suspense, useEffect, useMemo, useRef } from "react";
 import {
   Search, Package, ClipboardList, Store, CheckCircle2, Clock, Loader2,
   ArrowLeft, Send, ChevronDown, ChevronUp, Lock, CalendarDays, Sun, Moon, Download, ChevronRight, Trash2,
@@ -495,6 +495,8 @@ function getAutoTheme() {
   return hour >= 7 && hour < 20 ? "day" : "night";
 }
 
+const Analisis = lazy(() => import("./Analisis.jsx"));
+
 const STR = {
   es: {
     homeEyebrow: "Estados Unidos",
@@ -616,6 +618,7 @@ const STR = {
     nInOrder: (n) => `${n} ${n === 1 ? "producto en el pedido" : "productos en el pedido"}`,
     excelBtn: "Descargar / compartir Excel",
     excelDownload: "Descargar Excel",
+    analisisTitle: "Análisis",
     excelWorking: "Armando el Excel…",
     excelDone: "Excel listo",
     excelError: "No se pudo generar el Excel. Probá de nuevo.",
@@ -836,6 +839,7 @@ const STR = {
     nInOrder: (n) => `${n} ${n === 1 ? "product in the order" : "products in the order"}`,
     excelBtn: "Download / share Excel",
     excelDownload: "Download Excel",
+    analisisTitle: "Analysis",
     excelWorking: "Building the Excel…",
     excelDone: "Excel ready",
     excelError: "Couldn't build the Excel. Try again.",
@@ -3340,6 +3344,12 @@ function Deposito({ onBack, loading, orders, allOrders, filterSucursal, setFilte
   const [showExport, setShowExport] = useState(false);
   const isCompras = depositoSection === "compras";
   const isStocks = depositoSection === "stocks";
+  const isAnalisis = depositoSection === "analisis";
+  const analysisCatalog = useMemo(() => STOCK_REAL_CATEGORIES.map((cat) => ({
+    category: cat,
+    label: getStockVendorLabel(cat, lang),
+    products: [...STOCK_VENDORS[cat], ...stockExtraProducts.filter((e) => e.category === cat).map((e) => ({ item: e.item }))],
+  })), [lang, stockExtraProducts]);
 
   const productSummary = useMemo(() => {
     const map = new Map();
@@ -3397,7 +3407,21 @@ function Deposito({ onBack, loading, orders, allOrders, filterSucursal, setFilte
         >
           {t.stocksTitle}
         </button>
+        <button
+          style={{ ...styles.sectionToggleBtn, ...(isAnalisis ? styles.sectionToggleBtnActive : {}) }}
+          onClick={() => setDepositoSection("analisis")}
+        >
+          {t.analisisTitle}
+        </button>
       </div>
+
+      {isAnalisis && (
+        <Suspense fallback={<div style={styles.emptyRow}>{t.loadingWait}</div>}>
+          {stockCountsLoading ? <div style={styles.emptyRow}>{t.loadingStocks}</div> : (
+            <Analisis stockCounts={allStockCounts} catalog={analysisCatalog} theme={theme} lang={lang} />
+          )}
+        </Suspense>
+      )}
 
       {isCompras && (
         <>

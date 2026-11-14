@@ -37,6 +37,7 @@ function monthLabel(key, lang) {
   return `${(lang === "en" ? MONTHS_EN : MONTHS_ES)[m - 1]} ${String(y).slice(2)}`;
 }
 const num = (v) => { const n = parseFloat(String(v ?? "").replace(",", ".")); return isNaN(n) ? 0 : n; };
+const fmtUSD = (n) => "US$ " + Math.round(n).toLocaleString("es-AR");
 const fmt = (n, d = 1) => (Math.round(n * 10 ** d) / 10 ** d).toLocaleString("es-AR");
 
 // ── Datos de ejemplo (6 meses, 3 sucursales) para ver cómo queda ─────────
@@ -102,6 +103,12 @@ export default function Analisis({ stockCounts = [], catalog = [], theme = "day"
   const month = monthSel && months.includes(monthSel) ? monthSel : months[months.length - 1];
   const prevMonth = months[months.indexOf(month) - 1];
   const branches = branch === "Todas" ? BRANCHES : [branch];
+  const costMap = useMemo(() => {
+    const m = {};
+    catalog.forEach((c) => c.products.forEach((p) => { if (p.cost) m[c.category + "|" + p.item] = p.cost; }));
+    return m;
+  }, [catalog]);
+  const valueOf = (items = []) => items.reduce((a, it) => a + itemQty(it) * (costMap[it.vendor + "|" + it.item] || 0), 0);
   const catLabel = (cat) => (catalog.find((c) => c.category === cat) || {}).label || cat;
   const inCat = (it) => category === "Todas" || it.vendor === category;
 
@@ -114,6 +121,22 @@ export default function Analisis({ stockCounts = [], catalog = [], theme = "day"
     });
     return row;
   }), [months, get, lang]);
+
+  // Valor del inventario (USD) por mes y sucursal
+  const valueSeries = useMemo(() => months.map((m) => {
+    const row = { month: monthLabel(m, lang) };
+    BRANCHES.forEach((b) => {
+      const c = get(b, m);
+      row[b] = c ? Math.round(valueOf(c.items.filter(inCat))) : null;
+    });
+    return row;
+  }), [months, get, lang, category, costMap]);
+
+  // Valor por categoría en el mes elegido (sucursales filtradas)
+  const valueByCat = useMemo(() => catalog.map((c) => ({
+    name: c.label,
+    value: Math.round(branches.reduce((a, b) => a + valueOf(((get(b, month) || {}).items || []).filter((it) => it.vendor === c.category)), 0)),
+  })).filter((r) => r.value > 0).sort((a, b) => b.value - a.value), [catalog, month, branch, get, costMap]);
 
   // Desperdicio por mes y sucursal: kg (gelato + ingredientes) y unidades (resto)
   const wasteSeries = useMemo(() => months.map((m) => {
@@ -176,8 +199,12 @@ export default function Analisis({ stockCounts = [], catalog = [], theme = "day"
     const wasteU = wasteThisMonth.filter((w) => w.unit !== "kg").reduce((a, w) => a + itemQty(w), 0);
     const zero = monthTable.filter((e) => e.cur === 0 && e.prev > 0).length;
     const alerts = monthTable.filter((e) => e.pct !== null && Math.abs(e.pct) >= 50).length;
-    return { g, gp, wasteKg, wasteU, zero, alerts, counted: monthTable.filter((e) => e.cur > 0).length };
-  }, [month, prevMonth, branch, monthTable, wasteThisMonth, get]);
+    const val = (m) => branches.reduce((a, b) => { const c = get(b, m); return a + (c ? valueOf(c.items.filter(inCat)) : 0); }, 0);
+    const v = month ? val(month) : 0;
+    const vp = prevMonth ? val(prevMonth) : null;
+    const wasteUSD = valueOf(wasteThisMonth);
+    return { g, gp, wasteKg, wasteU, zero, alerts, v, vp, wasteUSD, counted: monthTable.filter((e) => e.cur > 0).length };
+  }, [month, prevMonth, branch, category, monthTable, wasteThisMonth, get, costMap]);
 
   // Explorador de producto
   const productOptions = useMemo(() => {
@@ -203,6 +230,7 @@ export default function Analisis({ stockCounts = [], catalog = [], theme = "day"
     if (sortKey === "pct") t.sort((a, b) => Math.abs(b.pct ?? 0) - Math.abs(a.pct ?? 0));
     if (sortKey === "item") t.sort((a, b) => a.item.localeCompare(b.item));
     if (sortKey === "cur") t.sort((a, b) => b.cur - a.cur);
+    if (sortKey === "val") t.sort((a, b) => b.cur * (costMap[b.vendor + "|" + b.item] || 0) - a.cur * (costMap[a.vendor + "|" + a.item] || 0));
     return t;
   }, [monthTable, sortKey]);
 
@@ -255,11 +283,45 @@ export default function Analisis({ stockCounts = [], catalog = [], theme = "day"
 
       {/* KPIs */}
       <div style={S.kpiGrid}>
+        <Kpi label={es ? "Valor del inventario" : "Inventory value"} value={fmtUSD(kpi.v)} delta={kpi.vp ? ((kpi.v - kpi.vp) / kpi.vp) * 100 : null} es={es} C={C} />
         <Kpi label={es ? "Gelato en stock" : "Gelato in stock"} value={`${fmt(kpi.g)} kg`} delta={delta} es={es} C={C} />
-        <Kpi label={es ? "Desperdicio del mes" : "Waste this month"} value={`${fmt(kpi.wasteKg)} kg`} sub={`+ ${fmt(kpi.wasteU, 0)} ${es ? "unidades" : "units"}`} C={C} />
+        <Kpi label={es ? "Desperdicio del mes" : "Waste this month"} value={fmtUSD(kpi.wasteUSD)} sub={`${fmt(kpi.wasteKg)} kg + ${fmt(kpi.wasteU, 0)} ${es ? "unidades" : "units"}`} C={C} />
         <Kpi label={es ? "Variaciones fuertes" : "Big swings"} value={kpi.alerts} sub={es ? "productos ±50% vs mes anterior" : "products ±50% vs last month"} C={C} />
         <Kpi label={es ? "Se quedaron sin stock" : "Ran out"} value={kpi.zero} sub={es ? "tenían el mes anterior" : "had stock last month"} C={C} />
-        <Kpi label={es ? "Valor del inventario" : "Inventory value"} value="USD —" sub={es ? "se activa con la lista de costos" : "enabled with the cost list"} C={C} muted />
+
+      </div>
+
+      <div style={S.grid2}>
+        <Card title={es ? "Valor del inventario por sucursal (US$)" : "Inventory value by branch (US$)"} sub={es ? "Cantidad contada × costo unitario" : "Counted quantity × unit cost"}>
+          <ResponsiveContainer width="100%" height={240}>
+            <LineChart data={valueSeries} margin={{ top: 10, right: 16, left: 0, bottom: 0 }}>
+              <CartesianGrid vertical={false} stroke={C.grid} />
+              <XAxis dataKey="month" {...axis} interval={0} tick={{ fontSize: 10, fill: C.muted }} />
+              <YAxis {...axis} width={56} tickFormatter={(v) => (v >= 1000 ? `${Math.round(v / 1000)}k` : v)} />
+              <Tooltip {...tooltipStyle} formatter={(v) => (v == null ? "—" : fmtUSD(v))} />
+              <Legend iconType="circle" iconSize={8} wrapperStyle={{ fontSize: 12 }} formatter={(v) => <span style={{ color: C.muted }}>{v}</span>} />
+              {visibleBranches.map((b) => (
+                <Line key={b} type="monotone" dataKey={b} stroke={C.branch[b]} strokeWidth={2} dot={{ r: 4, strokeWidth: 2, stroke: C.surface }} activeDot={{ r: 6 }} connectNulls />
+              ))}
+            </LineChart>
+          </ResponsiveContainer>
+        </Card>
+
+        <Card title={es ? `Valor por categoría · ${monthLabel(month, lang)}` : `Value by category · ${monthLabel(month, lang)}`} sub={branch === "Todas" ? (es ? "Las 3 sucursales" : "All 3 branches") : branch}>
+          {valueByCat.length === 0 ? <div style={S.empty}>—</div> : (
+            <ResponsiveContainer width="100%" height={240}>
+              <BarChart data={valueByCat} layout="vertical" margin={{ top: 4, right: 64, left: 4, bottom: 0 }}>
+                <CartesianGrid horizontal={false} stroke={C.grid} />
+                <XAxis type="number" {...axis} tickFormatter={(v) => (v >= 1000 ? `${Math.round(v / 1000)}k` : v)} />
+                <YAxis type="category" dataKey="name" {...axis} width={96} tick={{ fontSize: 11, fill: C.muted }} />
+                <Tooltip {...tooltipStyle} formatter={(v) => [fmtUSD(v), es ? "Valor" : "Value"]} />
+                <Bar dataKey="value" fill={C.single} radius={4} barSize={14}>
+                  <LabelList dataKey="value" position="right" formatter={fmtUSD} style={{ fontSize: 11, fill: C.muted }} />
+                </Bar>
+              </BarChart>
+            </ResponsiveContainer>
+          )}
+        </Card>
       </div>
 
       <div style={S.grid2}>
@@ -361,6 +423,7 @@ export default function Analisis({ stockCounts = [], catalog = [], theme = "day"
                 <th style={S.th}>{prevMonth ? monthLabel(prevMonth, lang) : "—"}</th>
                 <th style={{ ...S.th, cursor: "pointer" }} onClick={() => setSortKey("cur")}>{monthLabel(month, lang)}</th>
                 <th style={{ ...S.th, cursor: "pointer" }} onClick={() => setSortKey("pct")}>{es ? "Var." : "Chg."}</th>
+                <th style={{ ...S.th, cursor: "pointer" }} onClick={() => setSortKey("val")}>{es ? "Valor" : "Value"}</th>
               </tr>
             </thead>
             <tbody>
@@ -373,6 +436,7 @@ export default function Analisis({ stockCounts = [], catalog = [], theme = "day"
                   <td style={{ ...S.td, fontWeight: 700, color: e.pct == null ? C.muted : e.pct >= 0 ? C.up : C.down }}>
                     {e.pct == null ? "—" : `${e.pct >= 0 ? "▲" : "▼"} ${Math.abs(Math.round(e.pct))}%`}
                   </td>
+                  <td style={S.td}>{costMap[e.vendor + "|" + e.item] ? fmtUSD(e.cur * costMap[e.vendor + "|" + e.item]) : <span style={{ color: C.muted }}>{es ? "sin costo" : "no cost"}</span>}</td>
                 </tr>
               ))}
             </tbody>
@@ -381,11 +445,11 @@ export default function Analisis({ stockCounts = [], catalog = [], theme = "day"
       </Card>
 
       <div style={{ ...S.card, ...S.soon }}>
-        <div style={S.cardTitle}>{es ? "Próximamente, con la lista de costos" : "Coming with the cost list"}</div>
+        <div style={S.cardTitle}>{es ? "Próximamente, con las compras recibidas" : "Coming with received purchases"}</div>
         <div style={{ fontSize: 13, color: "var(--muted)", lineHeight: 1.5 }}>
           {es
-            ? "Valor del inventario en USD por sucursal y mes · costo del desperdicio · consumo estimado (stock inicial + pedidos − stock final) valorizado · productos que más plata inmovilizan."
-            : "Inventory value in USD by branch and month · cost of waste · estimated consumption (opening + orders − closing) valued · products tying up the most cash."}
+            ? "Uso del mes (inicial + recibido − desperdicio ± transferencias − empleados − final) · costo de uso en US$ · food cost % contra ventas netas · igual que la hoja FOOD COST CALC, pero automático."
+            : "Monthly use (opening + received − waste ± transfers − staff − closing) · cost of use in US$ · food cost % vs net sales · like the FOOD COST CALC sheet, but automatic."}
         </div>
       </div>
     </div>

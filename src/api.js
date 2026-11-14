@@ -62,3 +62,38 @@ export function saveSession(s) {
 export function clearSession() {
   try { localStorage.removeItem(KEY); } catch {}
 }
+
+// ── Usuarios de Sucursal ───────────────────────────────────────────────
+// El script valida usuario y contraseña y devuelve las sucursales habilitadas.
+export async function branchLogin(user, password) {
+  if (!SHEETS_URL) return null;
+  try {
+    const data = await call({ action: "branchLogin", user, password });
+    return Array.isArray(data.sucursales) && data.sucursales.length ? data.sucursales : null;
+  } catch {
+    return null;
+  }
+}
+
+const BKEY = "sucursal_session";
+export function readBranchSession() {
+  try { return JSON.parse(localStorage.getItem(BKEY) || "null"); } catch { return null; }
+}
+export function saveBranchSession(s) {
+  try { localStorage.setItem(BKEY, JSON.stringify(s)); } catch {}
+}
+export function clearBranchSession() {
+  try { localStorage.removeItem(BKEY); } catch {}
+}
+
+// Eliminar de verdad (fila + detalle). Si el script todavía no tiene esta
+// acción, devuelve "unsupported" para que la app use la baja lógica.
+export async function deleteRow(table, id, auth) {
+  try {
+    await call({ action: "delete", table, id, ...auth });
+    return "ok";
+  } catch (e) {
+    if (String(e.message || e).includes("unknown action")) return "unsupported";
+    throw e;
+  }
+}

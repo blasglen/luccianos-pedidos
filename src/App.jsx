@@ -3,16 +3,8 @@ import {
   Search, Package, ClipboardList, Store, CheckCircle2, Clock, Loader2,
   ArrowLeft, Send, ChevronDown, ChevronUp, Lock, CalendarDays, Sun, Moon, Download, ChevronRight, Trash2,
 } from "lucide-react";
-import { apiConfigured, listRows, insertRow, updateRow, upsertRows, login as apiLogin, readSession, saveSession, clearSession } from "./api";
+import { apiConfigured, listRows, insertRow, updateRow, upsertRows, deleteRow, login as apiLogin, readSession, saveSession, clearSession, branchLogin, readBranchSession, saveBranchSession, clearBranchSession } from "./api";
 
-const PINS = {
-  "American Dream": "1001",
-  "Aventura": "1002",
-  "Sawgrass": "1003",
-  "Florida Mall": "1004",
-  "Vineland": "1005",
-  "Weston": "1006",
-};
 
 const VENDORS = {
   "Mec3": [
@@ -620,6 +612,11 @@ const STR = {
     excelDownload: "Descargar Excel",
     analisisTitle: "Análisis",
     delStockBtn: "Eliminar este conteo",
+    branchAuthEyebrow: "Sucursal",
+    branchAuthSub: "Ingresá con el usuario y la contraseña de tu sucursal.",
+    userPlaceholder: "Usuario",
+    errWrongUser: "Usuario o contraseña incorrectos.",
+    loggedAs: "Conectado como",
     histOpen: "Importar conteos históricos",
     histTitle: "Importar conteos históricos",
     histSub: "Elegí el archivo .json con los conteos armados a partir de las planillas Excel. Si un mes ya estaba importado, se reemplaza.",
@@ -863,6 +860,11 @@ const STR = {
     excelDownload: "Download Excel",
     analisisTitle: "Analysis",
     delStockBtn: "Delete this count",
+    branchAuthEyebrow: "Store",
+    branchAuthSub: "Sign in with your store's username and password.",
+    userPlaceholder: "Username",
+    errWrongUser: "Wrong username or password.",
+    loggedAs: "Signed in as",
     histOpen: "Import past counts",
     histTitle: "Import past counts",
     histSub: "Pick the .json file with the counts built from the Excel sheets. A month already imported is replaced.",
@@ -1384,14 +1386,14 @@ export default function App() {
       case "sucursal-select":
         setScreen("home");
         break;
-      case "pin":
-        setScreen(pendingRole && pendingRole.key === "Depósito" ? "home" : "sucursal-select");
+      case "branch-auth":
+        setScreen("home");
         break;
       case "sucursal-menu":
-        setScreen("sucursal-select");
+        setScreen(singleBranch ? "home" : "sucursal-select");
         break;
       case "order-form":
-        setScreen(OWN_SUCURSALES.includes(sucursal) ? "sucursal-menu" : "sucursal-select");
+        setScreen(OWN_SUCURSALES.includes(sucursal) ? "sucursal-menu" : (singleBranch ? "home" : "sucursal-select"));
         break;
       case "stock-form":
         if (stockStage === "waste") { setStockStage("stock"); break; }
@@ -1439,10 +1441,26 @@ export default function App() {
   }
   const [expandedOrder, setExpandedOrder] = useState(null);
   const [lastOrder, setLastOrder] = useState(null);
-  const [pendingRole, setPendingRole] = useState(null);
-  const [pinValue, setPinValue] = useState("");
-  const [pinError, setPinError] = useState(false);
   const [depositoSession, setDepositoSession] = useState(() => readSession());
+  const [branchSession, setBranchSession] = useState(() => readBranchSession());
+  const allowedBranches = (branchSession?.sucursales || []).filter((b) => SUCURSALES.includes(b) && !HIDDEN_SUCURSALES.includes(b));
+  const singleBranch = allowedBranches.length === 1;
+
+  function enterBranches(session = branchSession) {
+    const list = (session?.sucursales || []).filter((b) => SUCURSALES.includes(b) && !HIDDEN_SUCURSALES.includes(b));
+    if (list.length === 1) {
+      setSucursal(list[0]);
+      setScreen(OWN_SUCURSALES.includes(list[0]) ? "sucursal-menu" : "order-form");
+    } else {
+      setScreen("sucursal-select");
+    }
+  }
+  function branchLogout() {
+    clearBranchSession();
+    setBranchSession(null);
+    setSucursal(null);
+    setScreen("home");
+  }
   const [authChecked, setAuthChecked] = useState(false);
 
   useEffect(() => { loadOrders(); }, []);
@@ -1508,24 +1526,6 @@ export default function App() {
       }
     }
     setStockCountsLoading(false);
-  }
-
-  function requestPin(key, nextScreen) {
-    setPendingRole({ key, nextScreen });
-    setPinValue("");
-    setPinError(false);
-    setScreen("pin");
-  }
-
-  function checkPin() {
-    if (pinValue === PINS[pendingRole.key]) {
-      if (pendingRole.key !== "Depósito") setSucursal(pendingRole.key);
-      setScreen(pendingRole.nextScreen);
-      setPinValue("");
-      setPinError(false);
-    } else {
-      setPinError(true);
-    }
   }
 
   const draftCount = useMemo(
@@ -1726,7 +1726,10 @@ export default function App() {
     const ok = await apiLogin(email, password);
     if (!ok) return "wrong-password";
     try {
-      await updateRow("stock_counts", id, { deleted: true, deleted_at: new Date().toISOString() }, { email, password });
+      const r = await deleteRow("stock_counts", id, { email, password });
+      if (r === "unsupported") {
+        await updateRow("stock_counts", id, { deleted: true, deleted_at: new Date().toISOString() }, { email, password });
+      }
     } catch (e) {
       console.warn("stock_counts delete error:", e);
       return "error";
@@ -1847,20 +1850,23 @@ export default function App() {
         </div>
       )}
 
-      {screen === "home" && <Home onSucursal={() => setScreen("sucursal-select")} onDeposito={() => setScreen(depositoSession ? "deposito" : "deposito-auth")} theme={theme} onToggleTheme={toggleTheme} lang={lang} onToggleLang={toggleLang} />}
+      {screen === "home" && <Home onSucursal={() => (branchSession ? enterBranches() : setScreen("branch-auth"))} onDeposito={() => setScreen(depositoSession ? "deposito" : "deposito-auth")} theme={theme} onToggleTheme={toggleTheme} lang={lang} onToggleLang={toggleLang} />}
 
       {screen === "sucursal-select" && (
-        <SucursalSelect onBack={goBack} onPick={(s) => requestPin(s, OWN_SUCURSALES.includes(s) ? "sucursal-menu" : "order-form")} theme={theme} onToggleTheme={toggleTheme} lang={lang} onToggleLang={toggleLang} />
+        <SucursalSelect
+          allowed={allowedBranches}
+          userLabel={branchSession?.user}
+          onLogout={branchLogout}
+          onBack={goBack}
+          onPick={(s) => { setSucursal(s); setScreen(OWN_SUCURSALES.includes(s) ? "sucursal-menu" : "order-form"); }}
+          theme={theme} onToggleTheme={toggleTheme} lang={lang} onToggleLang={toggleLang}
+        />
       )}
 
-      {screen === "pin" && pendingRole && (
-        <PinScreen
-          roleKey={pendingRole.key}
-          value={pinValue}
-          setValue={setPinValue}
-          error={pinError}
-          onSubmit={checkPin}
+      {screen === "branch-auth" && (
+        <BranchAuth
           onBack={goBack}
+          onSuccess={(session) => { saveBranchSession(session); setBranchSession(session); enterBranches(session); }}
           lang={lang}
         />
       )}
@@ -1871,6 +1877,8 @@ export default function App() {
           onBack={goBack}
           onCompras={() => setScreen("order-form")}
           onStocks={() => setScreen("stock-form")}
+          userLabel={singleBranch ? branchSession?.user : null}
+          onLogout={singleBranch ? branchLogout : null}
           theme={theme}
           onToggleTheme={toggleTheme}
           lang={lang}
@@ -2105,36 +2113,58 @@ function DepositoAuth({ onBack, onSuccess, lang }) {
   );
 }
 
-function PinScreen({ roleKey, value, setValue, error, onSubmit, onBack, lang }) {
+function LogoutLine({ user, onLogout, lang }) {
   const t = STR[lang];
+  return (
+    <div style={{ textAlign: "center", marginTop: 22, fontSize: 13, color: "var(--muted)" }}>
+      {user && <>{t.loggedAs} <strong style={{ color: "var(--ink)" }}>{user}</strong> · </>}
+      <button style={{ ...styles.textLink, marginTop: 0, fontSize: 13 }} onClick={onLogout}>{t.logout}</button>
+    </div>
+  );
+}
+
+function BranchAuth({ onBack, onSuccess, lang }) {
+  const t = STR[lang];
+  const [user, setUser] = useState("");
+  const [password, setPassword] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
   useEffect(() => () => unlockScroll(), []);
+
+  async function handleSubmit() {
+    setError(null);
+    if (!user.trim() || !password) { setError(t.errNeedBoth); return; }
+    if (!apiConfigured()) { setError(t.errNoDatabase); return; }
+    setLoading(true);
+    const sucursales = await branchLogin(user.trim(), password);
+    setLoading(false);
+    if (!sucursales) { setError(t.errWrongUser); return; }
+    onSuccess({ user: user.trim().toLowerCase(), sucursales });
+  }
+
   return (
     <div style={styles.center}>
-      <Lock size={36} color="var(--plum)" strokeWidth={1.5} />
-      <div style={styles.eyebrow}>{roleKey}</div>
-      <h1 style={styles.h1}>{t.pinTitle}</h1>
-      <p style={styles.sub}>{t.pinSub}</p>
-      <input
-        type="password"
-        inputMode="numeric"
-        style={{ ...styles.qtyInput, width: 160, fontSize: 20, textAlign: "center", padding: "12px 10px", marginTop: 20 }}
-        value={value}
-        onChange={(e) => setValue(e.target.value)}
-        onFocus={lockScroll}
-        onBlur={unlockScroll}
-        onKeyDown={(e) => { if (e.key === "Enter") onSubmit(); }}
-        placeholder="••••"
-      />
-      {error && <div style={{ color: "var(--terracotta)", fontSize: 13, marginTop: 10, fontWeight: 600 }}>{t.pinWrong}</div>}
-      <div style={{ display: "flex", gap: 12, marginTop: 24 }}>
+      <Store size={36} color="var(--plum)" strokeWidth={1.5} />
+      <div style={styles.eyebrow}>{t.branchAuthEyebrow}</div>
+      <h1 style={styles.h1}>{t.loginTitle}</h1>
+      <p style={styles.sub}>{t.branchAuthSub}</p>
+      <div style={{ width: "100%", maxWidth: 320, marginTop: 20 }}>
+        <input type="text" placeholder={t.userPlaceholder} style={styles.authInput} value={user} autoCapitalize="none" autoCorrect="off"
+          onChange={(e) => setUser(e.target.value)} onFocus={lockScroll} onBlur={unlockScroll} autoComplete="username" />
+        <input type="password" placeholder={t.passwordPlaceholder} style={styles.authInput} value={password}
+          onChange={(e) => setPassword(e.target.value)} onFocus={lockScroll} onBlur={unlockScroll} autoComplete="current-password"
+          onKeyDown={(e) => { if (e.key === "Enter") handleSubmit(); }} />
+      </div>
+      {error && <div style={{ color: "var(--terracotta)", fontSize: 13, marginTop: 10, fontWeight: 600, maxWidth: 320 }}>{error}</div>}
+      <div style={{ display: "flex", gap: 12, marginTop: 20 }}>
         <button style={styles.secondaryBtn} onClick={onBack}>{t.back}</button>
-        <button style={styles.primaryBtnSm} onClick={onSubmit}>{t.loginBtn}</button>
+        <button style={styles.primaryBtnSm} onClick={handleSubmit} disabled={loading}>{loading ? t.loadingWait : t.loginBtn}</button>
       </div>
     </div>
   );
 }
 
-function SucursalSelect({ onBack, onPick, theme, onToggleTheme, lang, onToggleLang }) {
+function SucursalSelect({ allowed = [], userLabel, onLogout, onBack, onPick, theme, onToggleTheme, lang, onToggleLang }) {
   const t = STR[lang];
   return (
     <div style={styles.darkWrapScroll}>
@@ -2157,7 +2187,7 @@ function SucursalSelect({ onBack, onPick, theme, onToggleTheme, lang, onToggleLa
           <img src={`${import.meta.env.BASE_URL}logo-gold.png`} alt="Lucciano's" style={styles.darkLogoImgSmall} />
         </div>
         <div style={styles.branchList}>
-          {SUCURSALES.filter((s) => !HIDDEN_SUCURSALES.includes(s)).map((s) => (
+          {SUCURSALES.filter((s) => allowed.includes(s)).map((s) => (
             <button
               key={s}
               className="branch-card"
@@ -2172,12 +2202,13 @@ function SucursalSelect({ onBack, onPick, theme, onToggleTheme, lang, onToggleLa
             </button>
           ))}
         </div>
+        {onLogout && <LogoutLine user={userLabel} onLogout={onLogout} lang={lang} />}
       </div>
     </div>
   );
 }
 
-function SucursalMenu({ sucursal, onBack, onCompras, onStocks, theme, onToggleTheme, lang, onToggleLang }) {
+function SucursalMenu({ sucursal, onBack, onCompras, onStocks, userLabel, onLogout, theme, onToggleTheme, lang, onToggleLang }) {
   const t = STR[lang];
   return (
     <div style={styles.wrap}>
@@ -2194,6 +2225,7 @@ function SucursalMenu({ sucursal, onBack, onCompras, onStocks, theme, onToggleTh
           <div style={styles.roleDesc}>{t.stocksDesc}</div>
         </button>
       </div>
+      {onLogout && <LogoutLine user={userLabel} onLogout={onLogout} lang={lang} />}
     </div>
   );
 }

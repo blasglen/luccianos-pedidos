@@ -14,6 +14,12 @@
  *
  * Usuario y clave del Depósito: Configuración del proyecto (ícono ⚙️) →
  * Propiedades del script → DEPOSITO_EMAIL y DEPOSITO_PASSWORD.
+ *
+ * Usuarios de Sucursal: una propiedad por usuario, con nombre SUC_<usuario>
+ * y valor  <contraseña>|<Sucursal>,<Sucursal>   por ejemplo:
+ *   SUC_weston      →  laClave|Weston
+ *   SUC_fmvineland  →  otraClave|Florida Mall,Vineland
+ * El usuario del Depósito también entra en Sucursal y ve todas.
  */
 
 var TABLES = {
@@ -39,6 +45,11 @@ function handle_(req) {
     if (action === 'list') return out_({ ok: true, rows: list_(req.table) });
     if (action === 'insert') return withLock_(function () { insert_(req.table, req.row); return { ok: true }; });
     if (action === 'login') return out_({ ok: checkAuth_(req.email, req.password) });
+    if (action === 'branchLogin') return out_({ ok: true, sucursales: branchAuth_(req.user, req.password) });
+    if (action === 'delete') {
+      if (!checkAuth_(req.email, req.password)) return out_({ ok: false, error: 'auth' });
+      return withLock_(function () { delete_(req.table, req.id); return { ok: true }; });
+    }
     if (action === 'update') {
       if (!checkAuth_(req.email, req.password)) return out_({ ok: false, error: 'auth' });
       return withLock_(function () { update_(req.table, req.id, req.patch); return { ok: true }; });
@@ -60,6 +71,25 @@ function checkAuth_(email, password) {
   var okPass = String(props.getProperty('DEPOSITO_PASSWORD') || '');
   if (!okEmail || !okPass) return false;
   return String(email || '').trim().toLowerCase() === okEmail && String(password || '') === okPass;
+}
+
+var ALL_BRANCHES = ['Florida Mall', 'Vineland', 'Weston', 'American Dream', 'Aventura', 'Sawgrass'];
+
+function branchAuth_(user, password) {
+  user = String(user || '').trim().toLowerCase();
+  if (!user || !password) return [];
+  if (checkAuth_(user, password)) return ALL_BRANCHES;
+  var props = PropertiesService.getScriptProperties().getProperties();
+  for (var k in props) {
+    if (k.toUpperCase().indexOf('SUC_') !== 0) continue;
+    if (k.slice(4).trim().toLowerCase() !== user) continue;
+    var v = String(props[k]);
+    var sep = v.lastIndexOf('|');
+    if (sep < 0) return [];
+    if (v.slice(0, sep) !== String(password)) return [];
+    return v.slice(sep + 1).split(',').map(function (x) { return x.trim(); }).filter(String);
+  }
+  return [];
 }
 
 // ── Lectura / escritura ────────────────────────────────────────────────
@@ -129,6 +159,18 @@ function upsert_(table, r) {
     sh.appendRow(toRow_(table, r));
     writeDetail_(table, r);
   }
+}
+
+function delete_(table, id) {
+  var sh = sheet_(table);
+  var rowIdx = findRow_(sh, id);
+  if (rowIdx > 0) sh.deleteRow(rowIdx);
+  var detail = table === 'stock_counts' ? 'Conteos detalle' : (table === 'orders' ? 'Pedidos detalle' : null);
+  if (!detail) return;
+  var dsh = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(detail);
+  if (!dsh || dsh.getLastRow() < 2) return;
+  var ids = dsh.getRange(2, 1, dsh.getLastRow() - 1, 1).getValues();
+  for (var i = ids.length - 1; i >= 0; i--) if (String(ids[i][0]) === String(id)) dsh.deleteRow(i + 2);
 }
 
 function findRow_(sh, id) {

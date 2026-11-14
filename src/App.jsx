@@ -3735,7 +3735,7 @@ function StockImportPanel({ onImport, lang }) {
     <div style={styles.exportPanel}>
       <div style={{ fontWeight: 700, marginBottom: 6 }}>{t.histTitle}</div>
       <div style={{ fontSize: 13, color: "var(--muted)", marginBottom: 12 }}>{t.histSub}</div>
-      <input type="file" accept=".json,application/json" onChange={handleFile} style={{ fontSize: 13, marginBottom: 12 }} />
+      <input type="file" onChange={handleFile} style={{ fontSize: 13, marginBottom: 12 }} />
       {rows && (
         <div style={{ marginBottom: 12 }}>
           {rows.map((c) => (

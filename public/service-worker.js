@@ -1,4 +1,4 @@
-const CACHE_NAME = "luccianos-pedidos-v1";
+const CACHE_NAME = "luccianos-pedidos-v2";
 
 // Calcula la carpeta base automáticamente (funciona tanto en Vercel como en
 // GitHub Pages, sin necesidad de hardcodear la ruta).
@@ -24,8 +24,11 @@ self.addEventListener("activate", (event) => {
 // Network-first para navegación/datos, con fallback a caché si no hay conexión.
 self.addEventListener("fetch", (event) => {
   if (event.request.method !== "GET") return;
+  // La página (index.html) se pide siempre fresca, sin pasar por la caché del
+  // navegador: así una versión nueva se ve apenas se publica.
+  const req = event.request.mode === "navigate" ? new Request(event.request.url, { cache: "no-store" }) : event.request;
   event.respondWith(
-    fetch(event.request)
+    fetch(req)
       .then((res) => {
         const resClone = res.clone();
         caches.open(CACHE_NAME).then((cache) => cache.put(event.request, resClone));

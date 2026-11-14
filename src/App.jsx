@@ -620,6 +620,16 @@ const STR = {
     excelDownload: "Descargar Excel",
     analisisTitle: "Análisis",
     delStockBtn: "Eliminar este conteo",
+    histOpen: "Importar conteos históricos",
+    histTitle: "Importar conteos históricos",
+    histSub: "Elegí el archivo .json con los conteos armados a partir de las planillas Excel. Si un mes ya estaba importado, se reemplaza.",
+    histBadFile: "El archivo no tiene el formato esperado.",
+    histImport: (n) => `Importar ${n} ${n === 1 ? "conteo" : "conteos"}`,
+    histImporting: "Importando…",
+    histDone: (n) => `Listo: ${n} ${n === 1 ? "conteo importado" : "conteos importados"}.`,
+    histError: "No se pudo importar. Probá de nuevo.",
+    histWaste: "con desperdicio",
+    histClose: "Cerrar",
     delConfirmTitle: "¿Eliminar el conteo?",
     delConfirmBody: (s, d) => `Vas a eliminar el conteo de ${s} del ${d}. Deja de aparecer en la app, en el Excel y en el Análisis.`,
     delConfirmYes: "Sí, eliminar",
@@ -853,6 +863,16 @@ const STR = {
     excelDownload: "Download Excel",
     analisisTitle: "Analysis",
     delStockBtn: "Delete this count",
+    histOpen: "Import past counts",
+    histTitle: "Import past counts",
+    histSub: "Pick the .json file with the counts built from the Excel sheets. A month already imported is replaced.",
+    histBadFile: "The file doesn't have the expected format.",
+    histImport: (n) => `Import ${n} ${n === 1 ? "count" : "counts"}`,
+    histImporting: "Importing…",
+    histDone: (n) => `Done: ${n} ${n === 1 ? "count imported" : "counts imported"}.`,
+    histError: "Couldn't import. Try again.",
+    histWaste: "with waste",
+    histClose: "Close",
     delConfirmTitle: "Delete the count?",
     delConfirmBody: (s, d) => `You're deleting ${s}'s count from ${d}. It will no longer show in the app, the Excel or the Analysis.`,
     delConfirmYes: "Yes, delete",
@@ -1687,6 +1707,18 @@ export default function App() {
     setScreen("stock-confirm");
   }
 
+  // Importar conteos históricos (archivo .json armado a partir de las planillas Excel).
+  async function importStockCounts(rows) {
+    try {
+      await upsertRows("stock_counts", rows, depositoSession || {});
+    } catch (e) {
+      console.warn("stock_counts import error:", e);
+      return false;
+    }
+    await loadStockCounts();
+    return true;
+  }
+
   // Borrar un conteo desde el Depósito: pide de nuevo la clave. Se marca como
   // eliminado en la planilla (queda el registro con fecha de baja) y desaparece de la app.
   async function deleteStockCount(id, password) {
@@ -1978,6 +2010,7 @@ export default function App() {
           updateStatus={updateStatus}
           onImportOrders={importOrders}
           onDeleteStockCount={deleteStockCount}
+          onImportStockCounts={importStockCounts}
           userEmail={depositoSession?.email}
           onLogout={() => { clearSession(); setDepositoSession(null); setScreen("home"); }}
           theme={theme}
@@ -3380,7 +3413,7 @@ function DateRangePicker({ from, to, setFrom, setTo, lang }) {
   );
 }
 
-function Deposito({ onBack, loading, orders, allOrders, filterSucursal, setFilterSucursal, filterStatus, setFilterStatus, filterDateFrom, setFilterDateFrom, filterDateTo, setFilterDateTo, depositoView, setDepositoView, depositoSection, setDepositoSection, depositoStockView, setDepositoStockView, stockCounts, allStockCounts, stockExtraProducts = [], stockCountsLoading, expandedStockCount, setExpandedStockCount, expandedOrder, setExpandedOrder, updateStatus, onImportOrders, onDeleteStockCount, userEmail, onLogout, theme, onToggleTheme, lang, onToggleLang }) {
+function Deposito({ onBack, loading, orders, allOrders, filterSucursal, setFilterSucursal, filterStatus, setFilterStatus, filterDateFrom, setFilterDateFrom, filterDateTo, setFilterDateTo, depositoView, setDepositoView, depositoSection, setDepositoSection, depositoStockView, setDepositoStockView, stockCounts, allStockCounts, stockExtraProducts = [], stockCountsLoading, expandedStockCount, setExpandedStockCount, expandedOrder, setExpandedOrder, updateStatus, onImportOrders, onDeleteStockCount, onImportStockCounts, userEmail, onLogout, theme, onToggleTheme, lang, onToggleLang }) {
   const t = STR[lang];
   const pendingCount = allOrders.filter((o) => o.status === "pendiente").length;
   const [showExport, setShowExport] = useState(false);
@@ -3595,6 +3628,8 @@ function Deposito({ onBack, loading, orders, allOrders, filterSucursal, setFilte
             />
           </div>
 
+          {onImportStockCounts && <StockImportPanel onImport={onImportStockCounts} lang={lang} />}
+
           {stockCountsLoading && <div style={styles.emptyRow}>{t.loadingStocks}</div>}
           {!stockCountsLoading && stockCounts.length === 0 && <div style={styles.emptyRow}>{t.noStocksMatchFilter}</div>}
 
@@ -3663,6 +3698,62 @@ function buildAllOrdersExport(orders, lang = "es") {
     text += `\n${"-".repeat(40)}\n\n`;
   });
   return text;
+}
+
+function StockImportPanel({ onImport, lang }) {
+  const t = STR[lang];
+  const [open, setOpen] = useState(false);
+  const [rows, setRows] = useState(null);
+  const [msg, setMsg] = useState(null);
+  const [busy, setBusy] = useState(false);
+
+  async function handleFile(e) {
+    setMsg(null); setRows(null);
+    const f = e.target.files && e.target.files[0];
+    if (!f) return;
+    try {
+      const parsed = JSON.parse(await f.text());
+      const ok = Array.isArray(parsed) && parsed.length && parsed.every((c) => c && c.id && c.sucursal && c.date && Array.isArray(c.items));
+      if (!ok) throw new Error("format");
+      setRows(parsed);
+    } catch {
+      setMsg({ type: "error", text: t.histBadFile });
+    }
+  }
+  async function doImport() {
+    setBusy(true);
+    const ok = await onImport(rows);
+    setBusy(false);
+    setMsg(ok ? { type: "ok", text: t.histDone(rows.length) } : { type: "error", text: t.histError });
+    if (ok) setRows(null);
+  }
+
+  if (!open) {
+    return <button style={{ ...styles.secondaryBtn, marginBottom: 14 }} onClick={() => setOpen(true)}>{t.histOpen}</button>;
+  }
+  return (
+    <div style={styles.exportPanel}>
+      <div style={{ fontWeight: 700, marginBottom: 6 }}>{t.histTitle}</div>
+      <div style={{ fontSize: 13, color: "var(--muted)", marginBottom: 12 }}>{t.histSub}</div>
+      <input type="file" accept=".json,application/json" onChange={handleFile} style={{ fontSize: 13, marginBottom: 12 }} />
+      {rows && (
+        <div style={{ marginBottom: 12 }}>
+          {rows.map((c) => (
+            <div key={c.id} style={styles.detailLine}>
+              <span><strong>{c.sucursal}</strong> · {fmtDate(c.date, lang)}</span>
+              <span style={styles.detailQty}>{c.items.length} {t.items}{c.waste && c.waste.length ? ` · ${c.waste.length} ${t.histWaste}` : ""}</span>
+            </div>
+          ))}
+          <button style={{ ...styles.submitBtn, marginTop: 12 }} onClick={doImport} disabled={busy}>
+            {busy ? <Loader2 size={16} style={{ animation: "spin 1s linear infinite" }} /> : <Download size={16} />}
+            {busy ? t.histImporting : t.histImport(rows.length)}
+          </button>
+        </div>
+      )}
+      {msg && <div style={{ fontSize: 13, fontWeight: 600, color: msg.type === "ok" ? "var(--ok)" : "#B3261E", marginBottom: 8 }}>{msg.text}</div>}
+      <button style={styles.textLink} onClick={() => { setOpen(false); setRows(null); setMsg(null); }}>{t.histClose}</button>
+    </div>
+  );
 }
 
 function ExportPanel({ orders, onImport, lang }) {

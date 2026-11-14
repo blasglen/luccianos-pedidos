@@ -175,7 +175,7 @@ export default function Analisis({ stockCounts = [], catalog = [], theme = "day"
 
   const movers = useMemo(() => {
     const withPct = monthTable.filter((e) => e.pct !== null && e.prev >= 1);
-    const short = (e) => ({ name: e.item.length > 22 ? e.item.slice(0, 21) + "…" : e.item, full: e.item, pct: Math.round(Math.abs(e.pct)) });
+    const short = (e) => { const real = Math.round(Math.abs(e.pct)); return { name: e.item.length > 22 ? e.item.slice(0, 21) + "…" : e.item, full: e.item, real, pct: Math.min(real, 300) }; };
     return {
       down: [...withPct].filter((e) => e.pct < 0).sort((a, b) => a.pct - b.pct).slice(0, 5).map(short),
       up: [...withPct].filter((e) => e.pct > 0).sort((a, b) => b.pct - a.pct).slice(0, 5).map(short),
@@ -361,11 +361,11 @@ export default function Analisis({ stockCounts = [], catalog = [], theme = "day"
               <ResponsiveContainer width="100%" height={210}>
                 <BarChart data={movers[k]} layout="vertical" margin={{ top: 4, right: 52, left: 4, bottom: 0 }}>
                   <CartesianGrid horizontal={false} stroke={C.grid} />
-                  <XAxis type="number" {...axis} tickFormatter={(v) => `${v}%`} allowDecimals={false} />
+                  <XAxis type="number" {...axis} tickFormatter={(v) => `${v}%`} allowDecimals={false} domain={[0, (max) => Math.min(Math.max(max, 10), 300)]} />
                   <YAxis type="category" dataKey="name" {...axis} width={130} tick={{ fontSize: 10, fill: C.muted }} />
-                  <Tooltip {...tooltipStyle} formatter={(v) => [`${sign}${v}%`, es ? "Variación" : "Change"]} labelFormatter={(l, p) => (p && p[0] ? p[0].payload.full : l)} />
+                  <Tooltip {...tooltipStyle} formatter={(v, n, it) => [`${sign}${it.payload.real}%`, es ? "Variación" : "Change"]} labelFormatter={(l, p) => (p && p[0] ? p[0].payload.full : l)} />
                   <Bar dataKey="pct" fill={color} radius={4} barSize={14}>
-                    <LabelList dataKey="pct" position="right" formatter={(v) => `${sign}${v}%`} style={{ fontSize: 11, fill: C.muted }} />
+                    <LabelList dataKey="real" position="right" formatter={(v) => `${sign}${v.toLocaleString("es-AR")}%`} style={{ fontSize: 11, fill: C.muted }} />
                   </Bar>
                 </BarChart>
               </ResponsiveContainer>

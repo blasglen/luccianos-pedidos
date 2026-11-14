@@ -537,6 +537,7 @@ const STR = {
     savePassword: "Guardar contraseña",
     errChoosePassword: "Elegí una contraseña nueva.",
 
+    progressRestored: "Recuperamos el conteo que tenías a medias.",
     pinTitle: "Ingresá el PIN",
     pinSub: "Pedíselo a quien administra la herramienta si no lo tenés.",
     pinWrong: "PIN incorrecto. Probá de nuevo.",
@@ -814,6 +815,7 @@ const STR = {
     savePassword: "Save password",
     errChoosePassword: "Choose a new password.",
 
+    progressRestored: "We restored the count you had in progress.",
     pinTitle: "Enter the PIN",
     pinSub: "Ask whoever manages this tool if you don't have it.",
     pinWrong: "Wrong PIN. Try again.",
@@ -1203,6 +1205,24 @@ function countKindLabel(c, lang = "es") {
   if (c.type === "spot") return lang === "en" ? "Spot check" : "Inventario aleatorio";
   const per = c.period || null;
   return (lang === "en" ? "Monthly inventory" : "Inventario mensual") + (per ? ` · ${periodLabel(per, lang)}` : "");
+}
+
+// Borrador del conteo en curso, guardado en el celular a medida que se carga.
+// Si la app se cierra (o se va la batería) el manager retoma donde estaba.
+const DRAFT_MAX_AGE_MS = 10 * 24 * 60 * 60 * 1000; // 10 días
+function readStockProgress(sucursal) {
+  try {
+    const d = JSON.parse(localStorage.getItem("stock_progress_" + sucursal) || "null");
+    if (!d || Date.now() - new Date(d.savedAt).getTime() > DRAFT_MAX_AGE_MS) return null;
+    return d;
+  } catch { return null; }
+}
+function writeStockProgress(sucursal, data) {
+  try {
+    const hasAny = ["stock", "waste", "reception"].some((k) => data[k] && Object.keys(data[k]).length);
+    if (hasAny) localStorage.setItem("stock_progress_" + sucursal, JSON.stringify({ ...data, savedAt: new Date().toISOString() }));
+    else localStorage.removeItem("stock_progress_" + sucursal);
+  } catch {}
 }
 
 function readLastStock(sucursal) {
@@ -1813,6 +1833,30 @@ export default function App() {
     setToast({ type: "success", text: STR[lang].recSaved(items.length) });
     setScreen("sucursal-menu");
   }
+
+  // Guarda el avance del conteo en el celular y lo recupera al volver a entrar.
+  const progressFor = useRef(null);
+  const skipProgressSave = useRef(false);
+  useEffect(() => {
+    if (!sucursal) { progressFor.current = null; return; }
+    if (progressFor.current === sucursal) return;
+    progressFor.current = sucursal;
+    skipProgressSave.current = true;
+    const saved = readStockProgress(sucursal);
+    setStockDraft(saved && saved.stock ? saved.stock : {});
+    setWasteDraft(saved && saved.waste ? saved.waste : {});
+    setReceptionDraft(saved && saved.reception ? saved.reception : {});
+    if (saved && saved.recMeta) setReceptionMeta(saved.recMeta);
+    if (saved && saved.kind) setStockKind(saved.kind);
+    if (saved && ((saved.stock && Object.keys(saved.stock).length) || (saved.reception && Object.keys(saved.reception).length))) {
+      setToast({ type: "success", text: STR[lang].progressRestored });
+    }
+  }, [sucursal]);
+  useEffect(() => {
+    if (!sucursal || progressFor.current !== sucursal) return;
+    if (skipProgressSave.current) { skipProgressSave.current = false; return; }
+    writeStockProgress(sucursal, { stock: stockDraft, waste: wasteDraft, kind: stockKind, reception: receptionDraft, recMeta: receptionMeta });
+  }, [sucursal, stockDraft, wasteDraft, stockKind, receptionDraft, receptionMeta]);
 
   async function submitStockCount() {
     const items = draftToItems(stockDraft);

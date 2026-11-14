@@ -26,7 +26,7 @@
 
 var TABLES = {
   orders: { sheet: 'Pedidos', cols: ['id', 'fecha', 'sucursal', 'estado', 'cancelado_en', 'notas', 'cant_productos', 'json'] },
-  stock_counts: { sheet: 'Conteos', cols: ['id', 'fecha', 'sucursal', 'cant_productos', 'cant_desperdicio', 'json'] },
+  stock_counts: { sheet: 'Conteos', cols: ['id', 'fecha', 'sucursal', 'cant_productos', 'cant_desperdicio', 'json', 'tipo', 'periodo'] },
   stock_extra_products: { sheet: 'Productos extra', cols: ['id', 'categoria', 'producto', 'json'] },
   receptions: { sheet: 'Recepciones', cols: ['id', 'fecha', 'sucursal', 'origen_tipo', 'origen', 'remito', 'cargado_por', 'cant_productos', 'json'] },
 };
@@ -105,6 +105,10 @@ function sheet_(table) {
     sh = ss.insertSheet(def.sheet);
     sh.appendRow(def.cols);
     styleHeader_(sh, def.cols.length);
+  } else if (sh.getLastColumn() < def.cols.length) {
+    // Columnas nuevas (siempre agregadas al final): completar el encabezado.
+    sh.getRange(1, 1, 1, def.cols.length).setValues([def.cols]);
+    styleHeader_(sh, def.cols.length);
   }
   return sh;
 }
@@ -130,7 +134,7 @@ function toRow_(table, r) {
     return [r.id, toDate_(r.date), r.sucursal, r.status || 'pendiente', r.canceled_at ? toDate_(r.canceled_at) : '', r.notes || '', (r.items || []).length, json];
   }
   if (table === 'stock_counts') {
-    return [r.id, toDate_(r.date), r.sucursal, (r.items || []).length, (r.waste || []).length, json];
+    return [r.id, toDate_(r.date), r.sucursal, (r.items || []).length, (r.waste || []).length, json, r.type === 'spot' ? 'Aleatorio' : 'Mensual', r.period || ''];
   }
   if (table === 'receptions') {
     return [r.id, toDate_(r.date), r.sucursal, r.source_type || '', r.source || '', r.ref || '', r.origin || 'manual', (r.items || []).length, json];

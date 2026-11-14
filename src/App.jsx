@@ -614,6 +614,14 @@ const STR = {
     delStockBtn: "Eliminar este conteo",
     branchAuthEyebrow: "Sucursal",
     recTitle: "Recepciones",
+    kindMonthly: "Inventario mensual",
+    kindMonthlyDesc: "El cierre de un mes. Es el que se usa en el análisis.",
+    kindWhichMonth: "¿De qué mes es el inventario?",
+    kindSuggested: "sugerido",
+    kindStartMonthly: (m) => `Empezar inventario de ${m}`,
+    kindSpot: "Inventario aleatorio",
+    kindSpotDesc: "Un control en cualquier momento del mes.",
+    kindSpotShort: "Aleatorio",
     recDesc: "Cargar lo que llegó: proveedor o transferencia",
     recSubtitle: "Recepción de mercadería",
     recDate: "Fecha de recepción",
@@ -883,6 +891,14 @@ const STR = {
     delStockBtn: "Delete this count",
     branchAuthEyebrow: "Store",
     recTitle: "Receiving",
+    kindMonthly: "Monthly inventory",
+    kindMonthlyDesc: "A month-end close. This is what the analysis uses.",
+    kindWhichMonth: "Which month is this inventory for?",
+    kindSuggested: "suggested",
+    kindStartMonthly: (m) => `Start ${m} inventory`,
+    kindSpot: "Spot check",
+    kindSpotDesc: "A check at any time of the month.",
+    kindSpotShort: "Spot",
     recDesc: "Log what arrived: supplier or transfer",
     recSubtitle: "Goods received",
     recDate: "Date received",
@@ -1162,6 +1178,32 @@ function stockItemBreakdown(it) {
   if (it.units) parts.push(`${fmtStockNum(it.units)}${it.unit ? " " + it.unit : " u"}`);
   return parts.join(" + ");
 }
+// ── Tipo de inventario: mensual (cierre de un mes) o aleatorio (control en cualquier momento) ──
+function periodKey(y, m) { return `${y}-${String(m).padStart(2, "0")}`; }
+// Hasta el día 10 se sugiere el mes anterior (el cierre se cuenta los primeros días del mes siguiente).
+function suggestedPeriod(d = new Date()) {
+  const x = new Date(d);
+  if (x.getDate() <= 10) x.setDate(0);
+  return periodKey(x.getFullYear(), x.getMonth() + 1);
+}
+function periodLabel(key, lang = "es") {
+  if (!key) return "";
+  const [y, m] = key.split("-").map(Number);
+  const name = (lang === "en" ? MONTH_NAMES_EN : MONTH_NAMES_ES)[m - 1];
+  return `${lang === "en" ? name : name.charAt(0).toUpperCase() + name.slice(1)} ${y}`;
+}
+function recentPeriods(n = 13, d = new Date()) {
+  const out = [];
+  for (let i = 0; i < n; i++) { const x = new Date(d.getFullYear(), d.getMonth() - i + 1, 1); out.push(periodKey(x.getFullYear(), x.getMonth() + 1)); }
+  return out; // del mes siguiente hacia atrás
+}
+function countKindLabel(c, lang = "es") {
+  if (!c) return "";
+  if (c.type === "spot") return lang === "en" ? "Spot check" : "Inventario aleatorio";
+  const per = c.period || null;
+  return (lang === "en" ? "Monthly inventory" : "Inventario mensual") + (per ? ` · ${periodLabel(per, lang)}` : "");
+}
+
 function readLastStock(sucursal) {
   try { return JSON.parse(localStorage.getItem("last_stock_" + sucursal) || "{}"); } catch { return {}; }
 }
@@ -1271,7 +1313,7 @@ function buildMailto(order) {
 }
 
 function buildStockMailBody(stockCount, lang = "es") {
-  let body = `Raconto de inventario\nSucursal: ${stockCount.sucursal}\nFecha: ${fmtDate(stockCount.date)}\n\n`;
+  let body = `${countKindLabel(stockCount, lang) || "Raconto de inventario"}\nSucursal: ${stockCount.sucursal}\nFecha: ${fmtDate(stockCount.date)}\n\n`;
   STOCK_REAL_CATEGORIES.filter((v) => stockCount.items.some((it) => it.vendor === v)).forEach((v) => {
     body += `${getStockVendorLabel(v, lang)}\n`;
     stockCount.items.filter((it) => it.vendor === v).forEach((it) => {
@@ -1303,7 +1345,7 @@ function buildStockHtmlTable(stockCount, lang = "es") {
   const dataCellCenter = `${dataCell}text-align:center;`;
 
   let html = `<div style="${font}color:#000000;">`;
-  html += `<p style="margin:0 0 2px;"><strong>Raconto de inventario</strong></p>`;
+  html += `<p style="margin:0 0 2px;"><strong>${escapeHtml(countKindLabel(stockCount, lang) || "Raconto de inventario")}</strong></p>`;
   html += `<p style="margin:0 0 2px;">Sucursal: ${escapeHtml(stockCount.sucursal)}</p>`;
   html += `<p style="margin:0 0 14px;">Fecha: ${escapeHtml(fmtDate(stockCount.date))}</p>`;
 
@@ -1343,7 +1385,7 @@ function buildStockHtmlTable(stockCount, lang = "es") {
 }
 
 function buildStockMailto(stockCount, lang = "es") {
-  const subject = `Raconto de inventario - ${stockCount.sucursal} - ${fmtDate(stockCount.date)}`;
+  const subject = `${countKindLabel(stockCount, lang) || "Raconto de inventario"} - ${stockCount.sucursal} - ${fmtDate(stockCount.date)}`;
   const body = buildStockMailBody(stockCount, lang);
   return `mailto:${ORDER_EMAIL}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
 }
@@ -1362,6 +1404,7 @@ export default function App() {
   const [stockDraft, setStockDraft] = useState({});
   const [wasteDraft, setWasteDraft] = useState({});
   const [stockStage, setStockStage] = useState("stock"); // "stock" | "waste"
+  const [stockKind, setStockKind] = useState({ type: "monthly", period: suggestedPeriod() });
   const [receptionDraft, setReceptionDraft] = useState({});
   const emptyReceptionMeta = () => ({ date: new Date().toLocaleDateString("en-CA"), sourceType: "proveedor", sourceName: "", ref: "" });
   const [receptionMeta, setReceptionMeta] = useState(emptyReceptionMeta);
@@ -1444,9 +1487,12 @@ export default function App() {
       case "reception-form":
         setScreen("sucursal-menu");
         break;
+      case "stock-kind":
+        setScreen("sucursal-menu");
+        break;
       case "stock-form":
         if (stockStage === "waste") { setStockStage("stock"); break; }
-        setScreen("sucursal-menu");
+        setScreen("stock-kind");
         break;
       case "sucursal-history":
         setScreen("order-form");
@@ -1771,6 +1817,8 @@ export default function App() {
       date: new Date().toISOString(),
       items,
       ...(waste.length ? { waste } : {}),
+      type: stockKind.type,
+      ...(stockKind.type === "monthly" ? { period: stockKind.period } : {}),
     };
     // El raconto se envía por mail desde la pantalla de confirmación.
     // Guardarlo en la base de datos es opcional: si falla, se sigue igual.
@@ -1962,7 +2010,7 @@ export default function App() {
           sucursal={sucursal}
           onBack={goBack}
           onCompras={() => setScreen("order-form")}
-          onStocks={() => setScreen("stock-form")}
+          onStocks={() => setScreen("stock-kind")}
           onRecepcion={() => { setStockActiveVendor(STOCK_VENDOR_ORDER[0]); setStockSearch(""); setScreen("reception-form"); }}
           userLabel={singleBranch ? branchSession?.user : null}
           onLogout={singleBranch ? branchLogout : null}
@@ -2035,8 +2083,19 @@ export default function App() {
         />
       )}
 
+      {screen === "stock-kind" && (
+        <StockKindPicker
+          sucursal={sucursal}
+          kind={stockKind}
+          onBack={goBack}
+          onPick={(k) => { setStockKind(k); setScreen("stock-form"); }}
+          theme={theme} onToggleTheme={toggleTheme} lang={lang} onToggleLang={toggleLang}
+        />
+      )}
+
       {screen === "stock-form" && (
         <StockForm
+          kindLabel={countKindLabel(stockKind, lang)}
           sucursal={sucursal}
           onBack={goBack}
           activeVendor={stockActiveVendor}
@@ -2800,7 +2859,43 @@ function ReceptionHeader({ meta, setMeta, sucursal, lang }) {
   );
 }
 
-function StockForm({ sucursal, onBack, activeVendor, setActiveVendor, search, setSearch, draft, setQty, mode = "stock", stockCountN = 0, onStartWaste, receptionMeta, setReceptionMeta, gelatoTare = "", setGelatoTare, onSubmit, submitting, extraProducts, onAddProduct, theme, onToggleTheme, lang, onToggleLang }) {
+function StockKindPicker({ sucursal, kind, onBack, onPick, theme, onToggleTheme, lang, onToggleLang }) {
+  const t = STR[lang];
+  const [period, setPeriod] = useState(kind && kind.type === "monthly" && kind.period ? kind.period : suggestedPeriod());
+  const periods = recentPeriods();
+  return (
+    <div style={styles.wrap}>
+      <TopBar onBack={onBack} title={sucursal} subtitle={t.stocksTitle} theme={theme} onToggleTheme={onToggleTheme} lang={lang} onToggleLang={onToggleLang} />
+      <div style={{ ...styles.roleGrid, marginTop: 8, maxWidth: 520 }}>
+        <div style={{ ...styles.roleCard, display: "block", cursor: "default" }}>
+          <div style={{ display: "flex", gap: 14, alignItems: "center" }}>
+            <span style={styles.kindIcon}><CalendarDays size={24} strokeWidth={1.7} /></span>
+            <div>
+              <div style={styles.roleTitle}>{t.kindMonthly}</div>
+              <div style={styles.roleDesc}>{t.kindMonthlyDesc}</div>
+            </div>
+          </div>
+          <label style={{ display: "flex", flexDirection: "column", gap: 4, marginTop: 14 }}>
+            <span style={styles.stockFieldLabel}>{t.kindWhichMonth}</span>
+            <select style={styles.authInput} value={period} onChange={(e) => setPeriod(e.target.value)}>
+              {periods.map((p) => <option key={p} value={p}>{periodLabel(p, lang)}{p === suggestedPeriod() ? ` (${t.kindSuggested})` : ""}</option>)}
+            </select>
+          </label>
+          <button style={{ ...styles.submitBtn, marginTop: 4 }} onClick={() => onPick({ type: "monthly", period })}>
+            {t.kindStartMonthly(periodLabel(period, lang))}
+          </button>
+        </div>
+        <button className="role-card" style={styles.roleCard} onClick={() => onPick({ type: "spot" })}>
+          <ClipboardList size={26} strokeWidth={1.7} />
+          <div style={styles.roleTitle}>{t.kindSpot}</div>
+          <div style={styles.roleDesc}>{t.kindSpotDesc}</div>
+        </button>
+      </div>
+    </div>
+  );
+}
+
+function StockForm({ kindLabel, sucursal, onBack, activeVendor, setActiveVendor, search, setSearch, draft, setQty, mode = "stock", stockCountN = 0, onStartWaste, receptionMeta, setReceptionMeta, gelatoTare = "", setGelatoTare, onSubmit, submitting, extraProducts, onAddProduct, theme, onToggleTheme, lang, onToggleLang }) {
   const t = STR[lang];
   const [focusedKey, setFocusedKey] = useState(null);
   const frozenHadValueRef = useRef(false);
@@ -2886,7 +2981,7 @@ function StockForm({ sucursal, onBack, activeVendor, setActiveVendor, search, se
 
   return (
     <div style={styles.wrap}>
-      <TopBar onBack={onBack} title={sucursal} subtitle={isWaste ? t.wasteSubtitle : isReception ? t.recSubtitle : t.stockSubtitle} theme={theme} onToggleTheme={onToggleTheme} lang={lang} onToggleLang={onToggleLang} />
+      <TopBar onBack={onBack} title={sucursal} subtitle={isWaste ? t.wasteSubtitle : isReception ? t.recSubtitle : (kindLabel || t.stockSubtitle)} theme={theme} onToggleTheme={onToggleTheme} lang={lang} onToggleLang={onToggleLang} />
       {isReception && receptionMeta && (
         <ReceptionHeader meta={receptionMeta} setMeta={setReceptionMeta} sucursal={sucursal} lang={lang} />
       )}
@@ -3243,7 +3338,7 @@ function withPreviousCount(stockCount, allStockCounts = []) {
   if (stockCount.prev && Object.keys(stockCount.prev).length) return stockCount;
   const t = new Date(stockCount.date).getTime();
   const prev = allStockCounts
-    .filter((c) => c.sucursal === stockCount.sucursal && c.id !== stockCount.id && new Date(c.date).getTime() < t)
+    .filter((c) => c.sucursal === stockCount.sucursal && c.id !== stockCount.id && c.type !== "spot" && new Date(c.date).getTime() < t)
     .sort((a, b) => new Date(b.date) - new Date(a.date))[0];
   if (!prev) return stockCount;
   const map = {};
@@ -3309,6 +3404,7 @@ function StockConfirm({ sucursal, lastStockCount, onNewCount, onMenu, onHome, ex
     <div style={styles.center}>
       <CheckCircle2 size={48} color="var(--pistachio-dark)" strokeWidth={1.5} />
       <h1 style={styles.h1}>{t.stockSent}</h1>
+      {lastStockCount && <div style={{ ...styles.eyebrow, marginTop: -2 }}>{countKindLabel(lastStockCount, lang)}</div>}
       <p style={styles.sub}>{t.stockConfirmSub(sucursal)}</p>
       <p style={{ ...styles.sub, fontSize: 13, marginTop: 4 }}>
         {t.alsoByMail(ORDER_EMAIL)}<strong>{ORDER_EMAIL}</strong>:
@@ -4130,6 +4226,7 @@ function OrderCard({ order, expanded, onToggle, showSucursal, actions, allOrders
 
 function StockCountCard({ stockCount, expanded, onToggle, allStockCounts = [], extraProducts = [], onDelete, lang = "es" }) {
   const t = STR[lang];
+  const kindTag = stockCount.type === "spot" ? t.kindSpotShort : (stockCount.period ? periodLabel(stockCount.period, lang) : null);
   const [excelState, setExcelState] = useState("idle");
   const [delStep, setDelStep] = useState(null); // null | "confirm" | "password"
   const [delPass, setDelPass] = useState("");
@@ -4159,7 +4256,7 @@ function StockCountCard({ stockCount, expanded, onToggle, allStockCounts = [], e
     <div style={styles.orderCard}>
       <button style={styles.orderCardHead} onClick={onToggle}>
         <div>
-          <div style={styles.orderCardTitle}>{stockCount.sucursal}</div>
+          <div style={styles.orderCardTitle}>{stockCount.sucursal}{kindTag && <span style={{ ...styles.kindBadge, ...(stockCount.type === "spot" ? styles.kindBadgeSpot : {}) }}>{kindTag}</span>}</div>
           <div style={styles.orderCardDate}>{fmtDate(stockCount.date, lang)} · {stockCount.items.length} {t.items}</div>
         </div>
         {expanded ? <ChevronUp size={18} color="var(--muted-faint)" /> : <ChevronDown size={18} color="var(--muted-faint)" />}
@@ -4274,6 +4371,9 @@ function TopBar({ onBack, title, subtitle, theme, onToggleTheme, lang, onToggleL
 }
 
 const styles = {
+  kindBadge: { marginLeft: 8, padding: "2px 8px", borderRadius: 999, background: "var(--paper-2)", color: "var(--gold)", fontSize: 11, fontWeight: 700, verticalAlign: "middle", textTransform: "uppercase", letterSpacing: "0.04em" },
+  kindBadgeSpot: { color: "var(--muted)" },
+  kindIcon: { width: 52, height: 52, borderRadius: 16, background: "var(--paper-2)", color: "var(--plum)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 },
   recCard: { background: "var(--paper)", border: "1px solid var(--line)", borderRadius: 18, padding: "14px 16px", marginBottom: 14, boxShadow: "var(--shadow-sm)" },
   recRow: { display: "flex", gap: 10, flexWrap: "wrap" },
   recField: { display: "flex", flexDirection: "column", gap: 4, flex: "1 1 150px", minWidth: 0 },

@@ -33,7 +33,12 @@ function fileDate(iso) {
   return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}`;
 }
 
+const MES = ["Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio", "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"];
+function periodText(p) { if (!p) return ""; const [y, m] = p.split("-").map(Number); return `${MES[m - 1]} ${y}`; }
+
 export function stockExcelFileName(stockCount) {
+  if (stockCount.type === "spot") return `Inventario aleatorio ${stockCount.sucursal} - ${fileDate(stockCount.date)}.xlsx`;
+  if (stockCount.period) return `Inventario ${stockCount.sucursal} - ${periodText(stockCount.period)}.xlsx`;
   return `Inventario ${stockCount.sucursal} - ${fileDate(stockCount.date)}.xlsx`;
 }
 
@@ -76,7 +81,10 @@ export async function buildStockWorkbook(stockCount, catalog, lang = "es") {
   // Título
   ws.mergeCells(`A1:${lastCol}1`);
   const title = ws.getCell("A1");
-  title.value = es ? "LUCCIANO'S · RACONTO DE INVENTARIO" : "LUCCIANO'S · INVENTORY COUNT";
+  const kindTxt = stockCount.type === "spot" ? (es ? "INVENTARIO ALEATORIO" : "SPOT CHECK")
+    : stockCount.period ? `${es ? "INVENTARIO MENSUAL" : "MONTHLY INVENTORY"} · ${periodText(stockCount.period).toUpperCase()}`
+    : (es ? "RACONTO DE INVENTARIO" : "INVENTORY COUNT");
+  title.value = `LUCCIANO'S · ${kindTxt}`;
   title.font = { name: "Arial", size: 16, bold: true, color: { argb: C.gold } };
   title.fill = { type: "pattern", pattern: "solid", fgColor: { argb: C.black } };
   title.alignment = { vertical: "middle", horizontal: "left", indent: 1 };

@@ -78,7 +78,8 @@ function buildMonthly(counts) {
   const byBM = {};
   counts.forEach((c) => {
     if (!BRANCHES.includes(c.sucursal)) return;
-    const mk = monthKeyOf(c.date);
+    if (c.type === "spot") return; // los aleatorios no entran al análisis mes a mes
+    const mk = c.period || monthKeyOf(c.date);
     const k = c.sucursal + "|" + mk;
     if (!byBM[k] || new Date(c.date) > new Date(byBM[k].date)) byBM[k] = c;
   });

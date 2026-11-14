@@ -615,6 +615,7 @@ const STR = {
     nCounted: (n) => `${n} ${n === 1 ? "producto contado" : "productos contados"}`,
     nInOrder: (n) => `${n} ${n === 1 ? "producto en el pedido" : "productos en el pedido"}`,
     excelBtn: "Descargar / compartir Excel",
+    excelDownload: "Descargar Excel",
     excelWorking: "Armando el Excel…",
     excelDone: "Excel listo",
     excelError: "No se pudo generar el Excel. Probá de nuevo.",
@@ -834,6 +835,7 @@ const STR = {
     nCounted: (n) => `${n} ${n === 1 ? "product counted" : "products counted"}`,
     nInOrder: (n) => `${n} ${n === 1 ? "product in the order" : "products in the order"}`,
     excelBtn: "Download / share Excel",
+    excelDownload: "Download Excel",
     excelWorking: "Building the Excel…",
     excelDone: "Excel ready",
     excelError: "Couldn't build the Excel. Try again.",
@@ -1922,6 +1924,7 @@ export default function App() {
           setDepositoStockView={setDepositoStockView}
           stockCounts={depositoStockCounts}
           allStockCounts={stockCounts}
+          stockExtraProducts={stockExtraProducts}
           stockCountsLoading={stockCountsLoading}
           expandedStockCount={expandedStockCount}
           setExpandedStockCount={setExpandedStockCount}
@@ -2925,6 +2928,51 @@ function Confirm({ sucursal, lastOrder, onNewOrder, onHistory, onHome, lang }) {
   );
 }
 
+// Arma el Excel de un conteo y lo comparte (celular) o lo descarga (compu).
+// Devuelve "done", "cancel" o lanza error.
+async function shareOrDownloadStockExcel(stockCount, extraProducts, lang) {
+  const { buildStockWorkbook, stockExcelFileName } = await import("./stockExcel.js");
+  const catalog = STOCK_REAL_CATEGORIES.map((cat) => ({
+    category: cat,
+    label: getStockVendorLabel(cat, lang),
+    products: [
+      ...STOCK_VENDORS[cat],
+      ...extraProducts.filter((e) => e.category === cat).map((e) => ({ item: e.item, code: e.code || "" })),
+    ],
+  }));
+  const blob = await buildStockWorkbook(stockCount, catalog, lang);
+  const name = stockExcelFileName(stockCount);
+  const file = new File([blob], name, { type: blob.type });
+  const isTouch = typeof window !== "undefined" && window.matchMedia && window.matchMedia("(pointer: coarse)").matches;
+  if (isTouch && navigator.canShare && navigator.canShare({ files: [file] })) {
+    try {
+      await navigator.share({ files: [file], title: name });
+      return "done";
+    } catch (e) {
+      if (e && e.name === "AbortError") return "cancel";
+    }
+  }
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url; a.download = name;
+  document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 4000);
+  return "done";
+}
+
+// Conteo anterior de la misma sucursal (para las columnas Anterior / Diferencia del Excel).
+function withPreviousCount(stockCount, allStockCounts = []) {
+  if (stockCount.prev && Object.keys(stockCount.prev).length) return stockCount;
+  const t = new Date(stockCount.date).getTime();
+  const prev = allStockCounts
+    .filter((c) => c.sucursal === stockCount.sucursal && c.id !== stockCount.id && new Date(c.date).getTime() < t)
+    .sort((a, b) => new Date(b.date) - new Date(a.date))[0];
+  if (!prev) return stockCount;
+  const map = {};
+  (prev.items || []).forEach((it) => { map[it.vendor + "|" + it.item] = it.quantity; });
+  return { ...stockCount, prev: map, prevDate: prev.date };
+}
+
 function StockConfirm({ sucursal, lastStockCount, onNewCount, onMenu, onHome, extraProducts = [], lang }) {
   const t = STR[lang];
   const [excelState, setExcelState] = useState("idle"); // idle | working | done | error
@@ -2933,38 +2981,14 @@ function StockConfirm({ sucursal, lastStockCount, onNewCount, onMenu, onHome, ex
     if (!lastStockCount) return;
     setExcelState("working");
     try {
-      const { buildStockWorkbook, stockExcelFileName } = await import("./stockExcel.js");
-      const catalog = STOCK_REAL_CATEGORIES.map((cat) => ({
-        category: cat,
-        label: getStockVendorLabel(cat, lang),
-        products: [
-          ...STOCK_VENDORS[cat],
-          ...extraProducts.filter((e) => e.category === cat).map((e) => ({ item: e.item, code: e.code || "" })),
-        ],
-      }));
-      const blob = await buildStockWorkbook(lastStockCount, catalog, lang);
-      const name = stockExcelFileName(lastStockCount);
-      const file = new File([blob], name, { type: blob.type });
-      if (navigator.canShare && navigator.canShare({ files: [file] })) {
-        try {
-          await navigator.share({ files: [file], title: name });
-          setExcelState("done");
-          return;
-        } catch (e) {
-          if (e && e.name === "AbortError") { setExcelState("idle"); return; }
-        }
-      }
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = url; a.download = name;
-      document.body.appendChild(a); a.click(); a.remove();
-      setTimeout(() => URL.revokeObjectURL(url), 4000);
-      setExcelState("done");
+      const r = await shareOrDownloadStockExcel(lastStockCount, extraProducts, lang);
+      setExcelState(r === "cancel" ? "idle" : "done");
     } catch (e) {
       console.error("excel error:", e);
       setExcelState("error");
     }
   }
+
 
   const textRef = useRef(null);
   const [selected, setSelected] = useState(false);
@@ -3310,7 +3334,7 @@ function DateRangePicker({ from, to, setFrom, setTo, lang }) {
   );
 }
 
-function Deposito({ onBack, loading, orders, allOrders, filterSucursal, setFilterSucursal, filterStatus, setFilterStatus, filterDateFrom, setFilterDateFrom, filterDateTo, setFilterDateTo, depositoView, setDepositoView, depositoSection, setDepositoSection, depositoStockView, setDepositoStockView, stockCounts, allStockCounts, stockCountsLoading, expandedStockCount, setExpandedStockCount, expandedOrder, setExpandedOrder, updateStatus, onImportOrders, userEmail, onLogout, theme, onToggleTheme, lang, onToggleLang }) {
+function Deposito({ onBack, loading, orders, allOrders, filterSucursal, setFilterSucursal, filterStatus, setFilterStatus, filterDateFrom, setFilterDateFrom, filterDateTo, setFilterDateTo, depositoView, setDepositoView, depositoSection, setDepositoSection, depositoStockView, setDepositoStockView, stockCounts, allStockCounts, stockExtraProducts = [], stockCountsLoading, expandedStockCount, setExpandedStockCount, expandedOrder, setExpandedOrder, updateStatus, onImportOrders, userEmail, onLogout, theme, onToggleTheme, lang, onToggleLang }) {
   const t = STR[lang];
   const pendingCount = allOrders.filter((o) => o.status === "pendiente").length;
   const [showExport, setShowExport] = useState(false);
@@ -3517,6 +3541,7 @@ function Deposito({ onBack, loading, orders, allOrders, filterSucursal, setFilte
                   expanded={expandedStockCount === c.id}
                   onToggle={() => setExpandedStockCount(expandedStockCount === c.id ? null : c.id)}
                   allStockCounts={allStockCounts}
+                  extraProducts={stockExtraProducts}
                   lang={lang}
                 />
               ))}
@@ -3746,8 +3771,20 @@ function OrderCard({ order, expanded, onToggle, showSucursal, actions, allOrders
   );
 }
 
-function StockCountCard({ stockCount, expanded, onToggle, lang = "es" }) {
+function StockCountCard({ stockCount, expanded, onToggle, allStockCounts = [], extraProducts = [], lang = "es" }) {
   const t = STR[lang];
+  const [excelState, setExcelState] = useState("idle");
+  async function handleExcel(e) {
+    e && e.stopPropagation();
+    setExcelState("working");
+    try {
+      const r = await shareOrDownloadStockExcel(withPreviousCount(stockCount, allStockCounts), extraProducts, lang);
+      setExcelState(r === "cancel" ? "idle" : "done");
+    } catch (err) {
+      console.error("excel error:", err);
+      setExcelState("error");
+    }
+  }
   return (
     <div style={styles.orderCard}>
       <button style={styles.orderCardHead} onClick={onToggle}>
@@ -3759,6 +3796,14 @@ function StockCountCard({ stockCount, expanded, onToggle, lang = "es" }) {
       </button>
       {expanded && (
         <div style={styles.orderCardBody}>
+          <button
+            onClick={handleExcel}
+            disabled={excelState === "working"}
+            style={{ ...styles.submitBtn, background: "var(--pistachio-dark)", margin: "0 0 14px" }}
+          >
+            {excelState === "working" ? <Loader2 size={16} style={{ animation: "spin 1s linear infinite" }} /> : excelState === "done" ? <CheckCircle2 size={16} /> : <Download size={16} />}
+            {excelState === "working" ? t.excelWorking : excelState === "done" ? t.excelDone : excelState === "error" ? t.excelError : t.excelDownload}
+          </button>
           {STOCK_REAL_CATEGORIES.filter((v) => stockCount.items.some((it) => it.vendor === v)).map((v) => (
             <div key={v} style={{ marginBottom: 10 }}>
               <div style={styles.vendorLabel}>{getStockVendorLabel(v, lang)}</div>

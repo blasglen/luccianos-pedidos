@@ -49,7 +49,7 @@ function handle_(req) {
     if (action === 'insert') {
       var res = withLockRaw_(function () { return insert_(req.table, req.row); });
       var mailed = null;
-      if (req.table === 'stock_counts' && res !== 'dup') { try { mailed = mailStockCount_(req.row); } catch (err) { mailed = null; } }
+      if (req.table === 'stock_counts' && res !== 'dup') { try { mailed = mailStockCount_(req.row, req.excel); } catch (err) { mailed = null; } }
       return out_({ ok: true, mailed: mailed });
     }
     if (action === 'login') return out_({ ok: checkAuth_(req.email, req.password) });
@@ -269,7 +269,7 @@ function out_(obj) {
 var MESES_ = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
 var CAT_LABEL_ = { PAPER: 'Papel', 'COFFEE CORNER': 'Rincón Café', 'GRAB & GO': 'Grab & Go', OTHERS: 'Otros', INGREDIENTS: 'Ingredientes', ALFAJORES: 'Alfajores', 'ICE POPS': 'Paletas', GELATO: 'Gelato' };
 
-function mailStockCount_(r) {
+function mailStockCount_(r, excel) {
   var props = PropertiesService.getScriptProperties();
   var to = String(props.getProperty('NOTIFY_EMAIL') || props.getProperty('DEPOSITO_EMAIL') || '').trim();
   if (!to) return null;
@@ -304,8 +304,12 @@ function mailStockCount_(r) {
     '<div style="color:#6e625e;font-size:13px">' + fecha + ' · ' + (r.items || []).length + ' productos' + ((r.waste || []).length ? ' · ' + r.waste.length + ' con desperdicio' : '') + '</div>' +
     table(r.items || [], false) +
     ((r.waste || []).length ? '<h2 style="margin:26px 0 0;color:#B3261E;font-size:16px">Desperdicio</h2>' + table(r.waste, true) : '') +
-    '<p style="color:#6e625e;font-size:12px;margin-top:22px">El Excel completo se descarga desde la app → Depósito → Stocks.</p></div>';
-  MailApp.sendEmail({ to: to, subject: "Lucciano's · " + r.sucursal + ' · ' + kind, htmlBody: html, name: "Lucciano's App" });
+    '<p style="color:#6e625e;font-size:12px;margin-top:22px">Va adjunto el Excel del conteo. También se descarga desde la app → Depósito → Stocks.</p></div>';
+  var msg = { to: to, subject: "Lucciano's · " + r.sucursal + ' · ' + kind, htmlBody: html, name: "Lucciano's App" };
+  if (excel && excel.b64) {
+    msg.attachments = [Utilities.newBlob(Utilities.base64Decode(excel.b64), 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', String(excel.name || 'Inventario.xlsx'))];
+  }
+  MailApp.sendEmail(msg);
   return to;
 }
 

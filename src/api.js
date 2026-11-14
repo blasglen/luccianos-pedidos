@@ -29,8 +29,8 @@ export async function listRows(table) {
   return data.rows || [];
 }
 
-export async function insertRow(table, row) {
-  return await call({ action: "insert", table, row });
+export async function insertRow(table, row, extra = {}) {
+  return await call({ action: "insert", table, row, ...extra }, { timeoutMs: 40000 });
 }
 
 export async function updateRow(table, id, patch, auth) {

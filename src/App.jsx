@@ -1912,7 +1912,10 @@ export default function App() {
     // Guardarlo en la base de datos es opcional: si falla, se sigue igual.
     setStockSubmitting(true);
     if (apiConfigured()) {
-      try { const res = await insertRow("stock_counts", newCount); if (res && res.mailed) newCount.mailedTo = res.mailed; }
+      let excel = null;
+      try { excel = await stockExcelBase64(withEntries(withPreviousCount(newCount, stockCounts), receptions), stockExtraProducts, lang); }
+      catch (e) { console.warn("excel para mail:", e); }
+      try { const res = await insertRow("stock_counts", newCount, excel ? { excel } : {}); if (res && res.mailed) newCount.mailedTo = res.mailed; }
       catch (e) {
         console.warn("stock_counts insert skipped:", e);
         setToast({ type: "error", text: STR[lang].warnNotSavedMail });
@@ -3418,6 +3421,24 @@ function Confirm({ sucursal, lastOrder, onNewOrder, onHistory, onHome, lang }) {
 
 // Arma el Excel de un conteo y lo comparte (celular) o lo descarga (compu).
 // Devuelve "done", "cancel" o lanza error.
+// Arma el Excel del conteo y lo devuelve en base64 (para adjuntarlo al mail automático).
+async function stockExcelBase64(stockCount, extraProducts, lang) {
+  const { buildStockWorkbook, stockExcelFileName } = await import("./stockExcel.js");
+  const catalog = STOCK_REAL_CATEGORIES.map((cat) => ({
+    category: cat,
+    label: getStockVendorLabel(cat, lang),
+    products: [
+      ...STOCK_VENDORS[cat],
+      ...extraProducts.filter((e) => e.category === cat).map((e) => ({ item: e.item, code: e.code || "" })),
+    ],
+  }));
+  const blob = await buildStockWorkbook(stockCount, catalog, lang);
+  const buf = new Uint8Array(await blob.arrayBuffer());
+  let bin = "";
+  for (let i = 0; i < buf.length; i += 0x8000) bin += String.fromCharCode.apply(null, buf.subarray(i, i + 0x8000));
+  return { name: stockExcelFileName(stockCount), b64: btoa(bin) };
+}
+
 async function shareOrDownloadStockExcel(stockCount, extraProducts, lang) {
   const { buildStockWorkbook, stockExcelFileName } = await import("./stockExcel.js");
   const catalog = STOCK_REAL_CATEGORIES.map((cat) => ({

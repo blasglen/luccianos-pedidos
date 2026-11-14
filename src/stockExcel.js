@@ -255,6 +255,88 @@ export async function buildStockWorkbook(stockCount, catalog, lang = "es") {
     });
   }
 
+  // ── Hoja Entradas por semana (solo inventario mensual con entradas) ──
+  // stockCount.entries: [{ vendor, item, week, qty, unit }] ya normalizado
+  // (recepciones del mes + entradas históricas de la planilla; las
+  // transferencias enviadas a otra sucursal vienen en negativo).
+  const entries = stockCount.entries || [];
+  const weeks = stockCount.weeks || [];
+  if (entries.length && weeks.length) {
+    const nW = weeks.length;
+    const wsE = wb.addWorksheet(es ? "Entradas" : "Received", {
+      views: [{ state: "frozen", xSplit: 2, ySplit: 4, showGridLines: false }],
+      pageSetup: { orientation: "landscape", fitToPage: true, fitToWidth: 1, fitToHeight: 0 },
+    });
+    wsE.columns = [{ width: 5 }, { width: 52 }, { width: 8 }, ...weeks.map(() => ({ width: 11 })), { width: 12 }];
+    const lastE = String.fromCharCode(65 + 3 + nW); // A + 3 + nW = columna Total
+    wsE.mergeCells(`A1:${lastE}1`);
+    const te = wsE.getCell("A1");
+    te.value = `${es ? "ENTRADAS POR SEMANA" : "RECEIVED BY WEEK"} · ${stockCount.sucursal} · ${periodText(stockCount.period).toUpperCase()}`;
+    te.font = { name: "Arial", size: 14, bold: true, color: { argb: C.gold } };
+    te.fill = { type: "pattern", pattern: "solid", fgColor: { argb: C.black } };
+    te.alignment = { vertical: "middle", indent: 1 };
+    wsE.getRow(1).height = 28;
+    wsE.mergeCells(`A2:${lastE}2`);
+    const ne = wsE.getCell("A2");
+    ne.value = es
+      ? "Semanas de lunes a domingo, cortadas en el cambio de mes. Incluye pedidos de proveedores y transferencias recibidas; lo enviado a otra sucursal va en negativo."
+      : "Monday–Sunday weeks, cut at month end. Includes supplier deliveries and transfers received; transfers sent to another store are negative.";
+    ne.font = { name: "Arial", size: 9, italic: true, color: { argb: C.muted } };
+    ne.alignment = { indent: 1, wrapText: true };
+    wsE.getRow(2).height = 26;
+    const he = wsE.getRow(4);
+    he.values = ["#", es ? "Producto" : "Product", es ? "Unidad" : "Unit", ...weeks.map((w) => `${es ? "Sem" : "Wk"} ${w.n}\n${w.from}–${w.to}`), "TOTAL"];
+    he.height = 30;
+    he.eachCell((cell, col) => {
+      cell.font = { name: "Arial", size: 10, bold: true, color: { argb: "FFFFFFFF" } };
+      cell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: C.black } };
+      cell.alignment = { vertical: "middle", horizontal: col === 2 ? "left" : "center", wrapText: true };
+      cell.border = border;
+    });
+    const byKey = {};
+    entries.forEach((e) => {
+      const k = e.vendor + "|" + e.item;
+      if (!byKey[k]) byKey[k] = { unit: e.unit, w: Array(nW).fill(0) };
+      const i = Math.min(Math.max(1, e.week || 1), nW) - 1;
+      byKey[k].w[i] += Number(e.qty) || 0;
+    });
+    let re = 5;
+    const firstE = re;
+    catalog.forEach((cat) => {
+      const prods = cat.products.filter((p) => byKey[cat.category + "|" + p.item]);
+      if (!prods.length) return;
+      wsE.mergeCells(`A${re}:${lastE}${re}`);
+      const cc = wsE.getCell(`A${re}`);
+      cc.value = cat.label.toUpperCase();
+      cc.font = { name: "Arial", size: 11, bold: true };
+      cc.fill = { type: "pattern", pattern: "solid", fgColor: { argb: C.beige } };
+      cc.alignment = { vertical: "middle", indent: 1 };
+      cc.border = border;
+      re++;
+      prods.forEach((p, i) => {
+        const d = byKey[cat.category + "|" + p.item];
+        const row = wsE.getRow(re);
+        const tot = d.w.reduce((a, b) => a + b, 0);
+        row.values = [i + 1, p.item, (d.unit || p.unit) === "kg" ? "kg" : "u", ...d.w.map((v) => (v ? Math.round(v * 1000) / 1000 : null)),
+          { formula: `SUM(D${re}:${String.fromCharCode(67 + nW)}${re})`, result: tot }];
+        row.eachCell({ includeEmpty: true }, (cell, col) => {
+          if (col > 4 + nW) return;
+          cell.border = border;
+          cell.font = { name: "Arial", size: 10, bold: col === 4 + nW };
+          cell.alignment = { vertical: "middle", horizontal: col === 2 ? "left" : "center" };
+          if (col >= 4) cell.numFmt = NUM;
+          if (i % 2 === 1) cell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: C.beigeLight } };
+        });
+        row.getCell(1).font = { name: "Arial", size: 9, color: { argb: C.muted } };
+        re++;
+      });
+    });
+    wsE.addConditionalFormatting({
+      ref: `D${firstE}:${lastE}${re - 1}`,
+      rules: [{ type: "cellIs", operator: "lessThan", formulae: ["0"], style: { font: { color: { argb: C.red }, bold: true } } }],
+    });
+  }
+
   // ── Hoja 2: Resumen ───────────────────────────────────────────────────
   const rs = wb.addWorksheet(es ? "Resumen" : "Summary", { views: [{ showGridLines: false }] });
   rs.columns = [{ width: 28 }, { width: 14 }, { width: 14 }, { width: 14 }];

@@ -1,3 +1,4 @@
+import { monthWeeks, weekOf } from "./weeks.js";
 import { useState, lazy, Suspense, useEffect, useMemo, useRef } from "react";
 import {
   Search, Package, ClipboardList, Store, CheckCircle2, Clock, Loader2,
@@ -1429,6 +1430,7 @@ export default function App() {
   const [depositoSection, setDepositoSection] = useState("compras");
   const [depositoStockView, setDepositoStockView] = useState("conteo");
   const [stockCounts, setStockCounts] = useState([]);
+  const [receptions, setReceptions] = useState([]);
   const [stockCountsLoading, setStockCountsLoading] = useState(true);
   const [expandedStockCount, setExpandedStockCount] = useState(null);
   const [theme, setTheme] = useState(() => {
@@ -1619,6 +1621,12 @@ export default function App() {
       } catch (e) {
         console.warn("stock_counts load error:", e);
       }
+      try {
+        const recs = await listRows("receptions");
+        setReceptions(recs.filter((r) => !r.deleted));
+      } catch (e) {
+        console.warn("receptions load error:", e);
+      }
     }
     setStockCountsLoading(false);
   }
@@ -1788,6 +1796,8 @@ export default function App() {
       source: receptionMeta.sourceName,
       ref: receptionMeta.ref || "",
       origin: "manual",
+      period: weekOf(receptionMeta.date).period,
+      week: weekOf(receptionMeta.date).week,
       items,
     };
     setReceptionSubmitting(true);
@@ -2124,6 +2134,7 @@ export default function App() {
         <StockConfirm
           sucursal={sucursal}
           lastStockCount={lastStockCount}
+          receptions={receptions}
           onNewCount={() => setScreen("stock-form")}
           onMenu={() => setScreen("sucursal-menu")}
           onHome={() => { setSucursal(null); setScreen("home"); }}
@@ -2179,6 +2190,7 @@ export default function App() {
           setDepositoStockView={setDepositoStockView}
           stockCounts={depositoStockCounts}
           allStockCounts={stockCounts}
+          receptions={receptions}
           stockExtraProducts={stockExtraProducts}
           stockCountsLoading={stockCountsLoading}
           expandedStockCount={expandedStockCount}
@@ -2829,6 +2841,10 @@ function ReceptionHeader({ meta, setMeta, sucursal, lang }) {
         <label style={styles.recField}>
           <span style={styles.stockFieldLabel}>{t.recDate}</span>
           <input type="date" style={styles.authInput} value={meta.date} onChange={(e) => set("date", e.target.value)} />
+          {meta.date && (() => {
+            const w = weekOf(meta.date);
+            return <span style={styles.recHint}>{lang === "en" ? `Counts for ${periodLabel(w.period, lang)} · Week ${w.week} (${w.range.from}–${w.range.to})` : `Va a ${periodLabel(w.period, lang)} · Semana ${w.week} (${w.range.from} al ${w.range.to})`}</span>;
+          })()}
         </label>
         <label style={styles.recField}>
           <span style={styles.stockFieldLabel}>{t.recSourceType}</span>
@@ -3334,6 +3350,32 @@ async function shareOrDownloadStockExcel(stockCount, extraProducts, lang) {
 }
 
 // Conteo anterior de la misma sucursal (para las columnas Anterior / Diferencia del Excel).
+// Suma al conteo mensual las entradas del mes, por semana (lunes a domingo,
+// cortadas en el cambio de mes): recepciones cargadas en la app + las que
+// vinieron en la planilla histórica. Lo transferido a otra sucursal resta.
+function withEntries(stockCount, receptions = []) {
+  if (stockCount.type === "spot" || !stockCount.period) return stockCount;
+  const period = stockCount.period;
+  const weeks = monthWeeks(period);
+  const entries = [];
+  receptions.forEach((r) => {
+    const wk = weekOf(r.date);
+    if (wk.period !== period) return;
+    const incoming = r.sucursal === stockCount.sucursal;
+    const outgoing = r.source_type === "sucursal" && r.source === stockCount.sucursal;
+    if (!incoming && !outgoing) return;
+    (r.items || []).forEach((it) => {
+      const q = Number(it.total ?? it.quantity) || 0;
+      if (q) entries.push({ vendor: it.vendor, item: it.item, unit: it.unit, week: wk.week, qty: incoming ? q : -q });
+    });
+  });
+  (stockCount.received || []).forEach((it) => {
+    const week = it.date ? weekOf(it.date).week : it.week;
+    entries.push({ vendor: it.vendor, item: it.item, unit: it.unit, week: week || 1, qty: Number(it.qty) || 0 });
+  });
+  return { ...stockCount, entries, weeks };
+}
+
 function withPreviousCount(stockCount, allStockCounts = []) {
   if (stockCount.prev && Object.keys(stockCount.prev).length) return stockCount;
   const t = new Date(stockCount.date).getTime();
@@ -3346,7 +3388,7 @@ function withPreviousCount(stockCount, allStockCounts = []) {
   return { ...stockCount, prev: map, prevDate: prev.date };
 }
 
-function StockConfirm({ sucursal, lastStockCount, onNewCount, onMenu, onHome, extraProducts = [], lang }) {
+function StockConfirm({ sucursal, lastStockCount, receptions = [], onNewCount, onMenu, onHome, extraProducts = [], lang }) {
   const t = STR[lang];
   const [excelState, setExcelState] = useState("idle"); // idle | working | done | error
 
@@ -3354,7 +3396,7 @@ function StockConfirm({ sucursal, lastStockCount, onNewCount, onMenu, onHome, ex
     if (!lastStockCount) return;
     setExcelState("working");
     try {
-      const r = await shareOrDownloadStockExcel(lastStockCount, extraProducts, lang);
+      const r = await shareOrDownloadStockExcel(withEntries(lastStockCount, receptions), extraProducts, lang);
       setExcelState(r === "cancel" ? "idle" : "done");
     } catch (e) {
       console.error("excel error:", e);
@@ -3708,7 +3750,7 @@ function DateRangePicker({ from, to, setFrom, setTo, lang }) {
   );
 }
 
-function Deposito({ onBack, loading, orders, allOrders, filterSucursal, setFilterSucursal, filterStatus, setFilterStatus, filterDateFrom, setFilterDateFrom, filterDateTo, setFilterDateTo, depositoView, setDepositoView, depositoSection, setDepositoSection, depositoStockView, setDepositoStockView, stockCounts, allStockCounts, stockExtraProducts = [], stockCountsLoading, expandedStockCount, setExpandedStockCount, expandedOrder, setExpandedOrder, updateStatus, onImportOrders, onDeleteStockCount, onImportStockCounts, userEmail, onLogout, theme, onToggleTheme, lang, onToggleLang }) {
+function Deposito({ onBack, loading, orders, allOrders, filterSucursal, setFilterSucursal, filterStatus, setFilterStatus, filterDateFrom, setFilterDateFrom, filterDateTo, setFilterDateTo, depositoView, setDepositoView, depositoSection, setDepositoSection, depositoStockView, setDepositoStockView, stockCounts, allStockCounts, receptions = [], stockExtraProducts = [], stockCountsLoading, expandedStockCount, setExpandedStockCount, expandedOrder, setExpandedOrder, updateStatus, onImportOrders, onDeleteStockCount, onImportStockCounts, userEmail, onLogout, theme, onToggleTheme, lang, onToggleLang }) {
   const t = STR[lang];
   const pendingCount = allOrders.filter((o) => o.status === "pendiente").length;
   const [showExport, setShowExport] = useState(false);
@@ -3937,6 +3979,7 @@ function Deposito({ onBack, loading, orders, allOrders, filterSucursal, setFilte
                   expanded={expandedStockCount === c.id}
                   onToggle={() => setExpandedStockCount(expandedStockCount === c.id ? null : c.id)}
                   allStockCounts={allStockCounts}
+                  receptions={receptions}
                   extraProducts={stockExtraProducts}
                   onDelete={onDeleteStockCount}
                   lang={lang}
@@ -4224,7 +4267,7 @@ function OrderCard({ order, expanded, onToggle, showSucursal, actions, allOrders
   );
 }
 
-function StockCountCard({ stockCount, expanded, onToggle, allStockCounts = [], extraProducts = [], onDelete, lang = "es" }) {
+function StockCountCard({ stockCount, expanded, onToggle, allStockCounts = [], receptions = [], extraProducts = [], onDelete, lang = "es" }) {
   const t = STR[lang];
   const kindTag = stockCount.type === "spot" ? t.kindSpotShort : (stockCount.period ? periodLabel(stockCount.period, lang) : null);
   const [excelState, setExcelState] = useState("idle");
@@ -4245,7 +4288,7 @@ function StockCountCard({ stockCount, expanded, onToggle, allStockCounts = [], e
     e && e.stopPropagation();
     setExcelState("working");
     try {
-      const r = await shareOrDownloadStockExcel(withPreviousCount(stockCount, allStockCounts), extraProducts, lang);
+      const r = await shareOrDownloadStockExcel(withEntries(withPreviousCount(stockCount, allStockCounts), receptions), extraProducts, lang);
       setExcelState(r === "cancel" ? "idle" : "done");
     } catch (err) {
       console.error("excel error:", err);

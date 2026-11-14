@@ -28,7 +28,7 @@ var TABLES = {
   orders: { sheet: 'Pedidos', cols: ['id', 'fecha', 'sucursal', 'estado', 'cancelado_en', 'notas', 'cant_productos', 'json'] },
   stock_counts: { sheet: 'Conteos', cols: ['id', 'fecha', 'sucursal', 'cant_productos', 'cant_desperdicio', 'json', 'tipo', 'periodo'] },
   stock_extra_products: { sheet: 'Productos extra', cols: ['id', 'categoria', 'producto', 'json'] },
-  receptions: { sheet: 'Recepciones', cols: ['id', 'fecha', 'sucursal', 'origen_tipo', 'origen', 'remito', 'cargado_por', 'cant_productos', 'json'] },
+  receptions: { sheet: 'Recepciones', cols: ['id', 'fecha', 'sucursal', 'origen_tipo', 'origen', 'remito', 'cargado_por', 'cant_productos', 'json', 'periodo', 'semana'] },
 };
 
 function doGet(e) {
@@ -137,7 +137,7 @@ function toRow_(table, r) {
     return [r.id, toDate_(r.date), r.sucursal, (r.items || []).length, (r.waste || []).length, json, r.type === 'spot' ? 'Aleatorio' : 'Mensual', r.period || ''];
   }
   if (table === 'receptions') {
-    return [r.id, toDate_(r.date), r.sucursal, r.source_type || '', r.source || '', r.ref || '', r.origin || 'manual', (r.items || []).length, json];
+    return [r.id, toDate_(r.date), r.sucursal, r.source_type || '', r.source || '', r.ref || '', r.origin || 'manual', (r.items || []).length, json, r.period || '', r.week || ''];
   }
   return [r.id, r.category || '', r.item || '', json];
 }
@@ -203,11 +203,11 @@ function writeDetail_(table, r) {
     if (rows.length) sh.getRange(sh.getLastRow() + 1, 1, rows.length, cols.length).setValues(rows);
   }
   if (table === 'receptions') {
-    var cols3 = ['recepcion_id', 'fecha', 'sucursal', 'origen_tipo', 'origen', 'categoria', 'producto', 'cajas', 'paquetes', 'sueltas', 'total', 'unidad'];
+    var cols3 = ['recepcion_id', 'fecha', 'sucursal', 'origen_tipo', 'origen', 'categoria', 'producto', 'cajas', 'paquetes', 'sueltas', 'total', 'unidad', 'periodo', 'semana'];
     var sh3 = ss.getSheetByName('Recepciones detalle') || newSheet_(ss, 'Recepciones detalle', cols3);
     var rows3 = (r.items || []).map(function (it) {
       return [r.id, toDate_(r.date), r.sucursal, r.source_type || '', r.source || '', it.vendor || '', it.item || '',
-        it.boxes || '', it.subs || '', it.units || '', num_(it.total !== undefined ? it.total : it.quantity), it.unit || 'u'];
+        it.boxes || '', it.subs || '', it.units || '', num_(it.total !== undefined ? it.total : it.quantity), it.unit || 'u', r.period || '', r.week || ''];
     });
     if (rows3.length) sh3.getRange(sh3.getLastRow() + 1, 1, rows3.length, cols3.length).setValues(rows3);
   }

@@ -1,7 +1,7 @@
 import { useState, lazy, Suspense, useEffect, useMemo, useRef } from "react";
 import {
   Search, Package, ClipboardList, Store, CheckCircle2, Clock, Loader2,
-  ArrowLeft, Send, ChevronDown, ChevronUp, Lock, CalendarDays, Sun, Moon, Download, ChevronRight, Trash2,
+  ArrowLeft, Send, ChevronDown, ChevronUp, Lock, CalendarDays, Sun, Moon, Download, ChevronRight, Trash2, Truck,
 } from "lucide-react";
 import { apiConfigured, listRows, insertRow, updateRow, upsertRows, deleteRow, login as apiLogin, readSession, saveSession, clearSession, branchLogin, readBranchSession, saveBranchSession, clearBranchSession } from "./api";
 
@@ -613,6 +613,27 @@ const STR = {
     analisisTitle: "Análisis",
     delStockBtn: "Eliminar este conteo",
     branchAuthEyebrow: "Sucursal",
+    recTitle: "Recepciones",
+    recDesc: "Cargar lo que llegó: proveedor o transferencia",
+    recSubtitle: "Recepción de mercadería",
+    recDate: "Fecha de recepción",
+    recSourceType: "Viene de",
+    recSupplier: "Proveedor",
+    recBranch: "Otra sucursal",
+    recFromBranch: "Sucursal que envió",
+    recWhichSupplier: "Proveedor",
+    recChoose: "Elegí…",
+    recOther: "Otro",
+    recRef: "N° de remito (opcional)",
+    recRefPh: "Ej. 0001-00012345",
+    recHint: "Cargá lo recibido en cajas, paquetes o sueltas; la app lo pasa a unidades. Gelato e ingredientes en kg.",
+    recNone: "Todavía no cargaste productos",
+    nReceived: (n) => `${n} ${n === 1 ? "producto recibido" : "productos recibidos"}`,
+    recSave: "Guardar recepción",
+    recConfirmTitle: "¿Guardar la recepción?",
+    recConfirmBody: (n, m) => `${n} ${n === 1 ? "producto" : "productos"} recibidos el ${m && m.date ? m.date.split("-").reverse().join("/") : ""}${m && m.sourceName ? ` de ${m.sourceName}` : ""}.`,
+    recSaved: (n) => `Recepción guardada (${n} ${n === 1 ? "producto" : "productos"}).`,
+    recNotSaved: "No se pudo guardar la recepción. Revisá la conexión y probá de nuevo.",
     branchAuthSub: "Ingresá con el usuario y la contraseña de tu sucursal.",
     userPlaceholder: "Usuario",
     errWrongUser: "Usuario o contraseña incorrectos.",
@@ -861,6 +882,27 @@ const STR = {
     analisisTitle: "Analysis",
     delStockBtn: "Delete this count",
     branchAuthEyebrow: "Store",
+    recTitle: "Receiving",
+    recDesc: "Log what arrived: supplier or transfer",
+    recSubtitle: "Goods received",
+    recDate: "Date received",
+    recSourceType: "Comes from",
+    recSupplier: "Supplier",
+    recBranch: "Another store",
+    recFromBranch: "Sending store",
+    recWhichSupplier: "Supplier",
+    recChoose: "Choose…",
+    recOther: "Other",
+    recRef: "Delivery note # (optional)",
+    recRefPh: "e.g. 0001-00012345",
+    recHint: "Enter what arrived in boxes, packs or loose units; the app converts to units. Gelato and ingredients in kg.",
+    recNone: "No products entered yet",
+    nReceived: (n) => `${n} ${n === 1 ? "product received" : "products received"}`,
+    recSave: "Save receipt",
+    recConfirmTitle: "Save this receipt?",
+    recConfirmBody: (n, m) => `${n} ${n === 1 ? "product" : "products"} received on ${m && m.date ? m.date : ""}${m && m.sourceName ? ` from ${m.sourceName}` : ""}.`,
+    recSaved: (n) => `Receipt saved (${n} ${n === 1 ? "product" : "products"}).`,
+    recNotSaved: "Couldn't save the receipt. Check the connection and try again.",
     branchAuthSub: "Sign in with your store's username and password.",
     userPlaceholder: "Username",
     errWrongUser: "Wrong username or password.",
@@ -1320,6 +1362,10 @@ export default function App() {
   const [stockDraft, setStockDraft] = useState({});
   const [wasteDraft, setWasteDraft] = useState({});
   const [stockStage, setStockStage] = useState("stock"); // "stock" | "waste"
+  const [receptionDraft, setReceptionDraft] = useState({});
+  const emptyReceptionMeta = () => ({ date: new Date().toLocaleDateString("en-CA"), sourceType: "proveedor", sourceName: "", ref: "" });
+  const [receptionMeta, setReceptionMeta] = useState(emptyReceptionMeta);
+  const [receptionSubmitting, setReceptionSubmitting] = useState(false);
   const [gelatoTare, setGelatoTareState] = useState("");
   useEffect(() => { if (sucursal) setGelatoTareState(readGelatoTare(sucursal)); }, [sucursal]);
   function setGelatoTare(v) {
@@ -1394,6 +1440,9 @@ export default function App() {
         break;
       case "order-form":
         setScreen(OWN_SUCURSALES.includes(sucursal) ? "sucursal-menu" : (singleBranch ? "home" : "sucursal-select"));
+        break;
+      case "reception-form":
+        setScreen("sucursal-menu");
         break;
       case "stock-form":
         if (stockStage === "waste") { setStockStage("stock"); break; }
@@ -1628,6 +1677,10 @@ export default function App() {
     const key = vendor + "|" + item;
     setStockDraft((d) => ({ ...d, [key]: { ...(d[key] || {}), [field]: value } }));
   }
+  function setReceptionQty(vendor, item, field, value) {
+    const key = vendor + "|" + item;
+    setReceptionDraft((d) => ({ ...d, [key]: { ...(d[key] || {}), [field]: value } }));
+  }
   function setWasteQty(vendor, item, field, value) {
     const key = vendor + "|" + item;
     setWasteDraft((d) => ({ ...d, [key]: { ...(d[key] || {}), [field]: value } }));
@@ -1670,6 +1723,39 @@ export default function App() {
       });
     });
     return items;
+  }
+
+  // Recepción cargada a mano (compra a proveedor o transferencia desde otra sucursal).
+  async function submitReception() {
+    const items = draftToItems(receptionDraft).map((it) => {
+      const p = findStockProduct(it.vendor, it.item, stockExtraProducts);
+      // En recepciones el gelato se carga en kg directo (sin vaschettas).
+      return isPanProduct({ vendor: it.vendor }) ? { ...it, units: stockNum((receptionDraft[it.vendor + "|" + it.item] || {}).u), total: stockNum((receptionDraft[it.vendor + "|" + it.item] || {}).u), quantity: fmtStockNum(stockNum((receptionDraft[it.vendor + "|" + it.item] || {}).u)), unit: p.unit || "kg" } : it;
+    });
+    if (items.length === 0) { setToast({ type: "error", text: STR[lang].errNoQtyToSubmit }); return; }
+    const rec = {
+      id: (crypto.randomUUID ? crypto.randomUUID() : Date.now().toString()),
+      sucursal,
+      date: new Date(receptionMeta.date + "T12:00:00").toISOString(),
+      created_at: new Date().toISOString(),
+      source_type: receptionMeta.sourceType,
+      source: receptionMeta.sourceName,
+      ref: receptionMeta.ref || "",
+      origin: "manual",
+      items,
+    };
+    setReceptionSubmitting(true);
+    let saved = false;
+    if (apiConfigured()) {
+      try { await insertRow("receptions", rec); saved = true; }
+      catch (e) { console.warn("receptions insert error:", e); }
+    }
+    setReceptionSubmitting(false);
+    if (!saved) { setToast({ type: "error", text: STR[lang].recNotSaved }); return; }
+    setReceptionDraft({});
+    setReceptionMeta(emptyReceptionMeta());
+    setToast({ type: "success", text: STR[lang].recSaved(items.length) });
+    setScreen("sucursal-menu");
   }
 
   async function submitStockCount() {
@@ -1877,6 +1963,7 @@ export default function App() {
           onBack={goBack}
           onCompras={() => setScreen("order-form")}
           onStocks={() => setScreen("stock-form")}
+          onRecepcion={() => { setStockActiveVendor(STOCK_VENDOR_ORDER[0]); setStockSearch(""); setScreen("reception-form"); }}
           userLabel={singleBranch ? branchSession?.user : null}
           onLogout={singleBranch ? branchLogout : null}
           theme={theme}
@@ -1921,6 +2008,30 @@ export default function App() {
           onHistory={() => setScreen("sucursal-history")}
           onHome={() => { setSucursal(null); setScreen("home"); }}
           lang={lang}
+        />
+      )}
+
+      {screen === "reception-form" && (
+        <StockForm
+          sucursal={sucursal}
+          onBack={goBack}
+          activeVendor={stockActiveVendor}
+          setActiveVendor={setStockActiveVendor}
+          search={stockSearch}
+          setSearch={setStockSearch}
+          draft={receptionDraft}
+          setQty={setReceptionQty}
+          mode="reception"
+          receptionMeta={receptionMeta}
+          setReceptionMeta={setReceptionMeta}
+          onSubmit={submitReception}
+          submitting={receptionSubmitting}
+          extraProducts={stockExtraProducts}
+          onAddProduct={addStockProduct}
+          theme={theme}
+          onToggleTheme={toggleTheme}
+          lang={lang}
+          onToggleLang={toggleLang}
         />
       )}
 
@@ -2208,7 +2319,7 @@ function SucursalSelect({ allowed = [], userLabel, onLogout, onBack, onPick, the
   );
 }
 
-function SucursalMenu({ sucursal, onBack, onCompras, onStocks, userLabel, onLogout, theme, onToggleTheme, lang, onToggleLang }) {
+function SucursalMenu({ sucursal, onBack, onCompras, onStocks, onRecepcion, userLabel, onLogout, theme, onToggleTheme, lang, onToggleLang }) {
   const t = STR[lang];
   return (
     <div style={styles.wrap}>
@@ -2224,6 +2335,13 @@ function SucursalMenu({ sucursal, onBack, onCompras, onStocks, userLabel, onLogo
           <div style={styles.roleTitle}>{t.stocksTitle}</div>
           <div style={styles.roleDesc}>{t.stocksDesc}</div>
         </button>
+        {onRecepcion && (
+          <button className="role-card" style={styles.roleCard} onClick={onRecepcion}>
+            <Truck size={26} strokeWidth={1.7} />
+            <div style={styles.roleTitle}>{t.recTitle}</div>
+            <div style={styles.roleDesc}>{t.recDesc}</div>
+          </button>
+        )}
       </div>
       {onLogout && <LogoutLine user={userLabel} onLogout={onLogout} lang={lang} />}
     </div>
@@ -2562,14 +2680,16 @@ function StockItemRow({ p, draft, setQty, lang, onFocusItem, onBlurItem, showVen
   const d = draft[key] || {};
   const rowRef = useRef(null);
   const isWaste = mode === "waste";
-  // En stock, el gelato se pesa por vaschetta. En desperdicio va directo en kg.
-  if (isPanProduct(p) && !isWaste) {
+  // Un solo casillero (unidades o kg): desperdicio siempre; en recepciones, el gelato.
+  const singleField = isWaste || (mode === "reception" && isPanProduct(p));
+  // En stock, el gelato se pesa por vaschetta. En desperdicio y recepciones va directo en kg.
+  if (isPanProduct(p) && mode === "stock") {
     return <PanRow p={p} d={d} setQty={setQty} lang={lang} onFocusItem={onFocusItem} onBlurItem={onBlurItem} showVendorTag={showVendorTag} prev={prev} tare={tare} mode={mode}
       open={!!(openPans && openPans[key])} setOpen={(v) => setOpenPans && setOpenPans((o) => ({ ...o, [key]: v }))} />;
   }
   const isKg = p.unit === "kg";
   const fields = [];
-  if (isWaste) {
+  if (singleField) {
     // Desperdicio: siempre en unidades individuales (o kg), sin cajas ni paquetes.
     fields.push({ f: "u", label: isKg ? t.stockLooseKg : t.wasteUnits, hint: "" });
   } else {
@@ -2577,10 +2697,10 @@ function StockItemRow({ p, draft, setQty, lang, onFocusItem, onBlurItem, showVen
     if (p.sub) fields.push({ f: "s", label: t.stockPacksShort, hint: `×${p.sub}` });
     fields.push({ f: "u", label: isKg ? t.stockLooseKg : (p.box || p.sub ? t.stockLoose : t.stockQty), hint: "" });
   }
-  const total = isWaste ? stockNum(d.u) : stockEntryTotal(p, d);
+  const total = singleField ? stockNum(d.u) : stockEntryTotal(p, d);
   const has = stockEntryHasValue(d);
   const meta = [p.code, showVendorTag ? getStockVendorLabel(p.vendor, lang) : null].filter(Boolean).join(" · ");
-  const unitLabel = isKg ? " kg" : (isWaste ? " u" : (p.unit ? " " + p.unit : ""));
+  const unitLabel = isKg ? " kg" : (singleField || mode === "reception" ? " u" : (p.unit ? " " + p.unit : ""));
 
   // Mientras el foco se mueva entre los casilleros de este mismo producto,
   // el producto no cambia de lugar en la lista (antes saltaba arriba y se perdía).
@@ -2638,7 +2758,49 @@ function StockItemRow({ p, draft, setQty, lang, onFocusItem, onBlurItem, showVen
   );
 }
 
-function StockForm({ sucursal, onBack, activeVendor, setActiveVendor, search, setSearch, draft, setQty, mode = "stock", stockCountN = 0, onStartWaste, gelatoTare = "", setGelatoTare, onSubmit, submitting, extraProducts, onAddProduct, theme, onToggleTheme, lang, onToggleLang }) {
+// Encabezado de una recepción: fecha, de dónde viene y número de remito.
+function ReceptionHeader({ meta, setMeta, sucursal, lang }) {
+  const t = STR[lang];
+  const set = (k, v) => setMeta((m) => ({ ...m, [k]: v }));
+  const otherBranches = SUCURSALES.filter((b) => b !== sucursal && !HIDDEN_SUCURSALES.includes(b));
+  const suppliers = VENDOR_ORDER.filter((v) => v !== "Todos");
+  return (
+    <div style={styles.recCard}>
+      <div style={styles.recRow}>
+        <label style={styles.recField}>
+          <span style={styles.stockFieldLabel}>{t.recDate}</span>
+          <input type="date" style={styles.authInput} value={meta.date} onChange={(e) => set("date", e.target.value)} />
+        </label>
+        <label style={styles.recField}>
+          <span style={styles.stockFieldLabel}>{t.recSourceType}</span>
+          <select style={styles.authInput} value={meta.sourceType} onChange={(e) => setMeta((m) => ({ ...m, sourceType: e.target.value, sourceName: "" }))}>
+            <option value="proveedor">{t.recSupplier}</option>
+            <option value="sucursal">{t.recBranch}</option>
+          </select>
+        </label>
+      </div>
+      <div style={styles.recRow}>
+        <label style={styles.recField}>
+          <span style={styles.stockFieldLabel}>{meta.sourceType === "sucursal" ? t.recFromBranch : t.recWhichSupplier}</span>
+          <select style={styles.authInput} value={meta.sourceName} onChange={(e) => set("sourceName", e.target.value)}>
+            <option value="">{t.recChoose}</option>
+            {(meta.sourceType === "sucursal" ? otherBranches : suppliers).map((x) => (
+              <option key={x} value={x}>{meta.sourceType === "sucursal" ? x : getVendorLabel(x, lang)}</option>
+            ))}
+            {meta.sourceType !== "sucursal" && <option value="Otro">{t.recOther}</option>}
+          </select>
+        </label>
+        <label style={styles.recField}>
+          <span style={styles.stockFieldLabel}>{t.recRef}</span>
+          <input style={styles.authInput} placeholder={t.recRefPh} value={meta.ref} onChange={(e) => set("ref", e.target.value)} />
+        </label>
+      </div>
+      <div style={styles.recHint}>{t.recHint}</div>
+    </div>
+  );
+}
+
+function StockForm({ sucursal, onBack, activeVendor, setActiveVendor, search, setSearch, draft, setQty, mode = "stock", stockCountN = 0, onStartWaste, receptionMeta, setReceptionMeta, gelatoTare = "", setGelatoTare, onSubmit, submitting, extraProducts, onAddProduct, theme, onToggleTheme, lang, onToggleLang }) {
   const t = STR[lang];
   const [focusedKey, setFocusedKey] = useState(null);
   const frozenHadValueRef = useRef(false);
@@ -2649,6 +2811,8 @@ function StockForm({ sucursal, onBack, activeVendor, setActiveVendor, search, se
   const [showConfirm, setShowConfirm] = useState(false);
   const [askWaste, setAskWaste] = useState(false);
   const isWaste = mode === "waste";
+  const isReception = mode === "reception";
+  const metaOk = !isReception || (receptionMeta && receptionMeta.date && receptionMeta.sourceName);
 
   const lastStock = useMemo(() => readLastStock(sucursal), [sucursal]);
   const [openPans, setOpenPans] = useState({});
@@ -2722,7 +2886,10 @@ function StockForm({ sucursal, onBack, activeVendor, setActiveVendor, search, se
 
   return (
     <div style={styles.wrap}>
-      <TopBar onBack={onBack} title={sucursal} subtitle={isWaste ? t.wasteSubtitle : t.stockSubtitle} theme={theme} onToggleTheme={onToggleTheme} lang={lang} onToggleLang={onToggleLang} />
+      <TopBar onBack={onBack} title={sucursal} subtitle={isWaste ? t.wasteSubtitle : isReception ? t.recSubtitle : t.stockSubtitle} theme={theme} onToggleTheme={onToggleTheme} lang={lang} onToggleLang={onToggleLang} />
+      {isReception && receptionMeta && (
+        <ReceptionHeader meta={receptionMeta} setMeta={setReceptionMeta} sucursal={sucursal} lang={lang} />
+      )}
       {isWaste && (
         <div style={styles.wasteBanner}>
           <Trash2 size={20} style={{ flexShrink: 0 }} />
@@ -2787,7 +2954,7 @@ function StockForm({ sucursal, onBack, activeVendor, setActiveVendor, search, se
                 />
               </div>
 
-              {activeVendor === "GELATO" && !isWaste && (
+              {activeVendor === "GELATO" && mode === "stock" && (
                 <div style={styles.tareCard}>
                   <div style={{ flex: 1, minWidth: 0 }}>
                     <div style={styles.tareTitle}>{t.tareTitle}</div>
@@ -2807,11 +2974,11 @@ function StockForm({ sucursal, onBack, activeVendor, setActiveVendor, search, se
               )}
               <div style={styles.itemList}>
                 {withQty.map((p) => (
-                  <StockItemRow key={p.vendor + "|" + p.item} p={p} tare={gelatoTare} openPans={openPans} setOpenPans={setOpenPans} draft={draft} setQty={setQty} lang={lang} onFocusItem={handleFocusItem} onBlurItem={handleBlurItem} showVendorTag={isTodos} prev={isWaste ? undefined : (lastStock.items && lastStock.items[p.vendor + "|" + p.item])} mode={mode} />
+                  <StockItemRow key={p.vendor + "|" + p.item} p={p} tare={gelatoTare} openPans={openPans} setOpenPans={setOpenPans} draft={draft} setQty={setQty} lang={lang} onFocusItem={handleFocusItem} onBlurItem={handleBlurItem} showVendorTag={isTodos} prev={mode !== "stock" ? undefined : (lastStock.items && lastStock.items[p.vendor + "|" + p.item])} mode={mode} />
                 ))}
                 {rest.length > 0 && withQty.length > 0 && <div style={styles.itemSectionLabel}>{t.restOfProducts}</div>}
                 {rest.map((p) => (
-                  <StockItemRow key={p.vendor + "|" + p.item} p={p} tare={gelatoTare} openPans={openPans} setOpenPans={setOpenPans} draft={draft} setQty={setQty} lang={lang} onFocusItem={handleFocusItem} onBlurItem={handleBlurItem} showVendorTag={isTodos} prev={isWaste ? undefined : (lastStock.items && lastStock.items[p.vendor + "|" + p.item])} mode={mode} />
+                  <StockItemRow key={p.vendor + "|" + p.item} p={p} tare={gelatoTare} openPans={openPans} setOpenPans={setOpenPans} draft={draft} setQty={setQty} lang={lang} onFocusItem={handleFocusItem} onBlurItem={handleBlurItem} showVendorTag={isTodos} prev={mode !== "stock" ? undefined : (lastStock.items && lastStock.items[p.vendor + "|" + p.item])} mode={mode} />
                 ))}
                 {sourceItems.length === 0 && <div style={styles.emptyRow}>{t.noMatch(search)}</div>}
               </div>
@@ -2841,19 +3008,19 @@ function StockForm({ sucursal, onBack, activeVendor, setActiveVendor, search, se
             })}
           </div>
           <div style={styles.ticketDivider} />
-          <button style={styles.submitBtn} onClick={() => setShowConfirm(true)} disabled={submitting || (!isWaste && draftCount === 0)}>
+          <button style={styles.submitBtn} onClick={() => setShowConfirm(true)} disabled={submitting || (!isWaste && draftCount === 0) || !metaOk}>
             {submitting ? <Loader2 size={16} style={{ animation: "spin 1s linear infinite" }} /> : <Send size={16} />}
-            {submitting ? t.sending : isWaste ? t.sendWithWaste : t.sendCount}
+            {submitting ? t.sending : isWaste ? t.sendWithWaste : isReception ? t.recSave : t.sendCount}
           </button>
         </div>
       </div>
 
       {!isAddTab && (
         <div className="mobile-cta" style={styles.mobileCta}>
-          <div style={styles.mobileCtaCount}>{isWaste ? (draftCount === 0 ? t.wasteNone : t.nWasted(draftCount)) : (draftCount === 0 ? t.stockNoItemsYet : t.nCounted(draftCount))}</div>
-          <button style={{ ...styles.submitBtn, ...styles.mobileCtaBtn }} onClick={() => setShowConfirm(true)} disabled={submitting || (!isWaste && draftCount === 0)}>
+          <div style={styles.mobileCtaCount}>{isWaste ? (draftCount === 0 ? t.wasteNone : t.nWasted(draftCount)) : isReception ? (draftCount === 0 ? t.recNone : t.nReceived(draftCount)) : (draftCount === 0 ? t.stockNoItemsYet : t.nCounted(draftCount))}</div>
+          <button style={{ ...styles.submitBtn, ...styles.mobileCtaBtn }} onClick={() => setShowConfirm(true)} disabled={submitting || (!isWaste && draftCount === 0) || !metaOk}>
             {submitting ? <Loader2 size={16} style={{ animation: "spin 1s linear infinite" }} /> : <Send size={16} />}
-            {submitting ? t.sending : isWaste ? t.sendWithWaste : t.sendCount}
+            {submitting ? t.sending : isWaste ? t.sendWithWaste : isReception ? t.recSave : t.sendCount}
           </button>
         </div>
       )}
@@ -2861,16 +3028,16 @@ function StockForm({ sucursal, onBack, activeVendor, setActiveVendor, search, se
       {showConfirm && (
         <div className="modal-overlay" style={styles.modalOverlay} onClick={() => setShowConfirm(false)}>
           <div className="modal-box" style={styles.modalBox} onClick={(e) => e.stopPropagation()}>
-            <h2 style={styles.modalTitle}>{t.confirmSendStockTitle}</h2>
-            <p style={styles.modalBody}>{isWaste ? t.confirmSendWasteBody(stockCountN, draftCount) : t.confirmSendStockBody(draftCount)}</p>
+            <h2 style={styles.modalTitle}>{isReception ? t.recConfirmTitle : t.confirmSendStockTitle}</h2>
+            <p style={styles.modalBody}>{isWaste ? t.confirmSendWasteBody(stockCountN, draftCount) : isReception ? t.recConfirmBody(draftCount, receptionMeta) : t.confirmSendStockBody(draftCount)}</p>
             <div style={styles.modalActions}>
               <button style={styles.secondaryBtn} onClick={() => setShowConfirm(false)}>{t.confirmSendCancel}</button>
               <button
                 style={{ ...styles.submitBtn, width: "auto", padding: "10px 18px" }}
-                onClick={() => { setShowConfirm(false); if (isWaste) onSubmit(); else setAskWaste(true); }}
+                onClick={() => { setShowConfirm(false); if (isWaste || isReception) onSubmit(); else setAskWaste(true); }}
                 disabled={submitting}
               >
-                {isWaste ? t.confirmSendStockOk : t.confirmContinue}
+                {isWaste ? t.confirmSendStockOk : isReception ? t.recSave : t.confirmContinue}
               </button>
             </div>
           </div>
@@ -4107,6 +4274,10 @@ function TopBar({ onBack, title, subtitle, theme, onToggleTheme, lang, onToggleL
 }
 
 const styles = {
+  recCard: { background: "var(--paper)", border: "1px solid var(--line)", borderRadius: 18, padding: "14px 16px", marginBottom: 14, boxShadow: "var(--shadow-sm)" },
+  recRow: { display: "flex", gap: 10, flexWrap: "wrap" },
+  recField: { display: "flex", flexDirection: "column", gap: 4, flex: "1 1 150px", minWidth: 0 },
+  recHint: { fontSize: 12, color: "var(--muted)", marginTop: 2 },
   dangerLink: { display: "inline-flex", alignItems: "center", gap: 6, marginTop: 8, padding: "8px 0", background: "none", border: "none", color: "#B3261E", fontSize: 13, fontWeight: 600, cursor: "pointer" },
   wasteBanner: { display: "flex", gap: 12, alignItems: "flex-start", background: "var(--terracotta)", color: "#fff", borderRadius: 18, padding: "14px 16px", marginBottom: 14, boxShadow: "var(--shadow-sm)" },
   tareCard: { display: "flex", alignItems: "center", gap: 14, background: "var(--paper)", border: "1px solid var(--line)", borderRadius: 18, padding: "14px 16px", marginBottom: 14, boxShadow: "var(--shadow-sm)" },

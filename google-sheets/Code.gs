@@ -11,6 +11,8 @@
  *   - Conteos            → un renglón por conteo de stock (lo que lee la app)
  *   - Conteos detalle    → un renglón por producto contado
  *   - Productos extra    → productos agregados desde la app
+ *   - Recepciones        → un renglón por recepción (proveedor o transferencia)
+ *   - Recepciones detalle→ un renglón por producto recibido
  *
  * Usuario y clave del Depósito: Configuración del proyecto (ícono ⚙️) →
  * Propiedades del script → DEPOSITO_EMAIL y DEPOSITO_PASSWORD.
@@ -26,6 +28,7 @@ var TABLES = {
   orders: { sheet: 'Pedidos', cols: ['id', 'fecha', 'sucursal', 'estado', 'cancelado_en', 'notas', 'cant_productos', 'json'] },
   stock_counts: { sheet: 'Conteos', cols: ['id', 'fecha', 'sucursal', 'cant_productos', 'cant_desperdicio', 'json'] },
   stock_extra_products: { sheet: 'Productos extra', cols: ['id', 'categoria', 'producto', 'json'] },
+  receptions: { sheet: 'Recepciones', cols: ['id', 'fecha', 'sucursal', 'origen_tipo', 'origen', 'remito', 'cargado_por', 'cant_productos', 'json'] },
 };
 
 function doGet(e) {
@@ -129,6 +132,9 @@ function toRow_(table, r) {
   if (table === 'stock_counts') {
     return [r.id, toDate_(r.date), r.sucursal, (r.items || []).length, (r.waste || []).length, json];
   }
+  if (table === 'receptions') {
+    return [r.id, toDate_(r.date), r.sucursal, r.source_type || '', r.source || '', r.ref || '', r.origin || 'manual', (r.items || []).length, json];
+  }
   return [r.id, r.category || '', r.item || '', json];
 }
 
@@ -165,7 +171,7 @@ function delete_(table, id) {
   var sh = sheet_(table);
   var rowIdx = findRow_(sh, id);
   if (rowIdx > 0) sh.deleteRow(rowIdx);
-  var detail = table === 'stock_counts' ? 'Conteos detalle' : (table === 'orders' ? 'Pedidos detalle' : null);
+  var detail = { stock_counts: 'Conteos detalle', orders: 'Pedidos detalle', receptions: 'Recepciones detalle' }[table] || null;
   if (!detail) return;
   var dsh = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(detail);
   if (!dsh || dsh.getLastRow() < 2) return;
@@ -191,6 +197,15 @@ function writeDetail_(table, r) {
       return [r.id, toDate_(r.date), r.sucursal, it.vendor || '', it.code || '', it.item || '', num_(it.quantity)];
     });
     if (rows.length) sh.getRange(sh.getLastRow() + 1, 1, rows.length, cols.length).setValues(rows);
+  }
+  if (table === 'receptions') {
+    var cols3 = ['recepcion_id', 'fecha', 'sucursal', 'origen_tipo', 'origen', 'categoria', 'producto', 'cajas', 'paquetes', 'sueltas', 'total', 'unidad'];
+    var sh3 = ss.getSheetByName('Recepciones detalle') || newSheet_(ss, 'Recepciones detalle', cols3);
+    var rows3 = (r.items || []).map(function (it) {
+      return [r.id, toDate_(r.date), r.sucursal, r.source_type || '', r.source || '', it.vendor || '', it.item || '',
+        it.boxes || '', it.subs || '', it.units || '', num_(it.total !== undefined ? it.total : it.quantity), it.unit || 'u'];
+    });
+    if (rows3.length) sh3.getRange(sh3.getLastRow() + 1, 1, rows3.length, cols3.length).setValues(rows3);
   }
   if (table === 'stock_counts') {
     var cols2 = ['conteo_id', 'fecha', 'sucursal', 'tipo', 'categoria', 'producto', 'cajas', 'paquetes', 'sueltas', 'vaschettas', 'total', 'unidad', 'motivo'];
@@ -239,6 +254,7 @@ function setup() {
   var ss = SpreadsheetApp.getActiveSpreadsheet();
   if (!ss.getSheetByName('Pedidos detalle')) newSheet_(ss, 'Pedidos detalle', ['pedido_id', 'fecha', 'sucursal', 'proveedor', 'codigo', 'producto', 'cantidad']);
   if (!ss.getSheetByName('Conteos detalle')) newSheet_(ss, 'Conteos detalle', ['conteo_id', 'fecha', 'sucursal', 'tipo', 'categoria', 'producto', 'cajas', 'paquetes', 'sueltas', 'vaschettas', 'total', 'unidad', 'motivo']);
+  if (!ss.getSheetByName('Recepciones detalle')) newSheet_(ss, 'Recepciones detalle', ['recepcion_id', 'fecha', 'sucursal', 'origen_tipo', 'origen', 'categoria', 'producto', 'cajas', 'paquetes', 'sueltas', 'total', 'unidad']);
   var def = ss.getSheetByName('Hoja 1') || ss.getSheetByName('Sheet1');
   if (def && ss.getSheets().length > 1 && def.getLastRow() === 0) ss.deleteSheet(def);
 }

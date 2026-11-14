@@ -46,7 +46,12 @@ function handle_(req) {
     var action = req.action;
     if (action === 'ping') return out_({ ok: true });
     if (action === 'list') return out_({ ok: true, rows: list_(req.table) });
-    if (action === 'insert') return withLock_(function () { insert_(req.table, req.row); return { ok: true }; });
+    if (action === 'insert') {
+      var res = withLockRaw_(function () { return insert_(req.table, req.row); });
+      var mailed = null;
+      if (req.table === 'stock_counts' && res !== 'dup') { try { mailed = mailStockCount_(req.row); } catch (err) { mailed = null; } }
+      return out_({ ok: true, mailed: mailed });
+    }
     if (action === 'login') return out_({ ok: checkAuth_(req.email, req.password) });
     if (action === 'branchLogin') return out_({ ok: true, sucursales: branchAuth_(req.user, req.password) });
     if (action === 'delete') {
@@ -145,7 +150,7 @@ function toRow_(table, r) {
 function insert_(table, r) {
   if (!r || !r.id) throw new Error('Falta id');
   var sh = sheet_(table);
-  if (findRow_(sh, r.id) > 0) return; // ya estaba (reintento)
+  if (findRow_(sh, r.id) > 0) return 'dup'; // ya estaba (reintento)
   sh.appendRow(toRow_(table, r));
   writeDetail_(table, r);
 }
@@ -242,6 +247,12 @@ function styleHeader_(sh, n) {
 function toDate_(iso) { var d = new Date(iso); return isNaN(d.getTime()) ? iso : d; }
 function num_(v) { var n = Number(String(v).replace(',', '.')); return isNaN(n) ? v : n; }
 
+function withLockRaw_(fn) {
+  var lock = LockService.getScriptLock();
+  lock.waitLock(20000);
+  try { return fn(); } finally { lock.releaseLock(); }
+}
+
 function withLock_(fn) {
   var lock = LockService.getScriptLock();
   lock.waitLock(20000);
@@ -250,6 +261,57 @@ function withLock_(fn) {
 
 function out_(obj) {
   return ContentService.createTextOutput(JSON.stringify(obj)).setMimeType(ContentService.MimeType.JSON);
+}
+
+// ── Mail automático del conteo ─────────────────────────────────────────
+// Destinatarios: propiedad NOTIFY_EMAIL (varios separados por coma);
+// si no está, el mail del Depósito. Devuelve a quién se mandó.
+var MESES_ = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
+var CAT_LABEL_ = { PAPER: 'Papel', 'COFFEE CORNER': 'Rincón Café', 'GRAB & GO': 'Grab & Go', OTHERS: 'Otros', INGREDIENTS: 'Ingredientes', ALFAJORES: 'Alfajores', 'ICE POPS': 'Paletas', GELATO: 'Gelato' };
+
+function mailStockCount_(r) {
+  var props = PropertiesService.getScriptProperties();
+  var to = String(props.getProperty('NOTIFY_EMAIL') || props.getProperty('DEPOSITO_EMAIL') || '').trim();
+  if (!to) return null;
+  var tz = 'America/New_York';
+  var fecha = Utilities.formatDate(new Date(r.date), tz, 'dd/MM/yyyy HH:mm');
+  var kind = r.type === 'spot' ? 'Inventario aleatorio' : 'Inventario mensual';
+  if (r.type !== 'spot' && r.period) { var pm = r.period.split('-'); kind += ' · ' + MESES_[Number(pm[1]) - 1] + ' ' + pm[0]; }
+  var esc = function (x) { return String(x === undefined || x === null ? '' : x).replace(/&/g, '&amp;').replace(/</g, '&lt;'); };
+  var td = 'style="border:1px solid #d8cfc6;padding:6px 8px;font-size:13px"';
+  var th = 'style="border:1px solid #1a1a1a;padding:6px 8px;font-size:12px;background:#1a1a1a;color:#C9A45C;text-align:left"';
+  var table = function (items, waste) {
+    var groups = {};
+    var order = [];
+    items.forEach(function (it) { if (!groups[it.vendor]) { groups[it.vendor] = []; order.push(it.vendor); } groups[it.vendor].push(it); });
+    var h = '';
+    order.forEach(function (v) {
+      h += '<h3 style="font-family:Arial;font-size:14px;margin:18px 0 6px">' + esc(CAT_LABEL_[v] || v) + '</h3>';
+      h += '<table style="border-collapse:collapse;font-family:Arial;width:100%"><tr><th ' + th + '>Producto</th>' +
+        (waste ? '<th ' + th + '>Cantidad</th><th ' + th + '>Motivo</th>' : '<th ' + th + '>Cajas</th><th ' + th + '>Paquetes</th><th ' + th + '>Sueltas</th><th ' + th + '>Total</th>') + '</tr>';
+      groups[v].forEach(function (it) {
+        var u = it.unit === 'kg' ? ' kg' : '';
+        h += '<tr><td ' + td + '>' + esc(it.item) + '</td>' + (waste
+          ? '<td ' + td + '>' + esc(it.quantity) + u + '</td><td ' + td + '>' + esc(it.reason || '') + '</td>'
+          : '<td ' + td + '>' + esc(it.boxes || '') + '</td><td ' + td + '>' + esc(it.subs || '') + '</td><td ' + td + '>' + esc((it.pans && it.pans.length) ? it.pans.length + ' vasch.' : (it.units || '')) + '</td><td ' + td + '><b>' + esc(it.quantity) + u + '</b></td>') + '</tr>';
+      });
+      h += '</table>';
+    });
+    return h;
+  };
+  var html = '<div style="font-family:Arial;color:#1c1414">' +
+    '<h2 style="margin:0 0 4px">' + esc(r.sucursal) + ' · ' + esc(kind) + '</h2>' +
+    '<div style="color:#6e625e;font-size:13px">' + fecha + ' · ' + (r.items || []).length + ' productos' + ((r.waste || []).length ? ' · ' + r.waste.length + ' con desperdicio' : '') + '</div>' +
+    table(r.items || [], false) +
+    ((r.waste || []).length ? '<h2 style="margin:26px 0 0;color:#B3261E;font-size:16px">Desperdicio</h2>' + table(r.waste, true) : '') +
+    '<p style="color:#6e625e;font-size:12px;margin-top:22px">El Excel completo se descarga desde la app → Depósito → Stocks.</p></div>';
+  MailApp.sendEmail({ to: to, subject: "Lucciano's · " + r.sucursal + ' · ' + kind, htmlBody: html, name: "Lucciano's App" });
+  return to;
+}
+
+/** Ejecutalo una vez desde el editor para autorizar el envío de mails (manda uno de prueba). */
+function probarMail() {
+  return mailStockCount_({ sucursal: 'Prueba', date: new Date().toISOString(), type: 'spot', items: [{ vendor: 'PAPER', item: 'Producto de prueba', boxes: 1, quantity: '10' }] });
 }
 
 /** Ejecutalo una vez desde el editor para crear las hojas y dar permisos. */

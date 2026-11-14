@@ -538,6 +538,8 @@ const STR = {
     errChoosePassword: "Elegí una contraseña nueva.",
 
     progressRestored: "Recuperamos el conteo que tenías a medias.",
+    mailedAuto: "Se envió solo por mail a",
+    stockSavedSub: (s) => `El conteo de ${s} quedó guardado y ya le llegó al depósito. No hace falta hacer nada más.`,
     clearedOk: "Listo, se borró todo. Podés empezar de cero.",
     pinTitle: "Ingresá el PIN",
     pinSub: "Pedíselo a quien administra la herramienta si no lo tenés.",
@@ -825,6 +827,8 @@ const STR = {
     errChoosePassword: "Choose a new password.",
 
     progressRestored: "We restored the count you had in progress.",
+    mailedAuto: "Automatically emailed to",
+    stockSavedSub: (s) => `The ${s} count was saved and sent to the warehouse. Nothing else to do.`,
     clearedOk: "Done, everything was cleared. You can start over.",
     pinTitle: "Enter the PIN",
     pinSub: "Ask whoever manages this tool if you don't have it.",
@@ -1908,7 +1912,7 @@ export default function App() {
     // Guardarlo en la base de datos es opcional: si falla, se sigue igual.
     setStockSubmitting(true);
     if (apiConfigured()) {
-      try { await insertRow("stock_counts", newCount); }
+      try { const res = await insertRow("stock_counts", newCount); if (res && res.mailed) newCount.mailedTo = res.mailed; }
       catch (e) {
         console.warn("stock_counts insert skipped:", e);
         setToast({ type: "error", text: STR[lang].warnNotSavedMail });
@@ -3542,7 +3546,23 @@ function StockConfirm({ sucursal, lastStockCount, receptions = [], onNewCount, o
       <CheckCircle2 size={48} color="var(--pistachio-dark)" strokeWidth={1.5} />
       <h1 style={styles.h1}>{t.stockSent}</h1>
       {lastStockCount && <div style={{ ...styles.eyebrow, marginTop: -2 }}>{countKindLabel(lastStockCount, lang)}</div>}
-      <p style={styles.sub}>{t.stockConfirmSub(sucursal)}</p>
+      <p style={styles.sub}>{lastStockCount && lastStockCount.mailedTo ? t.stockSavedSub(sucursal) : t.stockConfirmSub(sucursal)}</p>
+      {lastStockCount && lastStockCount.mailedTo ? (
+        <div style={{ width: "100%", maxWidth: 460, marginTop: 14 }}>
+          <div style={styles.mailedCard}>
+            <CheckCircle2 size={18} color="var(--pistachio-dark)" />
+            <span>{t.mailedAuto} <strong>{lastStockCount.mailedTo}</strong></span>
+          </div>
+          <button
+            onClick={handleExcel}
+            disabled={excelState === "working"}
+            style={{ ...styles.secondaryBtn, width: "100%", marginTop: 14, display: "flex", alignItems: "center", justifyContent: "center", gap: 8 }}
+          >
+            {excelState === "working" ? <Loader2 size={16} style={{ animation: "spin 1s linear infinite" }} /> : excelState === "done" ? <CheckCircle2 size={16} /> : <Download size={16} />}
+            {excelState === "working" ? t.excelWorking : excelState === "done" ? t.excelDone : excelState === "error" ? t.excelError : t.excelBtn}
+          </button>
+        </div>
+      ) : (<>
       <p style={{ ...styles.sub, fontSize: 13, marginTop: 4 }}>
         {t.alsoByMail(ORDER_EMAIL)}<strong>{ORDER_EMAIL}</strong>:
       </p>
@@ -3649,6 +3669,7 @@ function StockConfirm({ sucursal, lastStockCount, receptions = [], onNewCount, o
           </a>
         </div>
       )}
+      </>)}
       <div style={{ display: "flex", gap: 12, marginTop: 20, flexWrap: "wrap", justifyContent: "center" }}>
         <button style={styles.secondaryBtn} onClick={onMenu}>{t.backToMenu}</button>
         <button style={styles.secondaryBtn} onClick={onNewCount}>{t.newCount}</button>
@@ -4678,6 +4699,7 @@ const styles = {
   notesInput: { width: "100%", border: "1px solid transparent", borderRadius: 14, padding: 12, fontSize: 14, resize: "vertical", marginBottom: 14, background: "var(--paper-2)", color: "var(--ink)" },
   authInput: { width: "100%", border: "1px solid transparent", borderRadius: 14, padding: "14px 16px", fontSize: 15, marginBottom: 10, background: "var(--paper-2)", color: "var(--ink)" },
   submitBtn: { width: "100%", background: "var(--plum)", color: "var(--on-accent)", border: "none", borderRadius: 14, padding: "14px 0", fontSize: 15, fontWeight: 650, display: "flex", alignItems: "center", justifyContent: "center", gap: 8, cursor: "pointer", boxShadow: "0 6px 18px var(--plum-glow)" },
+  mailedCard: { display: "flex", alignItems: "center", gap: 10, justifyContent: "center", padding: "14px 16px", borderRadius: 16, background: "var(--ok-bg)", color: "var(--ink)", fontSize: 14, textAlign: "left" },
   modalOverlay: { position: "fixed", inset: 0, background: "rgba(10,6,6,0.45)", backdropFilter: "blur(4px)", WebkitBackdropFilter: "blur(4px)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 100, padding: 20, animation: "fadeIn .2s ease both" },
   modalBox: { background: "var(--paper)", borderRadius: 24, padding: 24, maxWidth: 400, width: "100%", boxShadow: "0 24px 60px rgba(0,0,0,0.3)", animation: "sheetUp .28s cubic-bezier(.2,.8,.2,1) both" },
   modalTitle: { fontFamily: "'Bodoni Moda Variable', 'Bodoni Moda', Georgia, serif", fontWeight: 800, fontSize: 22, color: "var(--ink)", margin: "0 0 10px" },

@@ -30,7 +30,7 @@ export async function listRows(table) {
 }
 
 export async function insertRow(table, row) {
-  await call({ action: "insert", table, row });
+  return await call({ action: "insert", table, row });
 }
 
 export async function updateRow(table, id, patch, auth) {

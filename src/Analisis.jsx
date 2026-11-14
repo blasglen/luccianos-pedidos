@@ -207,11 +207,14 @@ export default function Analisis({ stockCounts = [], catalog = [], theme = "day"
   }, [month, prevMonth, branch, category, monthTable, wasteThisMonth, get, costMap]);
 
   // Explorador de producto
+  // Para elegir el producto: primero la categoría, después el producto de esa categoría.
+  const [prodCatSel, setProdCatSel] = useState(null);
+  const prodCat = prodCatSel || (category !== "Todas" ? category : "GELATO");
   const productOptions = useMemo(() => {
     const s = new Set();
-    counts.forEach((c) => c.items.forEach((it) => { if (inCat(it)) s.add(it.vendor + "|" + it.item); }));
+    counts.forEach((c) => c.items.forEach((it) => { if (it.vendor === prodCat) s.add(it.vendor + "|" + it.item); }));
     return [...s].sort((a, b) => a.split("|")[1].localeCompare(b.split("|")[1]));
-  }, [counts, category]);
+  }, [counts, prodCat]);
   const [productSel, setProductSel] = useState("");
   const product = productOptions.includes(productSel) ? productSel : productOptions[0];
   const productSeries = useMemo(() => months.map((m) => {
@@ -359,7 +362,7 @@ export default function Analisis({ stockCounts = [], catalog = [], theme = "day"
           <Card key={k} title={`${title} vs ${prevMonth ? monthLabel(prevMonth, lang) : (es ? "mes anterior" : "last month")}`} sub={es ? "Variación % del stock" : "Stock change %"}>
             {movers[k].length === 0 ? <div style={S.empty}>{es ? "Hace falta un mes anterior para comparar." : "Need a previous month to compare."}</div> : (
               <ResponsiveContainer width="100%" height={210}>
-                <BarChart data={movers[k]} layout="vertical" margin={{ top: 4, right: 52, left: 4, bottom: 0 }}>
+                <BarChart data={movers[k]} layout="vertical" margin={{ top: 4, right: 72, left: 4, bottom: 0 }}>
                   <CartesianGrid horizontal={false} stroke={C.grid} />
                   <XAxis type="number" {...axis} tickFormatter={(v) => `${v}%`} allowDecimals={false} domain={[0, (max) => Math.min(Math.max(max, 10), 300)]} />
                   <YAxis type="category" dataKey="name" {...axis} width={130} tick={{ fontSize: 10, fill: C.muted }} />
@@ -377,9 +380,15 @@ export default function Analisis({ stockCounts = [], catalog = [], theme = "day"
       <div style={S.grid2}>
         <Card title={es ? "Evolución de un producto" : "Product over time"}
           right={
-            <select style={{ ...S.select, maxWidth: 220 }} value={product || ""} onChange={(e) => setProductSel(e.target.value)}>
-              {productOptions.map((k) => <option key={k} value={k}>{k.split("|")[1]}</option>)}
-            </select>
+            <div style={{ display: "flex", gap: 8, flexWrap: "wrap", width: "100%" }}>
+              <select style={{ ...S.select, flex: "0 1 150px" }} value={prodCat} onChange={(e) => { setProdCatSel(e.target.value); setProductSel(""); }}>
+                {catalog.map((c) => <option key={c.category} value={c.category}>{c.label}</option>)}
+              </select>
+              <select style={{ ...S.select, flex: "1 1 180px", minWidth: 0 }} value={product || ""} onChange={(e) => setProductSel(e.target.value)}>
+                {productOptions.length === 0 && <option value="">{es ? "Sin productos contados" : "No counted products"}</option>}
+                {productOptions.map((k) => <option key={k} value={k}>{k.split("|")[1]}</option>)}
+              </select>
+            </div>
           }>
           <ResponsiveContainer width="100%" height={240}>
             <LineChart data={productSeries} margin={{ top: 10, right: 16, left: -10, bottom: 0 }}>

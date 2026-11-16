@@ -180,7 +180,8 @@ export async function buildStockWorkbook(stockCount, catalog, lang = "es") {
         formula: `IF(OR(H${r}="",J${r}=""),"",H${r}-J${r})`,
         result: totalVal !== null && prevVal !== null ? totalVal - prevVal : "",
       };
-      const cost = Number(p.cost) || null;
+      // Costo guardado en el conteo (precio de esa fecha); si no lo tiene, el actual.
+      const cost = (it && it.cost != null && it.cost !== "" ? Number(it.cost) : Number(p.cost)) || null;
       row.getCell(12).value = cost;
       const val = totalVal !== null && cost ? totalVal * cost : null;
       if (val) catValue += val;
@@ -273,7 +274,7 @@ export async function buildStockWorkbook(stockCount, catalog, lang = "es") {
       const rw = 4 + i;
       const row = wsW.getRow(rw);
       const q = Number(it.total ?? it.quantity);
-      const cost = costOf[it.vendor + "|" + it.item] || null;
+      const cost = (it.cost != null && it.cost !== "" ? Number(it.cost) : costOf[it.vendor + "|" + it.item]) || null;
       if (cost) wasteValue += q * cost;
       row.values = [labelOf[it.vendor] || it.vendor, it.item, q, it.unit === "kg" ? "kg" : "u", cost,
         { formula: `IF(E${rw}="","",C${rw}*E${rw})`, result: cost ? q * cost : "" }, it.reason || ""];

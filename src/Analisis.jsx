@@ -109,7 +109,10 @@ export default function Analisis({ stockCounts = [], catalog = [], theme = "day"
     catalog.forEach((c) => c.products.forEach((p) => { if (p.cost) m[c.category + "|" + p.item] = p.cost; }));
     return m;
   }, [catalog]);
-  const valueOf = (items = []) => items.reduce((a, it) => a + itemQty(it) * (costMap[it.vendor + "|" + it.item] || 0), 0);
+  // Costo con el que se valoriza: el guardado en el conteo (precio de ese momento);
+  // si el conteo es viejo y no lo tiene, el costo actual del catálogo.
+  const costOfIt = (it) => (it.cost != null && it.cost !== "" ? Number(it.cost) : costMap[it.vendor + "|" + it.item] || 0);
+  const valueOf = (items = []) => items.reduce((a, it) => a + itemQty(it) * costOfIt(it), 0);
   const catLabel = (cat) => (catalog.find((c) => c.category === cat) || {}).label || cat;
   const inCat = (it) => category === "Todas" || it.vendor === category;
 
@@ -162,6 +165,7 @@ export default function Analisis({ stockCounts = [], catalog = [], theme = "day"
         const k = it.vendor + "|" + it.item;
         const e = map.get(k) || { vendor: it.vendor, item: it.item, unit: it.unit === "kg" ? "kg" : "u", cur: 0, prev: null };
         e.cur += itemQty(it);
+        e.val = (e.val || 0) + itemQty(it) * costOfIt(it);
         map.set(k, e);
       });
       (prev ? prev.items : []).filter(inCat).forEach((it) => {
@@ -234,7 +238,7 @@ export default function Analisis({ stockCounts = [], catalog = [], theme = "day"
     if (sortKey === "pct") t.sort((a, b) => Math.abs(b.pct ?? 0) - Math.abs(a.pct ?? 0));
     if (sortKey === "item") t.sort((a, b) => a.item.localeCompare(b.item));
     if (sortKey === "cur") t.sort((a, b) => b.cur - a.cur);
-    if (sortKey === "val") t.sort((a, b) => b.cur * (costMap[b.vendor + "|" + b.item] || 0) - a.cur * (costMap[a.vendor + "|" + a.item] || 0));
+    if (sortKey === "val") t.sort((a, b) => (b.val || 0) - (a.val || 0));
     return t;
   }, [monthTable, sortKey]);
 
@@ -446,7 +450,7 @@ export default function Analisis({ stockCounts = [], catalog = [], theme = "day"
                   <td style={{ ...S.td, fontWeight: 700, color: e.pct == null ? C.muted : e.pct >= 0 ? C.up : C.down }}>
                     {e.pct == null ? "—" : `${e.pct >= 0 ? "▲" : "▼"} ${Math.abs(Math.round(e.pct))}%`}
                   </td>
-                  <td style={S.td}>{costMap[e.vendor + "|" + e.item] ? fmtUSD(e.cur * costMap[e.vendor + "|" + e.item]) : <span style={{ color: C.muted }}>{es ? "sin costo" : "no cost"}</span>}</td>
+                  <td style={S.td}>{e.val ? fmtUSD(e.val) : <span style={{ color: C.muted }}>{es ? "sin costo" : "no cost"}</span>}</td>
                 </tr>
               ))}
             </tbody>

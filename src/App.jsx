@@ -1815,6 +1815,8 @@ export default function App() {
         perBox: p.box || null, perSub: p.sub || null, unit: p.unit || "",
         ...(pans.length ? { pans, tare: stockNum(gelatoTare) } : {}),
         total, quantity: fmtStockNum(total),
+        // Costo unitario del día: el conteo queda valorizado a los precios de ese momento.
+        ...(p.cost ? { cost: Number(p.cost) } : {}),
         ...(d.r && String(d.r).trim() ? { reason: String(d.r).trim() } : {}),
       });
     });

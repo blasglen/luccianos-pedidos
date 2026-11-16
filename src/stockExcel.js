@@ -75,8 +75,12 @@ export async function buildStockWorkbook(stockCount, catalog, lang = "es") {
     { key: "unit", width: 7 },
     { key: "prev", width: 12 },
     { key: "diff", width: 12 },
+    { key: "cost", width: 12 },
+    { key: "value", width: 14 },
   ];
-  const lastCol = "K";
+  const lastCol = "M";
+  const USD = '"US$" #,##0.00;-"US$" #,##0.00;"-"';
+  const USD4 = '"US$" #,##0.00##;-"US$" #,##0.00##;"-"';
 
   // Título
   ws.mergeCells(`A1:${lastCol}1`);
@@ -117,8 +121,8 @@ export async function buildStockWorkbook(stockCount, catalog, lang = "es") {
 
   // Encabezado
   const headers = es
-    ? ["#", "Producto", "Ud x caja", "Ud x paq.", "Cajas", "Paquetes", "Sueltas", "TOTAL", "Unidad", "Anterior", "Diferencia"]
-    : ["#", "Product", "Units/box", "Units/pack", "Boxes", "Packs", "Loose", "TOTAL", "Unit", "Previous", "Difference"];
+    ? ["#", "Producto", "Ud x caja", "Ud x paq.", "Cajas", "Paquetes", "Sueltas", "TOTAL", "Unidad", "Anterior", "Diferencia", "Costo unit.", "Valor"]
+    : ["#", "Product", "Units/box", "Units/pack", "Boxes", "Packs", "Loose", "TOTAL", "Unit", "Previous", "Difference", "Unit cost", "Value"];
   const hr = ws.getRow(5);
   hr.values = headers;
   hr.height = 22;
@@ -145,6 +149,8 @@ export async function buildStockWorkbook(stockCount, catalog, lang = "es") {
     r++;
 
     let nCounted = 0;
+    let catValue = 0;
+    const catFirst = r;
     cat.products.forEach((p, i) => {
       const it = counted[cat.category + "|" + p.item];
       if (it) nCounted++;
@@ -174,14 +180,19 @@ export async function buildStockWorkbook(stockCount, catalog, lang = "es") {
         formula: `IF(OR(H${r}="",J${r}=""),"",H${r}-J${r})`,
         result: totalVal !== null && prevVal !== null ? totalVal - prevVal : "",
       };
+      const cost = Number(p.cost) || null;
+      row.getCell(12).value = cost;
+      const val = totalVal !== null && cost ? totalVal * cost : null;
+      if (val) catValue += val;
+      row.getCell(13).value = { formula: `IF(OR(H${r}="",L${r}=""),"",H${r}*L${r})`, result: val === null ? "" : val };
 
       const zebra = i % 2 === 1;
       row.eachCell({ includeEmpty: true }, (cell, col) => {
-        if (col > 11) return;
+        if (col > 13) return;
         cell.border = border;
         cell.font = { name: "Arial", size: 10, color: { argb: it ? "FF000000" : C.muted } };
         cell.alignment = { vertical: "middle", horizontal: col === 2 ? "left" : "center" };
-        if (col >= 3) cell.numFmt = col === 11 ? DIFF : NUM;
+        if (col >= 3) cell.numFmt = col === 11 ? DIFF : col === 12 ? USD4 : col === 13 ? USD : NUM;
         let fill = zebra ? C.beigeLight : null;
         if (col === 3 || col === 4) fill = C.grey;
         if (col >= 5 && col <= 7) fill = C.input;
@@ -198,9 +209,24 @@ export async function buildStockWorkbook(stockCount, catalog, lang = "es") {
       }
       r++;
     });
-    catStats.push({ label: cat.label, total: cat.products.length, counted: nCounted });
+    catStats.push({ label: cat.label, total: cat.products.length, counted: nCounted, value: catValue, from: catFirst, to: r - 1 });
   });
   const lastDataRow = r - 1;
+  const grandValue = catStats.reduce((a, c) => a + c.value, 0);
+  {
+    const tr = ws.getRow(r);
+    ws.mergeCells(`A${r}:L${r}`);
+    tr.getCell(1).value = es ? "VALOR TOTAL DEL INVENTARIO" : "TOTAL INVENTORY VALUE";
+    tr.getCell(13).value = { formula: `SUM(M${firstDataRow}:M${lastDataRow})`, result: grandValue };
+    tr.height = 22;
+    [1, 13].forEach((col) => {
+      const cell = tr.getCell(col);
+      cell.font = { name: "Arial", size: 11, bold: true, color: { argb: C.gold } };
+      cell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: C.black } };
+      cell.alignment = { vertical: "middle", horizontal: col === 1 ? "right" : "center", indent: col === 1 ? 1 : 0 };
+    });
+    tr.getCell(13).numFmt = USD;
+  }
 
   // Diferencias en color (verde sube, rojo baja)
   ws.addConditionalFormatting({
@@ -210,7 +236,7 @@ export async function buildStockWorkbook(stockCount, catalog, lang = "es") {
       { type: "cellIs", operator: "greaterThan", formulae: ["0"], style: { font: { color: { argb: C.green }, bold: true } } },
     ],
   });
-  ws.autoFilter = { from: { row: 5, column: 1 }, to: { row: lastDataRow, column: 11 } };
+  ws.autoFilter = { from: { row: 5, column: 1 }, to: { row: lastDataRow, column: 13 } };
   if (!hasPrev) {
     ws.getColumn(10).hidden = true;
     ws.getColumn(11).hidden = true;
@@ -223,8 +249,8 @@ export async function buildStockWorkbook(stockCount, catalog, lang = "es") {
       views: [{ state: "frozen", ySplit: 3, showGridLines: false }],
       pageSetup: { orientation: "landscape", fitToPage: true, fitToWidth: 1, fitToHeight: 0 },
     });
-    wsW.columns = [{ width: 16 }, { width: 50 }, { width: 12 }, { width: 9 }, { width: 44 }];
-    wsW.mergeCells("A1:E1");
+    wsW.columns = [{ width: 16 }, { width: 50 }, { width: 12 }, { width: 9 }, { width: 12 }, { width: 13 }, { width: 44 }];
+    wsW.mergeCells("A1:G1");
     const tw = wsW.getCell("A1");
     tw.value = es ? `DESPERDICIO · ${stockCount.sucursal} · ${fmtDate(stockCount.date)}` : `WASTE · ${stockCount.sucursal} · ${fmtDate(stockCount.date)}`;
     tw.font = { name: "Arial", size: 14, bold: true, color: { argb: "FFFFFFFF" } };
@@ -232,27 +258,48 @@ export async function buildStockWorkbook(stockCount, catalog, lang = "es") {
     tw.alignment = { vertical: "middle", indent: 1 };
     wsW.getRow(1).height = 28;
     const hw = wsW.getRow(3);
-    hw.values = es ? ["Categoría", "Producto", "Cantidad", "Unidad", "Motivo"] : ["Category", "Product", "Quantity", "Unit", "Reason"];
+    hw.values = es ? ["Categoría", "Producto", "Cantidad", "Unidad", "Costo unit.", "Valor", "Motivo"] : ["Category", "Product", "Quantity", "Unit", "Unit cost", "Value", "Reason"];
     hw.eachCell((cell, col) => {
       cell.font = { name: "Arial", size: 10, bold: true, color: { argb: "FFFFFFFF" } };
       cell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: C.black } };
-      cell.alignment = { horizontal: col === 3 || col === 4 ? "center" : "left", vertical: "middle" };
+      cell.alignment = { horizontal: col >= 3 && col <= 6 ? "center" : "left", vertical: "middle" };
       cell.border = border;
     });
     const labelOf = {};
-    catalog.forEach((c) => { labelOf[c.category] = c.label; });
+    const costOf = {};
+    catalog.forEach((c) => { labelOf[c.category] = c.label; c.products.forEach((p) => { if (p.cost) costOf[c.category + "|" + p.item] = Number(p.cost); }); });
+    let wasteValue = 0;
     waste.forEach((it, i) => {
-      const row = wsW.getRow(4 + i);
-      row.values = [labelOf[it.vendor] || it.vendor, it.item, Number(it.total ?? it.quantity), it.unit === "kg" ? "kg" : "u", it.reason || ""];
+      const rw = 4 + i;
+      const row = wsW.getRow(rw);
+      const q = Number(it.total ?? it.quantity);
+      const cost = costOf[it.vendor + "|" + it.item] || null;
+      if (cost) wasteValue += q * cost;
+      row.values = [labelOf[it.vendor] || it.vendor, it.item, q, it.unit === "kg" ? "kg" : "u", cost,
+        { formula: `IF(E${rw}="","",C${rw}*E${rw})`, result: cost ? q * cost : "" }, it.reason || ""];
       row.eachCell({ includeEmpty: true }, (cell, col) => {
-        if (col > 5) return;
+        if (col > 7) return;
         cell.border = border;
-        cell.font = { name: "Arial", size: 10, bold: col === 3 };
-        cell.alignment = { vertical: "middle", horizontal: col === 3 || col === 4 ? "center" : "left", wrapText: col === 5 };
+        cell.font = { name: "Arial", size: 10, bold: col === 3 || col === 6 };
+        cell.alignment = { vertical: "middle", horizontal: col >= 3 && col <= 6 ? "center" : "left", wrapText: col === 7 };
         if (col === 3) cell.numFmt = NUM;
+        if (col === 5) cell.numFmt = USD4;
+        if (col === 6) cell.numFmt = USD;
         if (i % 2 === 1) cell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: C.beigeLight } };
       });
     });
+    const wt = wsW.getRow(4 + waste.length);
+    wsW.mergeCells(`A${4 + waste.length}:E${4 + waste.length}`);
+    wt.getCell(1).value = es ? "VALOR TOTAL DEL DESPERDICIO" : "TOTAL WASTE VALUE";
+    wt.getCell(6).value = { formula: `SUM(F4:F${3 + waste.length})`, result: wasteValue };
+    [1, 6].forEach((col) => {
+      const cell = wt.getCell(col);
+      cell.font = { name: "Arial", size: 11, bold: true, color: { argb: "FFFFFFFF" } };
+      cell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FFB3261E" } };
+      cell.alignment = { vertical: "middle", horizontal: col === 1 ? "right" : "center", indent: col === 1 ? 1 : 0 };
+    });
+    wt.getCell(6).numFmt = USD;
+    stockCount._wasteValue = wasteValue;
   }
 
   // ── Hoja Entradas por semana (solo inventario mensual con entradas) ──
@@ -339,8 +386,8 @@ export async function buildStockWorkbook(stockCount, catalog, lang = "es") {
 
   // ── Hoja 2: Resumen ───────────────────────────────────────────────────
   const rs = wb.addWorksheet(es ? "Resumen" : "Summary", { views: [{ showGridLines: false }] });
-  rs.columns = [{ width: 28 }, { width: 14 }, { width: 14 }, { width: 14 }];
-  rs.mergeCells("A1:D1");
+  rs.columns = [{ width: 28 }, { width: 14 }, { width: 14 }, { width: 14 }, { width: 16 }];
+  rs.mergeCells("A1:E1");
   const t2 = rs.getCell("A1");
   t2.value = `${stockCount.sucursal} · ${fmtDate(stockCount.date)}`;
   t2.font = { name: "Arial", size: 14, bold: true, color: { argb: C.gold } };
@@ -348,7 +395,7 @@ export async function buildStockWorkbook(stockCount, catalog, lang = "es") {
   t2.alignment = { vertical: "middle", indent: 1 };
   rs.getRow(1).height = 28;
   const h2 = rs.getRow(3);
-  h2.values = es ? ["Categoría", "Productos", "Contados", "% contado"] : ["Category", "Products", "Counted", "% counted"];
+  h2.values = es ? ["Categoría", "Productos", "Contados", "% contado", "Valor"] : ["Category", "Products", "Counted", "% counted", "Value"];
   h2.eachCell((cell) => {
     cell.font = { name: "Arial", size: 10, bold: true, color: { argb: "FFFFFFFF" } };
     cell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: C.black } };
@@ -358,13 +405,15 @@ export async function buildStockWorkbook(stockCount, catalog, lang = "es") {
   let rr = 4;
   catStats.forEach((c) => {
     const row = rs.getRow(rr);
-    row.values = [c.label, c.total, c.counted, { formula: `IF(B${rr}=0,0,C${rr}/B${rr})`, result: c.total ? c.counted / c.total : 0 }];
+    row.values = [c.label, c.total, c.counted, { formula: `IF(B${rr}=0,0,C${rr}/B${rr})`, result: c.total ? c.counted / c.total : 0 },
+      { formula: `SUM('${es ? "Inventario" : "Inventory"}'!M${c.from}:M${c.to})`, result: c.value }];
     row.eachCell((cell, col) => {
       cell.border = border;
       cell.font = { name: "Arial", size: 10 };
       cell.alignment = { horizontal: col === 1 ? "left" : "center", indent: col === 1 ? 1 : 0 };
     });
     row.getCell(4).numFmt = "0%";
+    row.getCell(5).numFmt = USD;
     rr++;
   });
   const tot = rs.getRow(rr);
@@ -375,6 +424,7 @@ export async function buildStockWorkbook(stockCount, catalog, lang = "es") {
     { formula: `SUM(B4:B${rr - 1})`, result: sumT },
     { formula: `SUM(C4:C${rr - 1})`, result: sumC },
     { formula: `IF(B${rr}=0,0,C${rr}/B${rr})`, result: sumT ? sumC / sumT : 0 },
+    { formula: `SUM(E4:E${rr - 1})`, result: grandValue },
   ];
   tot.eachCell((cell, col) => {
     cell.border = border;
@@ -383,9 +433,13 @@ export async function buildStockWorkbook(stockCount, catalog, lang = "es") {
     cell.alignment = { horizontal: col === 1 ? "left" : "center", indent: col === 1 ? 1 : 0 };
   });
   tot.getCell(4).numFmt = "0%";
+  tot.getCell(5).numFmt = USD;
   if (waste.length) {
     const wr = rs.getRow(rr + 2);
-    wr.values = [es ? "Productos con desperdicio" : "Products with waste", waste.length];
+    wr.values = [es ? "Desperdicio (productos / valor)" : "Waste (products / value)", waste.length, null, null, stockCount._wasteValue || 0];
+    wr.getCell(5).numFmt = USD;
+    wr.getCell(5).font = { name: "Arial", size: 10, bold: true, color: { argb: "FFB3261E" } };
+    wr.getCell(5).alignment = { horizontal: "center" };
     wr.getCell(1).font = { name: "Arial", size: 10, bold: true, color: { argb: "FFB3261E" } };
     wr.getCell(2).font = { name: "Arial", size: 10, bold: true, color: { argb: "FFB3261E" } };
     wr.getCell(2).alignment = { horizontal: "center" };

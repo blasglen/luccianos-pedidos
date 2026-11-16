@@ -11,6 +11,7 @@
  *   - Conteos            → un renglón por conteo de stock (lo que lee la app)
  *   - Conteos detalle    → un renglón por producto contado
  *   - Productos extra    → productos agregados desde la app
+ *   - Costos             → costo unitario vigente de cada producto (se edita desde Depósito → Precios)
  *   - Recepciones        → un renglón por recepción (proveedor o transferencia)
  *   - Recepciones detalle→ un renglón por producto recibido
  *
@@ -28,6 +29,7 @@ var TABLES = {
   orders: { sheet: 'Pedidos', cols: ['id', 'fecha', 'sucursal', 'estado', 'cancelado_en', 'notas', 'cant_productos', 'json'] },
   stock_counts: { sheet: 'Conteos', cols: ['id', 'fecha', 'sucursal', 'cant_productos', 'cant_desperdicio', 'json', 'tipo', 'periodo'] },
   stock_extra_products: { sheet: 'Productos extra', cols: ['id', 'categoria', 'producto', 'json'] },
+  prices: { sheet: 'Costos', cols: ['id', 'categoria', 'producto', 'unidad', 'costo', 'actualizado', 'json'] },
   receptions: { sheet: 'Recepciones', cols: ['id', 'fecha', 'sucursal', 'origen_tipo', 'origen', 'remito', 'cargado_por', 'cant_productos', 'json', 'periodo', 'semana'] },
 };
 
@@ -143,6 +145,9 @@ function toRow_(table, r) {
   }
   if (table === 'receptions') {
     return [r.id, toDate_(r.date), r.sucursal, r.source_type || '', r.source || '', r.ref || '', r.origin || 'manual', (r.items || []).length, json, r.period || '', r.week || ''];
+  }
+  if (table === 'prices') {
+    return [r.id, r.vendor || '', r.item || '', r.unit === 'kg' ? 'kg' : 'u', num_(r.cost), r.updated_at ? toDate_(r.updated_at) : '', json];
   }
   return [r.id, r.category || '', r.item || '', json];
 }

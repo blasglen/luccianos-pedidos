@@ -616,6 +616,17 @@ const STR = {
     excelBtn: "Descargar / compartir Excel",
     excelDownload: "Descargar Excel",
     analisisTitle: "Análisis",
+    preciosTitle: "Precios",
+    pricesIntro: "Costo unitario de cada producto (por unidad, o por kg en gelato e ingredientes). Cada conteo guarda el precio vigente el día que se envía, así que cambiar un precio no modifica los inventarios anteriores.",
+    pricesSearch: "Buscar producto…",
+    pricesSave: (n) => `Guardar ${n} cambio${n === 1 ? "" : "s"}`,
+    pricesSaving: "Guardando…",
+    pricesSaved: "Precios guardados.",
+    pricesError: "No se pudieron guardar. Probá de nuevo.",
+    pricesDiscard: "Descartar",
+    pricesNoCost: "sin precio",
+    pricesUpdated: "Actualizado",
+    pricesDownload: "Descargar lista (Excel)",
     delStockBtn: "Eliminar este conteo",
     branchAuthEyebrow: "Sucursal",
     recTitle: "Recepciones",
@@ -905,6 +916,17 @@ const STR = {
     excelBtn: "Download / share Excel",
     excelDownload: "Download Excel",
     analisisTitle: "Analysis",
+    preciosTitle: "Prices",
+    pricesIntro: "Unit cost of each product (per unit, or per kg for gelato and ingredients). Each count stores the price in force the day it is sent, so changing a price doesn't modify earlier inventories.",
+    pricesSearch: "Search product…",
+    pricesSave: (n) => `Save ${n} change${n === 1 ? "" : "s"}`,
+    pricesSaving: "Saving…",
+    pricesSaved: "Prices saved.",
+    pricesError: "Couldn't save. Try again.",
+    pricesDiscard: "Discard",
+    pricesNoCost: "no price",
+    pricesUpdated: "Updated",
+    pricesDownload: "Download list (Excel)",
     delStockBtn: "Delete this count",
     branchAuthEyebrow: "Store",
     recTitle: "Receiving",
@@ -1187,6 +1209,21 @@ function readGelatoTare(sucursal) {
 function writeGelatoTare(sucursal, v) {
   try { localStorage.setItem("gelato_tare_" + sucursal, v); } catch {}
 }
+// Precios: el costo de fábrica vive en STOCK_VENDORS (código). Los que el admin
+// cambia desde Depósito → Precios se guardan en la hoja "Costos" de Google Sheets
+// y pisan al de fábrica cuando la app arranca.
+const BASE_COSTS = {};
+Object.entries(STOCK_VENDORS).forEach(([cat, list]) => list.forEach((p) => { BASE_COSTS[cat + "|" + p.item] = p.cost ?? null; }));
+function applyPriceRows(rows = []) {
+  rows.forEach((r) => {
+    const p = (STOCK_VENDORS[r.vendor] || []).find((x) => x.item === r.item);
+    if (!p) return;
+    const c = Number(r.cost);
+    p.cost = r.cost === null || r.cost === "" || !isFinite(c) ? BASE_COSTS[r.vendor + "|" + r.item] : c;
+    p.costUpdatedAt = r.updated_at || null;
+  });
+}
+
 function findStockProduct(vendor, item, extraProducts = []) {
   const base = (STOCK_VENDORS[vendor] || []).find((p) => p.item === item);
   if (base) return base;
@@ -1473,6 +1510,7 @@ export default function App() {
   const [depositoStockView, setDepositoStockView] = useState("conteo");
   const [stockCounts, setStockCounts] = useState([]);
   const [receptions, setReceptions] = useState([]);
+  const [pricesVersion, setPricesVersion] = useState(0);
   const [stockCountsLoading, setStockCountsLoading] = useState(true);
   const [expandedStockCount, setExpandedStockCount] = useState(null);
   const [theme, setTheme] = useState(() => {
@@ -1654,8 +1692,24 @@ export default function App() {
     setLoading(false);
   }
 
+  async function loadPrices() {
+    if (!apiConfigured()) return;
+    try { applyPriceRows(await listRows("prices")); setPricesVersion((v) => v + 1); }
+    catch (e) { console.warn("prices load error:", e); }
+  }
+
+  async function savePrices(changes) {
+    // changes: [{ vendor, item, unit, cost }]
+    const now = new Date().toISOString();
+    const rows = changes.map((c) => ({ id: c.vendor + "|" + c.item, vendor: c.vendor, item: c.item, unit: c.unit || "", cost: c.cost, updated_at: now, updated_by: (depositoSession && depositoSession.email) || "" }));
+    await upsertRows("prices", rows, depositoSession || {});
+    applyPriceRows(rows);
+    setPricesVersion((v) => v + 1);
+  }
+
   async function loadStockCounts() {
     setStockCountsLoading(true);
+    loadPrices();
     if (apiConfigured()) {
       try {
         const rows = await listRows("stock_counts");
@@ -2288,6 +2342,8 @@ export default function App() {
           onImportOrders={importOrders}
           onDeleteStockCount={deleteStockCount}
           onImportStockCounts={importStockCounts}
+          onSavePrices={savePrices}
+          pricesVersion={pricesVersion}
           userEmail={depositoSession?.email}
           onLogout={() => { clearSession(); setDepositoSession(null); setScreen("home"); }}
           theme={theme}
@@ -3889,18 +3945,19 @@ function DateRangePicker({ from, to, setFrom, setTo, lang }) {
   );
 }
 
-function Deposito({ onBack, loading, orders, allOrders, filterSucursal, setFilterSucursal, filterStatus, setFilterStatus, filterDateFrom, setFilterDateFrom, filterDateTo, setFilterDateTo, depositoView, setDepositoView, depositoSection, setDepositoSection, depositoStockView, setDepositoStockView, stockCounts, allStockCounts, receptions = [], stockExtraProducts = [], stockCountsLoading, expandedStockCount, setExpandedStockCount, expandedOrder, setExpandedOrder, updateStatus, onImportOrders, onDeleteStockCount, onImportStockCounts, userEmail, onLogout, theme, onToggleTheme, lang, onToggleLang }) {
+function Deposito({ onBack, loading, orders, allOrders, filterSucursal, setFilterSucursal, filterStatus, setFilterStatus, filterDateFrom, setFilterDateFrom, filterDateTo, setFilterDateTo, depositoView, setDepositoView, depositoSection, setDepositoSection, depositoStockView, setDepositoStockView, stockCounts, allStockCounts, receptions = [], stockExtraProducts = [], stockCountsLoading, expandedStockCount, setExpandedStockCount, expandedOrder, setExpandedOrder, updateStatus, onImportOrders, onDeleteStockCount, onImportStockCounts, onSavePrices, pricesVersion = 0, userEmail, onLogout, theme, onToggleTheme, lang, onToggleLang }) {
   const t = STR[lang];
   const pendingCount = allOrders.filter((o) => o.status === "pendiente").length;
   const [showExport, setShowExport] = useState(false);
   const isCompras = depositoSection === "compras";
   const isStocks = depositoSection === "stocks";
   const isAnalisis = depositoSection === "analisis";
+  const isPrecios = depositoSection === "precios";
   const analysisCatalog = useMemo(() => STOCK_REAL_CATEGORIES.map((cat) => ({
     category: cat,
     label: getStockVendorLabel(cat, lang),
-    products: [...STOCK_VENDORS[cat], ...stockExtraProducts.filter((e) => e.category === cat).map((e) => ({ item: e.item }))],
-  })), [lang, stockExtraProducts]);
+    products: [...STOCK_VENDORS[cat].map((p) => ({ ...p })), ...stockExtraProducts.filter((e) => e.category === cat).map((e) => ({ item: e.item }))],
+  })), [lang, stockExtraProducts, pricesVersion]);
 
   const productSummary = useMemo(() => {
     const map = new Map();
@@ -3964,7 +4021,15 @@ function Deposito({ onBack, loading, orders, allOrders, filterSucursal, setFilte
         >
           {t.analisisTitle}
         </button>
+        <button
+          style={{ ...styles.sectionToggleBtn, ...(isPrecios ? styles.sectionToggleBtnActive : {}) }}
+          onClick={() => setDepositoSection("precios")}
+        >
+          {t.preciosTitle}
+        </button>
       </div>
+
+      {isPrecios && <PricesPanel onSave={onSavePrices} version={pricesVersion} lang={lang} />}
 
       {isAnalisis && (
         <Suspense fallback={<div style={styles.emptyRow}>{t.loadingWait}</div>}>
@@ -4450,6 +4515,115 @@ function ClearAllDialog({ title, onCancel, onConfirm, lang }) {
           </>
         )}
       </div>
+    </div>
+  );
+}
+
+// Depósito → Precios: listado editable de costos unitarios.
+function PricesPanel({ onSave, version, lang }) {
+  const t = STR[lang];
+  const [cat, setCat] = useState(STOCK_REAL_CATEGORIES[0]);
+  const [search, setSearch] = useState("");
+  const [edits, setEdits] = useState({}); // key → string
+  const [state, setState] = useState("idle"); // idle | saving | saved | error
+  const keyOf = (c, p) => c + "|" + p.item;
+  const q = search.trim().toLowerCase();
+  const rows = q
+    ? STOCK_REAL_CATEGORIES.flatMap((c) => STOCK_VENDORS[c].filter((p) => p.item.toLowerCase().includes(q)).map((p) => ({ c, p })))
+    : STOCK_VENDORS[cat].map((p) => ({ c: cat, p }));
+  const changed = Object.entries(edits).filter(([k, v]) => {
+    const [c, ...rest] = k.split("|");
+    const p = STOCK_VENDORS[c].find((x) => x.item === rest.join("|"));
+    const n = v === "" ? null : Number(String(v).replace(",", "."));
+    return p && (v === "" ? p.cost != null : isFinite(n) && n >= 0 && n !== Number(p.cost));
+  });
+  async function save() {
+    setState("saving");
+    try {
+      await onSave(changed.map(([k, v]) => {
+        const [c, ...rest] = k.split("|");
+        const item = rest.join("|");
+        const p = STOCK_VENDORS[c].find((x) => x.item === item);
+        return { vendor: c, item, unit: p.unit || "", cost: v === "" ? "" : Number(String(v).replace(",", ".")) };
+      }));
+      setEdits({});
+      setState("saved");
+      setTimeout(() => setState("idle"), 2500);
+    } catch (e) {
+      console.warn("save prices:", e);
+      setState("error");
+    }
+  }
+  async function download() {
+    const ExcelJS = (await import("exceljs/dist/exceljs.min.js")).default;
+    const wb = new ExcelJS.Workbook();
+    const ws = wb.addWorksheet(lang === "en" ? "Prices" : "Precios");
+    ws.columns = [{ header: lang === "en" ? "Category" : "Categoría", width: 16 }, { header: lang === "en" ? "Product" : "Producto", width: 52 }, { header: lang === "en" ? "Unit" : "Unidad", width: 8 }, { header: lang === "en" ? "Unit cost (US$)" : "Costo unit. (US$)", width: 16 }, { header: t.pricesUpdated, width: 14 }];
+    STOCK_REAL_CATEGORIES.forEach((c) => STOCK_VENDORS[c].forEach((p) => ws.addRow([getStockVendorLabel(c, lang), p.item, p.unit === "kg" ? "kg" : "u", p.cost ?? null, p.costUpdatedAt ? new Date(p.costUpdatedAt) : null])));
+    ws.getRow(1).font = { name: "Arial", bold: true, color: { argb: "FFC9A45C" } };
+    ws.getRow(1).fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FF1A1A1A" } };
+    ws.getColumn(4).numFmt = '"US$" #,##0.00##';
+    ws.getColumn(5).numFmt = "dd/mm/yyyy";
+    ws.views = [{ state: "frozen", ySplit: 1 }];
+    ws.autoFilter = "A1:E1";
+    const blob = new Blob([await wb.xlsx.writeBuffer()], { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" });
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(blob);
+    a.download = `Precios Lucciano's - ${new Date().toISOString().slice(0, 10)}.xlsx`;
+    a.click();
+    setTimeout(() => URL.revokeObjectURL(a.href), 2000);
+  }
+  return (
+    <div style={{ paddingBottom: changed.length ? 90 : 0 }}>
+      <p style={{ fontSize: 13, color: "var(--muted-strong)", margin: "0 0 12px", lineHeight: 1.5 }}>{t.pricesIntro}</p>
+      <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 10 }}>
+        {STOCK_REAL_CATEGORIES.map((c) => (
+          <button key={c} onClick={() => { setCat(c); setSearch(""); }} style={{ ...styles.tab, ...(!q && cat === c ? styles.tabActive : {}) }}>{getStockVendorLabel(c, lang)}</button>
+        ))}
+      </div>
+      <div style={{ display: "flex", gap: 8, alignItems: "center", marginBottom: 12, flexWrap: "wrap" }}>
+        <input style={{ ...styles.authInput, flex: 1, minWidth: 180, margin: 0 }} placeholder={t.pricesSearch} value={search} onChange={(e) => setSearch(e.target.value)} />
+        <button style={{ ...styles.secondaryBtn, display: "flex", alignItems: "center", gap: 6 }} onClick={download}><Download size={15} /> {t.pricesDownload}</button>
+      </div>
+      <div style={{ background: "var(--paper)", border: "1px solid var(--line)", borderRadius: 16, overflow: "hidden" }}>
+        {rows.map(({ c, p }, i) => {
+          const k = keyOf(c, p);
+          const v = edits[k] !== undefined ? edits[k] : p.cost ?? "";
+          const dirty = edits[k] !== undefined && changed.some(([kk]) => kk === k);
+          return (
+            <div key={k} style={{ display: "flex", alignItems: "center", gap: 10, padding: "10px 14px", borderTop: i ? "1px solid var(--line)" : "none", background: dirty ? "var(--ok-bg)" : "transparent" }}>
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <div style={{ fontSize: 14, fontWeight: 600, color: "var(--ink)", lineHeight: 1.3 }}>{p.item}</div>
+                <div style={{ fontSize: 11, color: "var(--muted)" }}>
+                  {q ? getStockVendorLabel(c, lang) + " · " : ""}{p.unit === "kg" ? "US$ / kg" : "US$ / u"}
+                  {p.costUpdatedAt ? ` · ${t.pricesUpdated} ${new Date(p.costUpdatedAt).toLocaleDateString(lang === "en" ? "en-US" : "es-AR")}` : ""}
+                </div>
+              </div>
+              <input
+                inputMode="decimal"
+                value={v}
+                placeholder={t.pricesNoCost}
+                onChange={(e) => { const val = e.target.value.replace(/[^0-9.,]/g, ""); setEdits((x) => ({ ...x, [k]: val })); }}
+                style={{ width: 96, padding: "9px 10px", borderRadius: 10, border: "1px solid " + (dirty ? "var(--pistachio-dark)" : "var(--line)"), background: "var(--cream)", color: "var(--ink)", fontSize: 15, textAlign: "right", fontWeight: 600 }}
+              />
+            </div>
+          );
+        })}
+      </div>
+      {(changed.length > 0 || state === "saved" || state === "error") && (
+        <div style={styles.mobileCta}>
+          <span style={{ flex: 1, fontSize: 13, color: state === "error" ? "#B3261E" : "var(--muted-strong)" }}>
+            {state === "saved" ? t.pricesSaved : state === "error" ? t.pricesError : ""}
+            {changed.length > 0 && state !== "error" && state !== "saved" && <button style={{ ...styles.textLink, marginTop: 0 }} onClick={() => setEdits({})}>{t.pricesDiscard}</button>}
+          </span>
+          {changed.length > 0 && (
+            <button style={{ ...styles.submitBtn, width: "auto" }} onClick={save} disabled={state === "saving"}>
+              {state === "saving" ? <Loader2 size={16} style={{ animation: "spin 1s linear infinite" }} /> : <CheckCircle2 size={16} />}
+              {state === "saving" ? t.pricesSaving : t.pricesSave(changed.length)}
+            </button>
+          )}
+        </div>
+      )}
     </div>
   );
 }

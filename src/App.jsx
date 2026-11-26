@@ -303,6 +303,8 @@ const STOCK_VENDORS = {
     { item: "STIR for coffee cup", code: "", box: 100, cost: 0.023 },
     { item: "SWEETNER STICK PACKET LOGO - for coffee", code: "", box: 2000, cost: 0.0325 },
     { item: "WHITE SUGAR STICK PACKET LOGO - for coffee", code: "", box: 2000, cost: 0.02 },
+    { item: "NESPRESSO COFFEE CAPSULE RISTRETTO INTENSO", code: "", box: 50, cost: 0.69 },
+    { item: "NESPRESSO COFFEE CAPSULE VANILLA", code: "", box: 50, cost: 0.69 },
   ],
   "GRAB & GO": [
     { item: "BOTTLE OF SPARKLING WATER", code: "", box: 24, cost: 1.2496 },
@@ -324,6 +326,7 @@ const STOCK_VENDORS = {
     { item: "MINI CROISSANT", code: "", box: 150, cost: 0.6133 },
     { item: "RED VELVET CAKE", code: "", box: 16, cost: 4.69 },
     { item: "DULCE DE LECHE CHEESECAKE", code: "", box: 16, cost: 2.75 },
+    { item: "LIMONCELLO", code: "", box: 12 },
   ],
   "OTHERS": [
     { item: "CIALDINO - WAFFLE COOKIE", code: "", box: 1200, cost: 0.0421 },
@@ -361,6 +364,77 @@ const STOCK_VENDORS = {
     { item: "GIRARDELLI CHOCOLATE", code: "", box: 0.45, unit: "kg", cost: 13.08 },
     { item: "DULCE DE LECHE CLASSIC", code: "", box: 4.8, sub: 0.4, unit: "kg", cost: 7.29 },
     { item: "SHREDDED COCONUT", code: "", box: 11.33, unit: "kg", cost: 43.6 },
+    // Laboratorio: insumos que solo cuenta Florida Mall
+    { item: "BISCOFF COOKIE BUTTER 3KG", code: "", unit: "kg", only: ["Florida Mall"] },
+    { item: "BASE ELENA X 8 / 1.8KG", code: "", box: 14.4, sub: 1.8, unit: "kg", cost: 15.65, only: ["Florida Mall"] },
+    { item: "BASE G CRÉME 14 / 0.900KG", code: "", box: 12.6, sub: 0.9, unit: "kg", only: ["Florida Mall"] },
+    { item: "BASE LIMONE 50 x 10/ 1kg", code: "", box: 10, sub: 1, unit: "kg", cost: 18.68, only: ["Florida Mall"] },
+    { item: "BASE LUCCIANO'S DULCE DE LECHE 2 / 1.56kg", code: "", box: 3.12, sub: 1.56, unit: "kg", cost: 15.36, only: ["Florida Mall"] },
+    { item: "BASE LUCCIANO'S STECCHI LATTE X 4 / 2KG", code: "", box: 8, sub: 2, unit: "kg", cost: 14.04, only: ["Florida Mall"] },
+    { item: "BASE SOAVE X 8 / 2KG", code: "", box: 16, sub: 2, unit: "kg", cost: 14.95, only: ["Florida Mall"] },
+    { item: "BIANCOCIOC X 2 / 6KG", code: "", box: 12, sub: 6, unit: "kg", cost: 18.58, only: ["Florida Mall"] },
+    { item: "BREZEL CREAM", code: "", unit: "kg", only: ["Florida Mall"] },
+    { item: "CHEESE CAKE BASE 16 / 1kg", code: "", box: 16, sub: 1, unit: "kg", cost: 23.15, only: ["Florida Mall"] },
+    { item: "COOKIES BLACK VARIEGATE x 2 / 6kg", code: "", box: 12, sub: 6, unit: "kg", cost: 19.18, only: ["Florida Mall"] },
+    { item: "COOKIES LEMON MERINGUE US X 2/ 4KG", code: "", box: 8, sub: 4, unit: "kg", cost: 18.81, only: ["Florida Mall"] },
+    { item: "COPERTURA AL GUSTO DI CIOCC BLANCO TIPO M 2 /2.5kg", code: "", box: 5, sub: 2.5, unit: "kg", cost: 17.79, only: ["Florida Mall"] },
+    { item: "COPERTURA M. AL PISTACCHIO 1 / 2.5kg", code: "", box: 2.5, unit: "kg", cost: 31.77, only: ["Florida Mall"] },
+    { item: "COPERTURA STRACCIATELLA 2 / 5.5 kg", code: "", box: 11, sub: 5.5, unit: "kg", cost: 13.9, only: ["Florida Mall"] },
+    { item: "EXTRA DARK X 6 / 1.625 KG", code: "", box: 9.75, sub: 1.625, unit: "kg", cost: 22.75, only: ["Florida Mall"] },
+    { item: "GIANFRUTTA MANGO ALPHONSO X 2 /5 kg", code: "", box: 10, sub: 5, unit: "kg", cost: 15.44, only: ["Florida Mall"] },
+    { item: "GIANFRUTTA MARACUJA X 2 / 5kg", code: "", box: 10, sub: 5, unit: "kg", cost: 16.54, only: ["Florida Mall"] },
+    { item: "GRANELLA NOCCIOLA PRALINATA CIURI CIURI 10 / 0.750 kg", code: "", box: 7.5, sub: 0.75, unit: "kg", cost: 30.16, only: ["Florida Mall"] },
+    { item: "INSTACRUMBLE CACAO SALATO", code: "", box: 2.5, unit: "kg", cost: 18.29, only: ["Florida Mall"] },
+    { item: "KIT LIMETTA x 1 / 11.9kg", code: "", box: 11.9, unit: "kg", cost: 14.12, only: ["Florida Mall"] },
+    { item: "KIT LOTUS x 1/ 13.49", code: "", box: 13.49, unit: "kg", cost: 24.61, only: ["Florida Mall"] },
+    { item: "MEC FIBRA PLUS 4 / 1.8", code: "", box: 7.2, sub: 1.8, unit: "kg", cost: 17.28, only: ["Florida Mall"] },
+    { item: "PAN MEC E 2 / 1.5 kg", code: "", box: 3, sub: 1.5, unit: "kg", cost: 15.56, only: ["Florida Mall"] },
+    { item: "PASTA BANANA CON PEZZI X 2 / 3kg", code: "", box: 6, sub: 3, unit: "kg", cost: 16.74, only: ["Florida Mall"] },
+    { item: "PASTA BISCOTINO 2 / 4.5kg", code: "", box: 9, sub: 4.5, unit: "kg", cost: 18.22, only: ["Florida Mall"] },
+    { item: "PASTA CHOCOMILKY 2 / 6kg", code: "", box: 12, sub: 6, unit: "kg", cost: 23.75, only: ["Florida Mall"] },
+    { item: "PASTA COCCO 2 / 4kg", code: "", box: 8, sub: 4, unit: "kg", cost: 18.53, only: ["Florida Mall"] },
+    { item: "PASTA CREAM CACAO 2/ 6kg", code: "", box: 12, sub: 6, unit: "kg", cost: 24.26, only: ["Florida Mall"] },
+    { item: "PASTA CREMA BACI 2 / 5.5 kg", code: "", unit: "kg", cost: 29.47, only: ["Florida Mall"] },
+    { item: "PASTA FRAGOLA L - Kosher x 2 / 3kg", code: "", box: 6, sub: 3, unit: "kg", cost: 18.05, only: ["Florida Mall"] },
+    { item: "PASTA FRENCH VANILLA 2 / 3kg", code: "", box: 6, sub: 3, unit: "kg", cost: 20.16, only: ["Florida Mall"] },
+    { item: "PASTA LAMPONE 2 / 6kg", code: "", box: 12, sub: 6, unit: "kg", cost: 19.05, only: ["Florida Mall"] },
+    { item: "PASTA MAMA QUE BUENA 2 / 4kg", code: "", box: 8, sub: 4, unit: "kg", cost: 43.08, only: ["Florida Mall"] },
+    { item: "PASTA MANGO ALFONSO 2 / 3kg", code: "", box: 6, sub: 3, unit: "kg", cost: 20.32, only: ["Florida Mall"] },
+    { item: "PASTA MARACUYA 2 / 3kg", code: "", box: 6, sub: 3, unit: "kg", cost: 15.48, only: ["Florida Mall"] },
+    { item: "PASTA MENTA 2 / 3kg", code: "", box: 6, sub: 3, unit: "kg", cost: 16.8, only: ["Florida Mall"] },
+    { item: "PASTA NOCCIOLA SELECTION X 2 / 5kg", code: "", box: 10, sub: 5, unit: "kg", cost: 25.61, only: ["Florida Mall"] },
+    { item: "PASTA PER COOKIES BLACK X 2 / 4.5kg", code: "", box: 9, sub: 4.5, unit: "kg", cost: 18.68, only: ["Florida Mall"] },
+    { item: "PASTA SALTED BUTTER CARAMEL 10 / 1.2 kg", code: "", box: 12, sub: 1.2, unit: "kg", cost: 20.37, only: ["Florida Mall"] },
+    { item: "PASTA TIRAMISU MO - Kosher. 2 / 4kg", code: "", box: 8, sub: 4, unit: "kg", cost: 18.6, only: ["Florida Mall"] },
+    { item: "PASTA TIRAMISU X 2 / 4.5 kg", code: "", box: 9, sub: 4.5, unit: "kg", cost: 18.35, only: ["Florida Mall"] },
+    { item: "PESTO NOCCIOLA CIURI CIURI 2 / 5KG", code: "", box: 10, sub: 5, unit: "kg", cost: 26.5, only: ["Florida Mall"] },
+    { item: "QUELLA CRUNCHY X 5 kg", code: "", box: 5, unit: "kg", cost: 11.72, only: ["Florida Mall"] },
+    { item: "QUELLA G 2/ 6kg", code: "", box: 12, sub: 6, unit: "kg", cost: 12.66, only: ["Florida Mall"] },
+    { item: "QUELLA LAMPONE 2/ 5.5 kg", code: "", box: 11, sub: 5.5, unit: "kg", cost: 17.73, only: ["Florida Mall"] },
+    { item: "QUELLA NOCCIOLA PRALINE 2 / 6kg", code: "", box: 12, sub: 6, unit: "kg", cost: 13.16, only: ["Florida Mall"] },
+    { item: "QUELLO CRUNCHY X 2.3 kg", code: "", box: 2.3, unit: "kg", cost: 14.64, only: ["Florida Mall"] },
+    { item: "SOFTIN X 2 / 3.5kg", code: "", box: 7, sub: 3.5, unit: "kg", cost: 13.03, only: ["Florida Mall"] },
+    { item: "SUPERGEL MIX x 4 / 3kg", code: "", box: 12, sub: 3, unit: "kg", cost: 17.21, only: ["Florida Mall"] },
+    { item: "SWEET GUSTO MASCARPONE 4 / 2kg", code: "", box: 8, sub: 2, unit: "kg", cost: 24.38, only: ["Florida Mall"] },
+    { item: "SALTED BUTTER CARAMEL BASE X 1.2", code: "", box: 12, sub: 6, unit: "kg", cost: 19.18, only: ["Florida Mall"] },
+    { item: "VARIEGATO MAMA QUE BUENA 2 / 5kg", code: "", box: 10, sub: 5, unit: "kg", cost: 16.35, only: ["Florida Mall"] },
+    { item: "VARIEGATO MECRAPH X 2 / 5.5 KG", code: "", box: 11, sub: 5.5, unit: "kg", cost: 21.54, only: ["Florida Mall"] },
+    { item: "VARIEGATO WAFER X 2 / 5 kg", code: "", box: 10, sub: 5, unit: "kg", cost: 20.69, only: ["Florida Mall"] },
+    { item: "BLUE COLOR", code: "", box: 1, unit: "kg", cost: 33.55, only: ["Florida Mall"] },
+    { item: "RED COLOR", code: "", box: 1, unit: "kg", cost: 19.3, only: ["Florida Mall"] },
+    { item: "YELLOW COLOR", code: "", box: 1, unit: "kg", cost: 22.8, only: ["Florida Mall"] },
+    { item: "DARK CHOCOLATE 72% 2/10kg", code: "", box: 20, sub: 10, unit: "kg", only: ["Florida Mall"] },
+    { item: "MILK CHOCOLATE 39% 2/10kg", code: "", box: 20, sub: 10, unit: "kg", only: ["Florida Mall"] },
+    { item: "WHITE CHOCOLATE 8/2.5kg", code: "", box: 20, sub: 2.5, unit: "kg", only: ["Florida Mall"] },
+    { item: "LOTUS COOKIES", code: "", box: 0.24, unit: "kg", cost: 13.29, only: ["Florida Mall"] },
+    { item: "OREO COOKIES", code: "", box: 0.36, unit: "kg", cost: 12.19, only: ["Florida Mall"] },
+    { item: "DEXTROSE 50lb", code: "", box: 22.67, unit: "kg", cost: 6.15, only: ["Florida Mall"] },
+    { item: "MANDORLA TOSTATA", code: "", box: 12, sub: 6, unit: "kg", cost: 19.98, only: ["Florida Mall"] },
+    { item: "SUGAR", code: "", unit: "kg", cost: 1.59, only: ["Florida Mall"] },
+    { item: "WHOLE MILK POWDER 28.5%", code: "", unit: "kg", cost: 14.73, only: ["Florida Mall"] },
+    { item: "FROZEN STRAWBERRY", code: "", box: 1.8, unit: "kg", cost: 4.2, only: ["Florida Mall"] },
+    { item: "DULCE DE LECHE ICE CREAM", code: "", box: 10, unit: "kg", cost: 11.64, only: ["Florida Mall"] },
+    { item: "SALTY CARAMEL CREAM", code: "", unit: "kg", only: ["Florida Mall"] },
   ],
   "ALFAJORES": [
     { item: "ALFAJOR SEMISWEET CHOCOLATE", code: "", box: 60, cost: 2.05 },
@@ -409,6 +483,7 @@ const STOCK_VENDORS = {
     { item: "CHOCOLATE LUCCIANO'S & HAZELNUT", code: "", box: 40, sub: 30, cost: 2.5 },
     { item: "MILK CHOCOLATE 0% SUGAR ADDED", code: "", box: 40, sub: 30, cost: 2.83 },
     { item: "PASSION FRUIT CHEESECAKE", code: "", box: 40, sub: 30, cost: 2.84 },
+    { item: "DUBAI CHOCOLATE", code: "", box: 40, sub: 30, cost: 2.848 },
   ],
   "GELATO": [
     { item: "BANANA SPLIT", code: "", unit: "kg", cost: 9.683 },
@@ -445,6 +520,10 @@ const STOCK_VENDORS = {
     { item: "NOCCIOLA SUPREMA", code: "", unit: "kg", cost: 11.009 },
     { item: "PISTACCHIO CHEESECAKE", code: "", unit: "kg", cost: 13.122 },
     { item: "TIRAMISU PISTACCHIO", code: "", unit: "kg", cost: 14.388 },
+    { item: "LOTUS COOKIES & CREAM", code: "", unit: "kg", cost: 16.01 },
+    { item: "PEANUT CARAMEL", code: "", unit: "kg", cost: 16.45 },
+    { item: "PRETZEL", code: "", unit: "kg", cost: 16.66 },
+    { item: "SALTED CARAMEL", code: "", unit: "kg", cost: 18.6 },
   ],
   "Todos": [],
   "Agregar Producto": [],
@@ -1222,6 +1301,12 @@ function applyPriceRows(rows = []) {
     p.cost = r.cost === null || r.cost === "" || !isFinite(c) ? BASE_COSTS[r.vendor + "|" + r.item] : c;
     p.costUpdatedAt = r.updated_at || null;
   });
+}
+
+// Productos de una categoría que cuenta esa sucursal (algunos, como los insumos
+// de laboratorio, son solo de una sucursal: campo "only").
+function stockProductsFor(cat, sucursal) {
+  return (STOCK_VENDORS[cat] || []).filter((p) => !p.only || !sucursal || p.only.includes(sucursal));
 }
 
 function findStockProduct(vendor, item, extraProducts = []) {
@@ -3082,7 +3167,7 @@ function StockForm({ kindLabel, sucursal, onBack, activeVendor, setActiveVendor,
 
   function getCategoryItems(cat) {
     const extras = extraProducts.filter((e) => e.category === cat).map((e) => ({ item: e.item, code: e.code || "" }));
-    return [...STOCK_VENDORS[cat], ...extras];
+    return [...stockProductsFor(cat, sucursal), ...extras];
   }
 
   const isTodos = activeVendor === "Todos";
@@ -3486,7 +3571,7 @@ async function stockExcelBase64(stockCount, extraProducts, lang) {
     category: cat,
     label: getStockVendorLabel(cat, lang),
     products: [
-      ...STOCK_VENDORS[cat],
+      ...stockProductsFor(cat, stockCount.sucursal),
       ...extraProducts.filter((e) => e.category === cat).map((e) => ({ item: e.item, code: e.code || "" })),
     ],
   }));
@@ -3503,7 +3588,7 @@ async function shareOrDownloadStockExcel(stockCount, extraProducts, lang) {
     category: cat,
     label: getStockVendorLabel(cat, lang),
     products: [
-      ...STOCK_VENDORS[cat],
+      ...stockProductsFor(cat, stockCount.sucursal),
       ...extraProducts.filter((e) => e.category === cat).map((e) => ({ item: e.item, code: e.code || "" })),
     ],
   }));
@@ -4595,7 +4680,7 @@ function PricesPanel({ onSave, version, lang }) {
               <div style={{ flex: 1, minWidth: 0 }}>
                 <div style={{ fontSize: 14, fontWeight: 600, color: "var(--ink)", lineHeight: 1.3 }}>{p.item}</div>
                 <div style={{ fontSize: 11, color: "var(--muted)" }}>
-                  {q ? getStockVendorLabel(c, lang) + " · " : ""}{p.unit === "kg" ? "US$ / kg" : "US$ / u"}
+                  {q ? getStockVendorLabel(c, lang) + " · " : ""}{p.unit === "kg" ? "US$ / kg" : "US$ / u"}{p.only ? " · " + (lang === "en" ? "only " : "solo ") + p.only.join(", ") : ""}
                   {p.costUpdatedAt ? ` · ${t.pricesUpdated} ${new Date(p.costUpdatedAt).toLocaleDateString(lang === "en" ? "en-US" : "es-AR")}` : ""}
                 </div>
               </div>
